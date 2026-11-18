@@ -1,0 +1,21 @@
+{
+  "name": "occt-lab",
+  "version-string": "0.1.0",
+  "builtin-baseline": "4702e381dbbd9b54d3f7e1eb565cd8981c1814cd",
+  "dependencies": [
+    "opencascade",
+    {
+      "name": "sdl3",
+      "features": ["vulkan"]
+    },
+    {
+      "name": "imgui",
+      "features": ["sdl3-binding", "vulkan-binding", "docking-experimental"]
+    },
+    "vulkan",
+    {
+      "name": "shader-slang",
+      "host": true
+    }
+  ]
+}
