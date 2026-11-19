@@ -3,19 +3,22 @@
 #include "brep_mesh.hpp"
 #include "orbit_camera.hpp"
 
-#include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <SDL3/SDL.h>
 #include <gp_Pnt.hxx>
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
+#include <exception>
 #include <format>
 #include <memory>
 #include <span>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace
@@ -26,15 +29,6 @@ constexpr double linear_deflection = 0.1;
 
 static_assert(sizeof(ClipTransform) == 64 && offsetof(ClipTransform, w) == 48);
 static_assert(offsetof(MeshVertex, normal) == 12 && sizeof(MeshVertex) == 24);
-
-BRepMeshData make_box_mesh()
-{
-    constexpr std::array box_size{100.0, 80.0, 20.0};
-    const auto [length, width, height] = box_size;
-    BRepPrimAPI_MakeBox box{length, width, height};
-    const gp_Pnt center{0.5 * length, 0.5 * width, 0.5 * height};
-    return triangulate_brep(box.Shape(), center, linear_deflection);
-}
 
 BRepMeshData make_cylinder_mesh()
 {
@@ -138,13 +132,60 @@ vk::RenderingAttachmentInfo PreviewDepthTarget::attachment() const
 
 BRepPreview::BRepPreview(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device)
     : device_(device), memory_properties_(physical_device.getMemoryProperties2().memoryProperties),
-      depth_format_(choose_depth_format(physical_device)), box_(upload_mesh(make_box_mesh())),
+      depth_format_(choose_depth_format(physical_device)), box_(build_box(BoxDimensions{})),
       cylinder_(upload_mesh(make_cylinder_mesh()))
 {
     constexpr vk::PushConstantRange projection{vk::ShaderStageFlagBits::eVertex, 0, sizeof(ClipTransform)};
     vk::PipelineLayoutCreateInfo info;
     info.setPushConstantRanges(projection);
     layout_ = vk::raii::PipelineLayout{device_, info};
+}
+
+std::unique_ptr<BRepPreview::BoxPreview> BRepPreview::build_box(const BoxDimensions dimensions) const
+{
+    auto model = make_box(dimensions);
+    const auto [length, width, height] = model.dimensions;
+    const gp_Pnt center{0.5 * length, 0.5 * width, 0.5 * height};
+    const auto mesh = triangulate_brep(model.shape, center, linear_deflection);
+
+    // Keep comparable boxes at the same scale and adjust framing for sizes outside that range.
+    constexpr BoxDimensions defaults;
+    const double default_diagonal = std::hypot(defaults.length, defaults.width, defaults.height);
+    const double diagonal = std::hypot(length, width, height);
+    const double view_diagonal = std::clamp(diagonal, 0.25 * default_diagonal, 1.125 * default_diagonal);
+    return std::make_unique<BoxPreview>(BoxPreview{
+        .model = std::move(model),
+        .mesh = upload_mesh(mesh),
+        .view_scale = diagonal / view_diagonal,
+    });
+}
+
+BoxDimensions BRepPreview::box_dimensions() const
+{
+    return box_->model.dimensions;
+}
+
+double BRepPreview::view_scale(const PreviewShape shape) const
+{
+    return shape == PreviewShape::box ? box_->view_scale : 1.0;
+}
+
+std::expected<void, std::string> BRepPreview::rebuild_box(const BoxDimensions dimensions)
+{
+    try
+    {
+        box_ = build_box(dimensions);
+        return {};
+    }
+    catch (const vk::DeviceLostError &)
+    {
+        throw;
+    }
+    catch (const std::exception &error)
+    {
+        const std::string_view message{error.what()};
+        return std::unexpected(message.empty() ? std::string{"Unknown error"} : std::string{message});
+    }
 }
 
 BRepPreview::MeshBuffer BRepPreview::upload_mesh(const BRepMeshData &mesh) const
@@ -284,7 +325,7 @@ void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Exte
 {
     const auto width = static_cast<float>(extent.width);
     const auto height = static_cast<float>(extent.height);
-    const auto &mesh = shape == PreviewShape::box ? box_ : cylinder_;
+    const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
 
     commands.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline_);
     commands.setViewport(0, vk::Viewport{0.0F, 0.0F, width, height, 0.0F, 1.0F});

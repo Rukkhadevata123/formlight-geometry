@@ -21,6 +21,7 @@ target_link_libraries(occt_lab_dependencies INTERFACE
 
 add_executable(occt_lab
     src/main.cpp
+    src/box_model.cpp
     src/brep_mesh.cpp
     src/brep_preview.cpp
     src/orbit_camera.cpp
@@ -73,4 +74,5 @@ if(BUILD_TESTING)
         set_target_properties(${check} PROPERTIES CXX_EXTENSIONS OFF)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
+    target_sources(occt_box_check PRIVATE src/box_model.cpp)
 endif()

@@ -25,7 +25,8 @@ class OrbitCamera
     void orbit(float delta_x, float delta_y);
     void zoom(float wheel_delta);
 
-    [[nodiscard]] ClipTransform clip_transform(std::uint32_t width, std::uint32_t height, ProjectionMode mode) const;
+    [[nodiscard]] ClipTransform clip_transform(std::uint32_t width, std::uint32_t height, ProjectionMode mode,
+                                               double view_scale) const;
 
   private:
     static constexpr double initial_distance = 230.0;

@@ -594,6 +594,10 @@ public:
         imgui_.begin_frame();
         update_camera_input();
         draw_status_panel(selected_, swapchain, shape_, projection_, camera_);
+        if (shape_ == PreviewShape::box)
+        {
+            draw_box_editor();
+        }
         ImGui::Render();
 
         const auto &image = swapchain.images[image_index];
@@ -625,6 +629,57 @@ public:
     }
 
 private:
+    void draw_box_editor()
+    {
+        const auto *viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
+                                ImGuiCond_FirstUseEver, {1.0F, 0.0F});
+        if (ImGui::Begin("Box dimensions (mm)", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            constexpr auto input_flags = ImGuiInputTextFlags_ParseEmptyRefVal;
+            ImGui::PushItemWidth(8.0F * ImGui::GetFontSize());
+            const bool length_changed = ImGui::InputDouble("Length", &box_draft_.length, 0.0, 0.0, "%.8g", input_flags);
+            const bool width_changed = ImGui::InputDouble("Width", &box_draft_.width, 0.0, 0.0, "%.8g", input_flags);
+            const bool height_changed = ImGui::InputDouble("Height", &box_draft_.height, 0.0, 0.0, "%.8g", input_flags);
+            ImGui::PopItemWidth();
+            if (length_changed || width_changed || height_changed)
+            {
+                box_error_.clear();
+            }
+
+            ImGui::BeginDisabled(box_draft_ == preview_.box_dimensions());
+            if (ImGui::Button("Rebuild"))
+            {
+                // draw_frame waited for the last submission before opening this editor.
+                if (auto result = preview_.rebuild_box(box_draft_); !result)
+                {
+                    box_error_ = std::move(result.error());
+                }
+                else
+                {
+                    box_error_.clear();
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel"))
+            {
+                box_draft_ = preview_.box_dimensions();
+                box_error_.clear();
+            }
+            ImGui::EndDisabled();
+
+            const auto [length, width, height] = preview_.box_dimensions();
+            ImGui::Text("Applied: %.8g x %.8g x %.8g", length, width, height);
+            if (!box_error_.empty())
+            {
+                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
+                ImGui::Text("Rebuild failed: %s", box_error_.c_str());
+                ImGui::PopTextWrapPos();
+            }
+        }
+        ImGui::End();
+    }
+
     void update_camera_input()
     {
         const auto &io = ImGui::GetIO();
@@ -721,7 +776,8 @@ private:
         rendering.setColorAttachments(color_attachment);
         rendering.pDepthAttachment = &depth_attachment;
         command_buffer_.beginRendering(rendering);
-        const auto transform = camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_);
+        const auto transform = camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_,
+                                                      preview_.view_scale(shape_));
         preview_.record(command_buffer_, swapchain.extent, shape_, transform);
         ImGui_ImplVulkan_RenderDrawData(draw_data, *command_buffer_);
         command_buffer_.endRendering();
@@ -750,6 +806,8 @@ private:
     vk::raii::Semaphore image_available_;
     vk::raii::Fence frame_finished_;
     BRepPreview preview_;
+    BoxDimensions box_draft_ = preview_.box_dimensions();
+    std::string box_error_;
     PreviewShape shape_ = PreviewShape::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;

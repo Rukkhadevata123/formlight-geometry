@@ -33,7 +33,7 @@ void OrbitCamera::zoom(const float wheel_delta)
 }
 
 ClipTransform OrbitCamera::clip_transform(const std::uint32_t width, const std::uint32_t height,
-                                          const ProjectionMode mode) const
+                                          const ProjectionMode mode, const double view_scale) const
 {
     constexpr double radians_per_degree = std::numbers::pi / 180.0;
     const double azimuth = azimuth_degrees_ * radians_per_degree;
@@ -43,9 +43,10 @@ ClipTransform OrbitCamera::clip_transform(const std::uint32_t width, const std::
     const gp_Dir right{-std::sin(azimuth), std::cos(azimuth), 0.0};
     const gp_Dir up = towards_camera.Crossed(right);
 
-    // At the initial distance the shorter side of the viewport spans 170 mm at the orbit target.
+    // Normalize the vertex scale before projection so zoom and clipping are relative to the model size.
+    const double inverse_scale = 1.0 / view_scale;
     constexpr double view_half_extent = 85.0;
-    const double focal_scale = initial_distance * std::min(width, height) / view_half_extent;
+    const double focal_scale = inverse_scale * initial_distance * std::min(width, height) / view_half_extent;
     const double focal_x = focal_scale / width;
     const double focal_y = focal_scale / height;
     if (mode == ProjectionMode::orthographic)
@@ -54,7 +55,7 @@ ClipTransform OrbitCamera::clip_transform(const std::uint32_t width, const std::
         return {
             .x = clip_row(right, focal_x / distance_),
             .y = clip_row(up, -focal_y / distance_),
-            .z = clip_row(towards_camera, -1.0 / depth_extent, 0.5),
+            .z = clip_row(towards_camera, -inverse_scale / depth_extent, 0.5),
             .w = {0.0F, 0.0F, 0.0F, 1.0F},
         };
     }
@@ -66,7 +67,7 @@ ClipTransform OrbitCamera::clip_transform(const std::uint32_t width, const std::
     return {
         .x = clip_row(right, focal_x),
         .y = clip_row(up, -focal_y),
-        .z = clip_row(towards_camera, -depth_scale, depth_scale * (distance_ - near_plane)),
-        .w = clip_row(towards_camera, -1.0, distance_),
+        .z = clip_row(towards_camera, -depth_scale * inverse_scale, depth_scale * (distance_ - near_plane)),
+        .w = clip_row(towards_camera, -inverse_scale, distance_),
     };
 }

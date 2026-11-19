@@ -1,8 +1,7 @@
+#include "box_model.hpp"
 #include "brep_mesh.hpp"
 
-#include <BRepCheck_Analyzer.hxx>
 #include <BRepGProp.hxx>
-#include <BRepPrimAPI_MakeBox.hxx>
 #include <GProp_GProps.hxx>
 #include <NCollection_IndexedMap.hxx>
 #include <TopAbs_ShapeEnum.hxx>
@@ -22,6 +21,7 @@
 #include <cstdlib>
 #include <exception>
 #include <format>
+#include <limits>
 #include <print>
 #include <stdexcept>
 #include <string_view>
@@ -125,29 +125,8 @@ void check_mesh(const TopoDS_Shape &box, const double length, const double width
     std::println("  Mesh: 6 faces, 12 triangles, translated bounds and outward normals verified");
 }
 
-void run_occt_check()
+void check_volume(const TopoDS_Shape &box, const double expected_volume)
 {
-    constexpr double length = 100.0;
-    constexpr double width = 80.0;
-    constexpr double height = 20.0;
-    constexpr double expected_volume = length * width * height;
-
-    std::println("OCCT box check ({} x {} x {} mm)", length, width, height);
-    BRepPrimAPI_MakeBox builder{length, width, height};
-    builder.Build();
-    if (!builder.IsDone())
-    {
-        throw std::runtime_error("OCCT box construction failed");
-    }
-
-    const auto &box = builder.Shape();
-    if (box.IsNull() || !BRepCheck_Analyzer{box}.IsValid())
-    {
-        throw std::runtime_error("OCCT box failed B-Rep validation");
-    }
-
-    check_topology(box);
-
     GProp_GProps properties;
     constexpr bool only_closed_shells = true;
     BRepGProp::VolumeProperties(box, properties, only_closed_shells);
@@ -160,7 +139,52 @@ void run_occt_check()
     }
 
     std::println("  Volume: {:.6f} mm^3 (expected {:.0f} mm^3)", volume, expected_volume);
-    check_mesh(box, length, width, height);
+}
+
+void check_invalid_dimensions()
+{
+    constexpr std::array invalid_dimensions{
+        BoxDimensions{.length = 0.0},
+        BoxDimensions{.width = -1.0},
+        BoxDimensions{.height = std::numeric_limits<double>::infinity()},
+        BoxDimensions{.height = std::numeric_limits<double>::quiet_NaN()},
+    };
+    for (const auto &dimensions : invalid_dimensions)
+    {
+        try
+        {
+            (void)make_box(dimensions);
+        }
+        catch (const std::invalid_argument &)
+        {
+            continue;
+        }
+        throw std::runtime_error(std::format("Invalid box dimensions accepted: {:g} x {:g} x {:g}", dimensions.length,
+                                             dimensions.width, dimensions.height));
+    }
+    std::println("  Invalid dimensions rejected");
+}
+
+void run_occt_check()
+{
+    constexpr BoxDimensions defaults;
+    const auto [length, width, height] = defaults;
+    std::println("OCCT box check ({} x {} x {} mm)", length, width, height);
+    const auto box = make_box(defaults);
+    check_topology(box.shape);
+    check_volume(box.shape, length * width * height);
+    check_mesh(box.shape, length, width, height);
+
+    constexpr BoxDimensions edited{.length = 140.0, .width = 60.0, .height = 35.0};
+    std::println("OCCT edited box check ({} x {} x {} mm)", edited.length, edited.width, edited.height);
+    const auto resized = make_box(edited);
+    if (resized.dimensions != edited)
+    {
+        throw std::runtime_error("The edited model must retain its dimensions");
+    }
+    check_volume(resized.shape, edited.length * edited.width * edited.height);
+    check_mesh(resized.shape, edited.length, edited.width, edited.height);
+    check_invalid_dimensions();
     std::println("OCCT box check passed");
 }
 } // namespace
