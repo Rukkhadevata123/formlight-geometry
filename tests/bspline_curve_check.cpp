@@ -172,7 +172,7 @@ void check_knot_insertion(const bool rational)
     {
         throw std::runtime_error("Insertion must add one simple interior knot and one pole");
     }
-    if (!refined.insertion_sample_error || *refined.insertion_sample_error > 1e-12 ||
+    if (!refined.refinement || refined.refinement->max_sample_deviation > 1e-12 ||
         refined.framing_extent != original.framing_extent || refined.unit_weight_samples.has_value() != rational ||
         refined.definition.weights.front() != definition.weights.front())
     {
@@ -196,7 +196,7 @@ void check_knot_insertion(const bool rational)
     }
     curve.redo();
     if (curve.current().definition != refined.definition || curve.current().samples != refined.samples ||
-        curve.current().insertion_sample_error != refined.insertion_sample_error)
+        curve.current().refinement != refined.refinement)
     {
         throw std::runtime_error("Redo must restore the complete refined curve");
     }
@@ -217,9 +217,96 @@ void check_knot_insertion(const bool rational)
     auto edited = saturated;
     edited.poles.back().z += 5.0;
     if (!curve.apply(edited) || curve.current().definition.knots != saturated.knots ||
-        !near(curve.current().samples.back(), edited.poles.back()) || curve.current().insertion_sample_error)
+        !near(curve.current().samples.back(), edited.poles.back()) || curve.current().refinement)
     {
         throw std::runtime_error("Pole editing must use the refined knots and clear the old deviation");
+    }
+}
+
+void check_degree_elevation(const bool rational)
+{
+    EditableCurve curve;
+    if (rational)
+    {
+        auto weighted = curve.current().definition;
+        weighted.weights.assign(weighted.poles.size(), 2.0);
+        weighted.weights[2] = 8.0;
+        if (!curve.apply(weighted) || !curve.insert_knot(0.25))
+        {
+            throw std::runtime_error("Failed to prepare the nonuniform rational curve");
+        }
+    }
+
+    const auto original = curve.current();
+    if (!curve.elevate_degree(4))
+    {
+        throw std::runtime_error("Failed to elevate the cubic curve to degree four");
+    }
+    const auto elevated = curve.current();
+    const auto &before = original.definition;
+    const auto &after = elevated.definition;
+    const auto expected_poles = before.poles.size() + before.knots.size() - 1;
+    if (after.degree != 4 || after.poles.size() != expected_poles || after.knots.size() != before.knots.size())
+    {
+        throw std::runtime_error("Unexpected degree, pole count or knot count after elevation");
+    }
+    for (std::size_t i = 0; i < before.knots.size(); ++i)
+    {
+        if (after.knots[i].value != before.knots[i].value ||
+            after.knots[i].multiplicity != before.knots[i].multiplicity + 1)
+        {
+            throw std::runtime_error("Degree elevation must preserve knot values and increase each multiplicity");
+        }
+    }
+    if (!elevated.refinement || elevated.refinement->previous_degree != before.degree ||
+        elevated.refinement->previous_pole_count != before.poles.size() ||
+        elevated.refinement->max_sample_deviation > 1e-12 || elevated.framing_extent != original.framing_extent ||
+        elevated.unit_weight_samples.has_value() != rational ||
+        std::abs(after.weights.front() - before.weights.front()) > 1e-12)
+    {
+        throw std::runtime_error("Degree elevation lost the comparison, framing or weight scale");
+    }
+    for (std::size_t i = 0; i < original.samples.size(); ++i)
+    {
+        if (!near(elevated.samples[i], original.samples[i]))
+        {
+            throw std::runtime_error("Degree elevation changed a position at a shared parameter");
+        }
+    }
+
+    curve.undo();
+    for (const int invalid : {2, 3, std::numeric_limits<int>::max()})
+    {
+        if (curve.elevate_degree(invalid) || !curve.can_redo() || curve.current().definition != before ||
+            curve.current().refinement != original.refinement)
+        {
+            throw std::runtime_error("Invalid elevation changed the curve or discarded redo");
+        }
+    }
+    curve.redo();
+    if (curve.current().definition != after || curve.current().samples != elevated.samples ||
+        curve.current().refinement != elevated.refinement)
+    {
+        throw std::runtime_error("Redo must restore the elevated curve and its comparison");
+    }
+    const auto knot = after.knots[1];
+    for (int multiplicity = knot.multiplicity + 1; multiplicity <= after.degree; ++multiplicity)
+    {
+        if (!curve.insert_knot(knot.value) || curve.current().definition.knots[1].multiplicity != multiplicity)
+        {
+            throw std::runtime_error("Knot insertion must use the elevated degree as its multiplicity limit");
+        }
+    }
+    if (curve.insert_knot(knot.value) || !curve.elevate_degree(5))
+    {
+        throw std::runtime_error("The saturated quartic curve must reject another insertion and allow elevation");
+    }
+    auto edit = curve.current().definition;
+    edit.poles.back().z += 5.0;
+    if (!curve.apply(edit) || curve.current().definition.degree != 5 ||
+        !near(curve.current().samples.back(), edit.poles.back()) || curve.current().refinement)
+    {
+        throw std::runtime_error("Pole edits must use the elevated degree and clear the comparison");
     }
 }
 } // namespace
@@ -232,7 +319,9 @@ int main()
         check_curve_edits();
         check_knot_insertion(false);
         check_knot_insertion(true);
-        std::println("B-spline samples, weight edits, knot insertion and history verified");
+        check_degree_elevation(false);
+        check_degree_elevation(true);
+        std::println("B-spline samples, weight edits, knot insertion, degree elevation and history verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

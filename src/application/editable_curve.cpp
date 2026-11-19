@@ -27,7 +27,7 @@ double max_sample_deviation(const EditableCurve::Curve::Samples &before, const E
         const double distance = std::hypot(x1 - x0, y1 - y0, z1 - z0);
         if (!std::isfinite(distance))
         {
-            throw std::runtime_error("The sampled insertion error exceeds the finite coordinate range");
+            throw std::runtime_error("The sampled deviation exceeds the finite coordinate range");
         }
         maximum = std::max(maximum, distance);
     }
@@ -43,6 +43,18 @@ void EditableCurve::commit(Curve candidate)
 {
     history_ = std::exchange(current_, std::move(candidate));
     undone_ = false;
+}
+
+void EditableCurve::commit_refinement(const Definition &definition)
+{
+    auto candidate = sample_curve(definition);
+    candidate.refinement = occt_lab::geometry::RefinementComparison{
+        .previous_degree = current_.definition.degree,
+        .previous_pole_count = current_.definition.poles.size(),
+        .max_sample_deviation = max_sample_deviation(current_.samples, candidate.samples),
+    };
+    candidate.framing_extent = current_.framing_extent;
+    commit(std::move(candidate));
 }
 
 std::expected<void, std::string> EditableCurve::apply(const Definition &definition)
@@ -66,10 +78,20 @@ std::expected<void, std::string> EditableCurve::insert_knot(const double paramet
 {
     try
     {
-        auto candidate = sample_curve(insert_cubic_knot(current_.definition, parameter));
-        candidate.insertion_sample_error = max_sample_deviation(current_.samples, candidate.samples);
-        candidate.framing_extent = current_.framing_extent;
-        commit(std::move(candidate));
+        commit_refinement(insert_curve_knot(current_.definition, parameter));
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(std::string{error.what()});
+    }
+}
+
+std::expected<void, std::string> EditableCurve::elevate_degree(const int target_degree)
+{
+    try
+    {
+        commit_refinement(elevate_curve_degree(current_.definition, target_degree));
         return {};
     }
     catch (const std::exception &error)

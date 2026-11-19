@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <stdexcept>
 
@@ -15,13 +16,15 @@ namespace occt_lab::geometry
 {
 namespace
 {
-constexpr int degree = CurveDefinition::degree;
-
-int checked_pole_count(const std::size_t count)
+int checked_pole_count(const std::size_t count, const int degree)
 {
-    if (count < degree + 1 || count > std::numeric_limits<int>::max())
+    if (degree < 1 || degree > Geom_BSplineCurve::MaxDegree())
     {
-        throw std::invalid_argument("A cubic B-spline requires at least four poles and an OCCT-sized array");
+        throw std::invalid_argument("Curve degree is outside the supported OCCT range");
+    }
+    if (count <= static_cast<std::size_t>(degree) || count > std::numeric_limits<int>::max())
+    {
+        throw std::invalid_argument("A B-spline needs more poles than its degree and an OCCT-sized array");
     }
     return static_cast<int>(count);
 }
@@ -54,10 +57,11 @@ NCollection_Array1<double> normalized_weights(const std::span<const double> weig
 
 Geom_BSplineCurve make_curve(const CurveDefinition &definition, const bool use_unit_weights = false)
 {
-    const int pole_count = checked_pole_count(definition.poles.size());
+    const int degree = definition.degree;
+    const int pole_count = checked_pole_count(definition.poles.size(), degree);
     if (definition.knots.size() < 2 || definition.knots.size() > definition.poles.size())
     {
-        throw std::invalid_argument("Invalid number of distinct knots for a clamped cubic B-spline");
+        throw std::invalid_argument("Invalid number of distinct knots for a clamped B-spline");
     }
     NCollection_Array1<gp_Pnt> poles{1, pole_count};
     for (std::size_t i = 0; i < definition.poles.size(); ++i)
@@ -86,7 +90,7 @@ Geom_BSplineCurve make_curve(const CurveDefinition &definition, const bool use_u
         const int maximum = endpoint ? degree + 1 : degree;
         if (multiplicity < minimum || multiplicity > maximum)
         {
-            throw std::invalid_argument("Invalid knot multiplicity for a clamped cubic B-spline");
+            throw std::invalid_argument("Invalid knot multiplicity for this degree of clamped B-spline");
         }
         knots(static_cast<int>(i) + 1) = value;
         multiplicities(static_cast<int>(i) + 1) = multiplicity;
@@ -123,12 +127,30 @@ void sample_positions(const Geom_BSplineCurve &curve, const std::span<Vec3> samp
         samples[index] = Vec3{.x = point.X(), .y = point.Y(), .z = point.Z()};
     }
 }
+
+CurveDefinition read_definition(const Geom_BSplineCurve &curve, const double weight_scale)
+{
+    // Restore the common factor removed when creating the OCCT curve.
+    CurveDefinition result{.degree = curve.Degree()};
+    for (int i = 1; i <= curve.NbPoles(); ++i)
+    {
+        const gp_Pnt &point = curve.Pole(i);
+        result.poles.push_back({.x = point.X(), .y = point.Y(), .z = point.Z()});
+        result.weights.push_back(curve.Weight(i) * weight_scale);
+    }
+    for (int i = 1; i <= curve.NbKnots(); ++i)
+    {
+        result.knots.push_back({.value = curve.Knot(i), .multiplicity = curve.Multiplicity(i)});
+    }
+    return result;
+}
 } // namespace
 
 CurveDefinition make_uniform_cubic(const std::span<const Vec3> poles, const std::span<const double> weights)
 {
-    const int knot_count = checked_pole_count(poles.size()) - degree + 1;
-    CurveDefinition definition;
+    constexpr int degree = 3;
+    const int knot_count = checked_pole_count(poles.size(), degree) - degree + 1;
+    CurveDefinition definition{.degree = degree};
     definition.poles.assign(poles.begin(), poles.end());
     if (weights.empty())
     {
@@ -169,7 +191,7 @@ SampledCurve sample_curve(const CurveDefinition &definition)
     return result;
 }
 
-CurveDefinition insert_cubic_knot(const CurveDefinition &definition, const double parameter)
+CurveDefinition insert_curve_knot(const CurveDefinition &definition, const double parameter)
 {
     auto curve = make_curve(definition);
     constexpr double tolerance = Precision::PConfusion();
@@ -183,22 +205,19 @@ CurveDefinition insert_cubic_knot(const CurveDefinition &definition, const doubl
     curve.InsertKnot(parameter, 1, tolerance, true);
     if (curve.NbPoles() == old_count)
     {
-        throw std::invalid_argument("This cubic knot already has multiplicity 3");
+        throw std::invalid_argument("This knot's multiplicity already equals the curve degree");
     }
+    return read_definition(curve, std::ranges::max(definition.weights));
+}
 
-    // OCCT operates on normalized weights. Restore the user's common factor when reading back the poles.
-    const double weight_scale = std::ranges::max(definition.weights);
-    CurveDefinition refined;
-    for (int i = 1; i <= curve.NbPoles(); ++i)
+CurveDefinition elevate_curve_degree(const CurveDefinition &definition, const int target_degree)
+{
+    if (target_degree <= definition.degree || target_degree > Geom_BSplineCurve::MaxDegree())
     {
-        const gp_Pnt &point = curve.Pole(i);
-        refined.poles.push_back({.x = point.X(), .y = point.Y(), .z = point.Z()});
-        refined.weights.push_back(curve.Weight(i) * weight_scale);
+        throw std::invalid_argument("Elevation requires a higher degree within the supported OCCT range");
     }
-    for (int i = 1; i <= curve.NbKnots(); ++i)
-    {
-        refined.knots.push_back({.value = curve.Knot(i), .multiplicity = curve.Multiplicity(i)});
-    }
-    return refined;
+    auto curve = make_curve(definition);
+    curve.IncreaseDegree(target_degree);
+    return read_definition(curve, std::ranges::max(definition.weights));
 }
 } // namespace occt_lab::geometry

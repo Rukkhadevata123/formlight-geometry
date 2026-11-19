@@ -52,7 +52,7 @@ void CurveEditor::draw(EditableCurve &curve)
         {
             ImGui::TextUnformatted("Gold: weighted   Gray: all weights = 1");
         }
-        draw_knot_insertion(curve);
+        draw_refinement(curve);
         if (!error_.empty())
         {
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
@@ -98,9 +98,9 @@ void CurveEditor::draw_history(EditableCurve &curve)
     error_.clear();
 }
 
-void CurveEditor::draw_knot_insertion(EditableCurve &curve)
+void CurveEditor::draw_refinement(EditableCurve &curve)
 {
-    ImGui::SeparatorText("Knot insertion");
+    ImGui::SeparatorText("Curve refinement");
     ImGui::SetNextItemWidth(9.0F * ImGui::GetFontSize());
     if (ImGui::InputDouble("Parameter u", &knot_parameter_, 0.0, 0.0, "%.12g"))
     {
@@ -108,9 +108,15 @@ void CurveEditor::draw_knot_insertion(EditableCurve &curve)
     }
     const bool dirty = draft_ != curve.current().definition;
     ImGui::BeginDisabled(dirty);
-    if (ImGui::Button("Insert knot"))
+    const bool insert = ImGui::Button("Insert knot");
+    ImGui::SameLine();
+    const bool elevate = ImGui::Button("Elevate degree (+1)");
+    ImGui::EndDisabled();
+    if (insert || elevate)
     {
-        if (const auto result = curve.insert_knot(knot_parameter_); result)
+        const auto result =
+            insert ? curve.insert_knot(knot_parameter_) : curve.elevate_degree(curve.current().definition.degree + 1);
+        if (result)
         {
             draft_ = curve.current().definition;
             pole_number_ = 1;
@@ -121,13 +127,23 @@ void CurveEditor::draw_knot_insertion(EditableCurve &curve)
             error_ = result.error();
         }
     }
-    ImGui::EndDisabled();
     if (dirty)
     {
-        ImGui::TextUnformatted("Apply or cancel pole edits before changing knots.");
+        ImGui::TextUnformatted("Apply or cancel pole edits before refining.");
     }
     const auto &current = curve.current();
-    ImGui::Text("%zu poles, %zu distinct knots", current.definition.poles.size(), current.definition.knots.size());
+    if (current.refinement)
+    {
+        const auto &[previous_degree, previous_poles, deviation] = *current.refinement;
+        ImGui::Text("Degree %d -> %d    Poles %zu -> %zu", previous_degree, current.definition.degree, previous_poles,
+                    current.definition.poles.size());
+        ImGui::Text("Max deviation (%zu samples): %.3g mm", current.samples.size(), deviation);
+    }
+    else
+    {
+        ImGui::Text("Degree %d    Poles %zu", current.definition.degree, current.definition.poles.size());
+    }
+    ImGui::Text("%zu distinct knots", current.definition.knots.size());
     if (ImGui::TreeNode("Knots and multiplicities"))
     {
         for (const auto &[value, multiplicity] : current.definition.knots)
@@ -135,9 +151,5 @@ void CurveEditor::draw_knot_insertion(EditableCurve &curve)
             ImGui::Text("%.12g  (x%d)", value, multiplicity);
         }
         ImGui::TreePop();
-    }
-    if (current.insertion_sample_error)
-    {
-        ImGui::Text("Max deviation (%zu samples): %.3g mm", current.samples.size(), *current.insertion_sample_error);
     }
 }

@@ -19,6 +19,7 @@ class EditableCurve
     }
     [[nodiscard]] std::expected<void, std::string> apply(const Definition &definition);
     [[nodiscard]] std::expected<void, std::string> insert_knot(double parameter);
+    [[nodiscard]] std::expected<void, std::string> elevate_degree(int target_degree);
     [[nodiscard]] bool history_changes_knots() const
     {
         return history_ && history_->definition.knots != current_.definition.knots;
@@ -36,6 +37,7 @@ class EditableCurve
 
   private:
     void commit(Curve candidate);
+    void commit_refinement(const Definition &definition);
     Curve current_;
     std::optional<Curve> history_;
     bool undone_ = false;

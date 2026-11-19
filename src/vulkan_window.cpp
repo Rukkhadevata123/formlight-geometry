@@ -604,25 +604,26 @@ public:
         imgui_.begin_frame();
         update_camera_input();
         draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_);
-        if (preview_mode_ == PreviewMode::box)
+        std::optional<PreviewShape> solid;
+        switch (preview_mode_)
         {
+        case PreviewMode::box:
             // The last submission has finished, so the editor can replace or restore a mesh.
             box_editor_.draw(preview_);
-        }
-        else if (preview_mode_ == PreviewMode::bspline)
-        {
+            solid = PreviewShape::box;
+            break;
+        case PreviewMode::cylinder:
+            solid = PreviewShape::cylinder;
+            break;
+        case PreviewMode::bspline:
             curve_editor_.draw(curve_);
+            break;
         }
 
-        std::optional<PreviewShape> solid;
-        if (preview_mode_ != PreviewMode::bspline)
-        {
-            solid = preview_mode_ == PreviewMode::box ? PreviewShape::box : PreviewShape::cylinder;
-        }
         const double view_scale = solid ? preview_.view_scale(*solid) : 1.0;
         const auto transform =
             camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_, view_scale);
-        if (!solid)
+        if (preview_mode_ == PreviewMode::bspline)
         {
             draw_curve_preview(curve_.current(), transform, curve_editor_.selected_index());
         }
