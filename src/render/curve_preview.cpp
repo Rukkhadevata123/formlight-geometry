@@ -57,4 +57,11 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
         draw_list.AddCircleFilled(project(pole), 4.0F, pole_color);
     }
     draw_list.AddCircle(project(poles.at(selected_pole)), 7.0F, IM_COL32(255, 255, 255, 255), 0, 1.5F);
+    constexpr ImU32 data_color = IM_COL32(104, 226, 153, 255);
+    for (const auto &input : curve.interpolation_points)
+    {
+        const auto [x, y] = project(input.position);
+        constexpr float radius = 6.0F;
+        draw_list.AddQuad({x, y - radius}, {x + radius, y}, {x, y + radius}, {x - radius, y}, data_color, 2.0F);
+    }
 }

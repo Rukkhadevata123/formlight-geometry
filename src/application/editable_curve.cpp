@@ -47,7 +47,7 @@ void EditableCurve::commit(Curve candidate)
 
 void EditableCurve::commit_refinement(const Definition &definition)
 {
-    auto candidate = sample_curve(definition);
+    auto candidate = sample_curve(definition, current_.interpolation_points);
     candidate.refinement = occt_lab::geometry::RefinementComparison{
         .previous_degree = current_.definition.degree,
         .previous_pole_count = current_.definition.poles.size(),
@@ -92,6 +92,19 @@ std::expected<void, std::string> EditableCurve::elevate_degree(const int target_
     try
     {
         commit_refinement(elevate_curve_degree(current_.definition, target_degree));
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(std::string{error.what()});
+    }
+}
+
+std::expected<void, std::string> EditableCurve::interpolate_through_poles()
+{
+    try
+    {
+        commit(occt_lab::geometry::interpolate_curve(current_.definition.poles));
         return {};
     }
     catch (const std::exception &error)

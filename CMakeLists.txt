@@ -82,7 +82,7 @@ if(BUILD_TESTING)
 
     add_executable(bspline_curve_check tests/bspline_curve_check.cpp src/geometry/bspline_curve.cpp src/application/editable_curve.cpp)
     target_include_directories(bspline_curve_check SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
-    target_link_libraries(bspline_curve_check PRIVATE TKG3d TKernel)
+    target_link_libraries(bspline_curve_check PRIVATE TKGeomAlgo TKG3d TKernel)
 
     foreach(check IN ITEMS occt_box_check occt_cylinder_check bezier_patch_check bspline_curve_check)
         target_compile_features(${check} PRIVATE cxx_std_23)

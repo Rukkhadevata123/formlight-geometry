@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include <algorithm>
+
 void CurveEditor::draw(EditableCurve &curve)
 {
     const auto *viewport = ImGui::GetMainViewport();
@@ -53,6 +55,7 @@ void CurveEditor::draw(EditableCurve &curve)
             ImGui::TextUnformatted("Gold: weighted   Gray: all weights = 1");
         }
         draw_refinement(curve);
+        draw_interpolation(curve);
         if (!error_.empty())
         {
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
@@ -116,20 +119,11 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
     {
         const auto result =
             insert ? curve.insert_knot(knot_parameter_) : curve.elevate_degree(curve.current().definition.degree + 1);
-        if (result)
-        {
-            draft_ = curve.current().definition;
-            pole_number_ = 1;
-            error_.clear();
-        }
-        else
-        {
-            error_ = result.error();
-        }
+        finish_curve_operation(curve, result);
     }
     if (dirty)
     {
-        ImGui::TextUnformatted("Apply or cancel pole edits before refining.");
+        ImGui::TextUnformatted("Apply or cancel pole edits before curve operations.");
     }
     const auto &current = curve.current();
     if (current.refinement)
@@ -149,6 +143,47 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
         for (const auto &[value, multiplicity] : current.definition.knots)
         {
             ImGui::Text("%.12g  (x%d)", value, multiplicity);
+        }
+        ImGui::TreePop();
+    }
+}
+
+void CurveEditor::finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result)
+{
+    if (!result)
+    {
+        error_ = result.error();
+        return;
+    }
+    draft_ = curve.current().definition;
+    pole_number_ = 1;
+    error_.clear();
+}
+
+void CurveEditor::draw_interpolation(EditableCurve &curve)
+{
+    ImGui::SeparatorText("Point interpolation");
+    ImGui::BeginDisabled(draft_ != curve.current().definition);
+    if (ImGui::Button("Interpolate through applied poles"))
+    {
+        const auto result = curve.interpolate_through_poles();
+        finish_curve_operation(curve, result);
+    }
+    ImGui::EndDisabled();
+
+    const auto &points = curve.current().interpolation_points;
+    if (points.empty())
+    {
+        return;
+    }
+    const auto largest = std::ranges::max_element(points, {}, &occt_lab::geometry::InterpolationPoint::residual);
+    ImGui::Text("Green diamonds: %zu data points", points.size());
+    ImGui::Text("Max point residual: %.3g mm", largest->residual);
+    if (ImGui::TreeNode("Chord parameters and residuals"))
+    {
+        for (std::size_t i = 0; i < points.size(); ++i)
+        {
+            ImGui::Text("%zu   u = %.8g   %.3g mm", i + 1, points[i].parameter, points[i].residual);
         }
         ImGui::TreePop();
     }

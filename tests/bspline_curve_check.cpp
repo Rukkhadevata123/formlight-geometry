@@ -309,6 +309,92 @@ void check_degree_elevation(const bool rational)
         throw std::runtime_error("Pole edits must use the elevated degree and clear the comparison");
     }
 }
+void check_interpolation()
+{
+    constexpr std::array data{Vec3{.x = 0.0, .y = 0.0, .z = 0.0}, Vec3{.x = 1.0, .y = 0.0, .z = 0.0},
+                              Vec3{.x = 1.0, .y = 2.0, .z = 0.0}, Vec3{.x = 1.0, .y = 2.0, .z = 1.0}};
+    constexpr std::array parameters{0.0, 0.25, 0.75, 1.0};
+    EditableCurve curve;
+    auto source = occt_lab::geometry::make_uniform_cubic(data);
+    source.weights[1] = 4.0;
+    if (!curve.apply(source) || !curve.interpolate_through_poles())
+    {
+        throw std::runtime_error("Failed to interpolate four distinct 3D data points");
+    }
+    const auto interpolated = curve.current();
+    if (interpolated.interpolation_points.size() != data.size() || interpolated.unit_weight_samples)
+    {
+        throw std::runtime_error("Interpolation must retain the data points and solve for its own curve");
+    }
+    for (std::size_t i = 0; i < data.size(); ++i)
+    {
+        const auto &[point, parameter, residual] = interpolated.interpolation_points[i];
+        const auto sample = static_cast<std::size_t>(parameters[i] * (interpolated.samples.size() - 1));
+        if (point != data[i] || parameter != parameters[i] || residual > 1e-12 ||
+            !near(interpolated.samples[sample], data[i]))
+        {
+            throw std::runtime_error("Interpolated positions must pass through each input at its chord parameter");
+        }
+    }
+    curve.undo();
+    if (curve.current().definition != source || !curve.current().interpolation_points.empty())
+    {
+        throw std::runtime_error("Undo must restore the weighted source curve");
+    }
+    curve.redo();
+    if (curve.current().interpolation_points != interpolated.interpolation_points ||
+        curve.current().definition != interpolated.definition)
+    {
+        throw std::runtime_error("Redo must restore the interpolant and its residuals");
+    }
+    if (!curve.insert_knot(0.5) || curve.current().interpolation_points.size() != data.size())
+    {
+        throw std::runtime_error("Knot insertion lost the interpolation data");
+    }
+    for (const auto &point : curve.current().interpolation_points)
+    {
+        if (point.residual > 1e-12)
+        {
+            throw std::runtime_error("The refined curve no longer passes through the input points");
+        }
+    }
+    auto edited = curve.current().definition;
+    edited.poles.front().z += 1.0;
+    if (!curve.apply(edited) || !curve.current().interpolation_points.empty())
+    {
+        throw std::runtime_error("A pole edit must clear the previous interpolation report");
+    }
+}
+
+void check_interpolation_failure()
+{
+    EditableCurve curve;
+    const auto original = curve.current().definition;
+    auto duplicate = original;
+    duplicate.poles[1] = duplicate.poles.front();
+    if (!curve.apply(duplicate) || !curve.apply(original))
+    {
+        throw std::runtime_error("Could not prepare a curve with coincident adjacent poles");
+    }
+    curve.undo();
+    if (curve.interpolate_through_poles() || curve.current().definition != duplicate || !curve.can_redo())
+    {
+        throw std::runtime_error("Failed interpolation must preserve the source curve and redo entry");
+    }
+}
+
+void check_off_grid_residual()
+{
+    constexpr std::array data{Vec3{.x = 0.0, .y = 0.0, .z = 0.0}, Vec3{.x = 1.0, .y = 0.0, .z = 0.0},
+                              Vec3{.x = 4.0, .y = 0.0, .z = 0.0}, Vec3{.x = 7.0, .y = 0.0, .z = 0.0}};
+    const auto curve = occt_lab::geometry::interpolate_curve(data);
+    const auto &input = curve.interpolation_points.at(1);
+    // u = 1/7 lies between the 129 display samples.
+    if (std::abs(input.parameter - 1.0 / 7.0) > 1e-14 || input.residual > 1e-12)
+    {
+        throw std::runtime_error("Residuals must be evaluated at the original chord parameters");
+    }
+}
 } // namespace
 
 int main()
@@ -321,7 +407,10 @@ int main()
         check_knot_insertion(true);
         check_degree_elevation(false);
         check_degree_elevation(true);
-        std::println("B-spline samples, weight edits, knot insertion, degree elevation and history verified");
+        check_interpolation();
+        check_interpolation_failure();
+        check_off_grid_residual();
+        std::println("B-spline sampling, editing, refinement, interpolation and history verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

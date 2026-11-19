@@ -17,6 +17,8 @@ class CurveEditor
   private:
     void draw_history(EditableCurve &curve);
     void draw_refinement(EditableCurve &curve);
+    void draw_interpolation(EditableCurve &curve);
+    void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
     int pole_number_ = 1;
     double knot_parameter_ = 0.5;
