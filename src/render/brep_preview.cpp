@@ -1,6 +1,6 @@
 #include "brep_preview.hpp"
 
-#include "brep_mesh.hpp"
+#include "geometry/brep_mesh.hpp"
 #include "orbit_camera.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
@@ -140,7 +140,7 @@ BRepPreview::BRepPreview(const vk::raii::PhysicalDevice &physical_device, const 
     layout_ = vk::raii::PipelineLayout{device_, info};
 }
 
-std::unique_ptr<BRepPreview::BoxPreview> BRepPreview::build_box(const BoxDimensions dimensions) const
+std::unique_ptr<BRepPreview::BoxPreview> BRepPreview::build_box(const BoxDimensions &dimensions) const
 {
     auto model = make_box(dimensions);
     const auto [length, width, height] = model.dimensions;
@@ -179,7 +179,7 @@ bool BRepPreview::can_redo_box() const
     return redo_box_ != nullptr;
 }
 
-std::expected<void, std::string> BRepPreview::rebuild_box(const BoxDimensions dimensions)
+std::expected<void, std::string> BRepPreview::rebuild_box(const BoxDimensions &dimensions)
 {
     if (dimensions == box_dimensions())
     {

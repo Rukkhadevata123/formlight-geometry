@@ -1,7 +1,7 @@
 #include "vulkan_window.hpp"
 
-#include "brep_preview.hpp"
-#include "orbit_camera.hpp"
+#include "render/brep_preview.hpp"
+#include "render/orbit_camera.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -638,11 +638,14 @@ private:
         if (ImGui::Begin("Box dimensions (mm)", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             constexpr auto input_flags = ImGuiInputTextFlags_ParseEmptyRefVal;
+            // Update the draft while typing so the actions reflect edits before the field loses focus.
+            ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
             ImGui::PushItemWidth(8.0F * ImGui::GetFontSize());
             const bool length_changed = ImGui::InputDouble("Length", &box_draft_.length, 0.0, 0.0, "%.8g", input_flags);
             const bool width_changed = ImGui::InputDouble("Width", &box_draft_.width, 0.0, 0.0, "%.8g", input_flags);
             const bool height_changed = ImGui::InputDouble("Height", &box_draft_.height, 0.0, 0.0, "%.8g", input_flags);
             ImGui::PopItemWidth();
+            ImGui::PopItemFlag();
             if (length_changed || width_changed || height_changed)
             {
                 box_error_.clear();

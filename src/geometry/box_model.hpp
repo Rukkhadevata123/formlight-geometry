@@ -17,4 +17,4 @@ struct BoxModel
     TopoDS_Shape shape;
 };
 
-[[nodiscard]] BoxModel make_box(BoxDimensions dimensions);
+[[nodiscard]] BoxModel make_box(const BoxDimensions &dimensions);

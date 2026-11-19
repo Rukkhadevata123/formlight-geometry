@@ -1,4 +1,4 @@
-#include "brep_mesh.hpp"
+#include "geometry/brep_mesh.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <gp_Pnt.hxx>
@@ -27,14 +27,13 @@ void check_cylinder_normals()
     }
 
     int side_faces = 0;
-    for (const auto &face : mesh.faces)
+    for (const auto &[first_index, index_count] : mesh.faces)
     {
-        if (face.first_index > mesh.indices.size() || face.index_count == 0 ||
-            face.index_count > mesh.indices.size() - face.first_index)
+        if (first_index > mesh.indices.size() || index_count == 0 || index_count > mesh.indices.size() - first_index)
         {
             throw std::runtime_error("Cylinder face has an invalid index range");
         }
-        const auto indices = std::span{mesh.indices}.subspan(face.first_index, face.index_count);
+        const auto indices = std::span{mesh.indices}.subspan(first_index, index_count);
         const double first_z = mesh.vertices.at(indices.front()).position[2];
         const bool is_cap =
             std::ranges::all_of(indices, [&mesh, first_z](const auto index)
@@ -50,8 +49,9 @@ void check_cylinder_normals()
             const auto &[position, normal] = mesh.vertices.at(index);
             const auto expected = is_cap ? std::array{0.0, 0.0, std::copysign(1.0, first_z)}
                                          : std::array{position[0] / radius, position[1] / radius, 0.0};
-            const double error = std::hypot(normal[0] - expected[0], normal[1] - expected[1], normal[2] - expected[2]);
-            if (!std::isfinite(error) || error > tolerance)
+            if (const double error =
+                    std::hypot(normal[0] - expected[0], normal[1] - expected[1], normal[2] - expected[2]);
+                !std::isfinite(error) || error > tolerance)
             {
                 throw std::runtime_error(is_cap ? "Cylinder cap normal is not axial"
                                                 : "Cylinder side normal is not radial");

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "box_model.hpp"
+#include "geometry/box_model.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
 
@@ -40,7 +40,7 @@ class BRepPreview
     [[nodiscard]] bool can_redo_box() const;
 
     // Finish submitted draws before changing the active box or releasing a history entry.
-    [[nodiscard]] std::expected<void, std::string> rebuild_box(BoxDimensions dimensions);
+    [[nodiscard]] std::expected<void, std::string> rebuild_box(const BoxDimensions &dimensions);
     void undo_box();
     void redo_box();
 
@@ -64,7 +64,7 @@ class BRepPreview
         double view_scale;
     };
 
-    [[nodiscard]] std::unique_ptr<BoxPreview> build_box(BoxDimensions dimensions) const;
+    [[nodiscard]] std::unique_ptr<BoxPreview> build_box(const BoxDimensions &dimensions) const;
     [[nodiscard]] MeshBuffer upload_mesh(const BRepMeshData &mesh) const;
 
     const vk::raii::Device &device_;

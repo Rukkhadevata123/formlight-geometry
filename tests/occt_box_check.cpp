@@ -1,5 +1,5 @@
-#include "box_model.hpp"
-#include "brep_mesh.hpp"
+#include "geometry/box_model.hpp"
+#include "geometry/brep_mesh.hpp"
 
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
@@ -170,20 +170,20 @@ void run_occt_check()
     constexpr BoxDimensions defaults;
     const auto [length, width, height] = defaults;
     std::println("OCCT box check ({} x {} x {} mm)", length, width, height);
-    const auto box = make_box(defaults);
-    check_topology(box.shape);
-    check_volume(box.shape, length * width * height);
-    check_mesh(box.shape, length, width, height);
+    const auto box = make_box(defaults).shape;
+    check_topology(box);
+    check_volume(box, length * width * height);
+    check_mesh(box, length, width, height);
 
     constexpr BoxDimensions edited{.length = 140.0, .width = 60.0, .height = 35.0};
     std::println("OCCT edited box check ({} x {} x {} mm)", edited.length, edited.width, edited.height);
-    const auto resized = make_box(edited);
-    if (resized.dimensions != edited)
+    const auto [resized_dimensions, resized_shape] = make_box(edited);
+    if (resized_dimensions != edited)
     {
         throw std::runtime_error("The edited model must retain its dimensions");
     }
-    check_volume(resized.shape, edited.length * edited.width * edited.height);
-    check_mesh(resized.shape, edited.length, edited.width, edited.height);
+    check_volume(resized_shape, edited.length * edited.width * edited.height);
+    check_mesh(resized_shape, edited.length, edited.width, edited.height);
     check_invalid_dimensions();
     std::println("OCCT box check passed");
 }

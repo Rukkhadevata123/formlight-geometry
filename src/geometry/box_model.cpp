@@ -13,15 +13,14 @@ namespace
 {
 void validate_dimension(const double dimension, const std::string_view name)
 {
-    constexpr double tolerance = Precision::Confusion();
-    if (!std::isfinite(dimension) || dimension <= tolerance)
+    if (constexpr double tolerance = Precision::Confusion(); !std::isfinite(dimension) || dimension <= tolerance)
     {
         throw std::invalid_argument(std::format("{} must be finite and greater than {:g} mm", name, tolerance));
     }
 }
 } // namespace
 
-BoxModel make_box(const BoxDimensions dimensions)
+BoxModel make_box(const BoxDimensions &dimensions)
 {
     const auto [length, width, height] = dimensions;
     validate_dimension(length, "Length");

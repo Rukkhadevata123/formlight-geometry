@@ -21,12 +21,13 @@ target_link_libraries(occt_lab_dependencies INTERFACE
 
 add_executable(occt_lab
     src/main.cpp
-    src/box_model.cpp
-    src/brep_mesh.cpp
-    src/brep_preview.cpp
-    src/orbit_camera.cpp
     src/vulkan_window.cpp
+    src/geometry/box_model.cpp
+    src/geometry/brep_mesh.cpp
+    src/render/brep_preview.cpp
+    src/render/orbit_camera.cpp
 )
+target_include_directories(occt_lab PRIVATE src)
 target_link_libraries(occt_lab PRIVATE occt_lab_dependencies)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
 set_target_properties(occt_lab PROPERTIES CXX_EXTENSIONS OFF)
@@ -66,7 +67,7 @@ add_dependencies(occt_lab occt_lab_shaders)
 include(CTest)
 if(BUILD_TESTING)
     foreach(check IN ITEMS occt_box_check occt_cylinder_check)
-        add_executable(${check} tests/${check}.cpp src/brep_mesh.cpp)
+        add_executable(${check} tests/${check}.cpp src/geometry/brep_mesh.cpp)
         target_compile_features(${check} PRIVATE cxx_std_23)
         target_include_directories(${check} PRIVATE src)
         target_include_directories(${check} SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
@@ -74,5 +75,11 @@ if(BUILD_TESTING)
         set_target_properties(${check} PROPERTIES CXX_EXTENSIONS OFF)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
-    target_sources(occt_box_check PRIVATE src/box_model.cpp)
+    target_sources(occt_box_check PRIVATE src/geometry/box_model.cpp)
+
+    add_executable(bezier_patch_check tests/bezier_patch_check.cpp src/geometry/bezier_patch.cpp)
+    target_compile_features(bezier_patch_check PRIVATE cxx_std_23)
+    target_include_directories(bezier_patch_check PRIVATE src)
+    set_target_properties(bezier_patch_check PROPERTIES CXX_EXTENSIONS OFF)
+    add_test(NAME bezier_patch_check COMMAND bezier_patch_check)
 endif()
