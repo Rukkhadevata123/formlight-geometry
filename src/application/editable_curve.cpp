@@ -39,6 +39,11 @@ EditableCurve::EditableCurve() : current_(sample_curve(occt_lab::geometry::make_
 {
 }
 
+auto EditableCurve::current() const -> const Curve &
+{
+    return current_;
+}
+
 void EditableCurve::commit(Curve candidate)
 {
     history_ = std::exchange(current_, std::move(candidate));

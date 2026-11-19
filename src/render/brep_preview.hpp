@@ -13,12 +13,14 @@ struct ClipTransform;
 
 struct PreviewDepthTarget
 {
+    // clang-format off
     vk::raii::DeviceMemory memory;
-    vk::raii::Image image;
-    vk::raii::ImageView view;
+    vk::raii::Image        image;
+    vk::raii::ImageView    view;
 
-    [[nodiscard]] vk::ImageMemoryBarrier2 render_barrier() const;
-    [[nodiscard]] vk::RenderingAttachmentInfo attachment() const;
+    [[nodiscard]] auto render_barrier() const -> vk::ImageMemoryBarrier2;
+    [[nodiscard]] auto attachment() const     -> vk::RenderingAttachmentInfo;
+    // clang-format on
 };
 
 enum class PreviewShape
@@ -64,8 +66,10 @@ class BRepPreview
         double view_scale;
     };
 
-    [[nodiscard]] std::unique_ptr<BoxPreview> build_box(const BoxDimensions &dimensions) const;
-    [[nodiscard]] MeshBuffer upload_mesh(const BRepMeshData &mesh) const;
+    // clang-format off
+    [[nodiscard]] auto build_box(const BoxDimensions &dimensions) const -> std::unique_ptr<BoxPreview>;
+    [[nodiscard]] auto upload_mesh(const BRepMeshData &mesh) const      -> MeshBuffer;
+    // clang-format on
 
     const vk::raii::Device &device_;
     vk::PhysicalDeviceMemoryProperties memory_properties_;

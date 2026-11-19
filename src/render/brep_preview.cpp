@@ -140,7 +140,7 @@ BRepPreview::BRepPreview(const vk::raii::PhysicalDevice &physical_device, const 
     layout_ = vk::raii::PipelineLayout{device_, info};
 }
 
-std::unique_ptr<BRepPreview::BoxPreview> BRepPreview::build_box(const BoxDimensions &dimensions) const
+auto BRepPreview::build_box(const BoxDimensions &dimensions) const -> std::unique_ptr<BoxPreview>
 {
     auto model = make_box(dimensions);
     const auto [length, width, height] = model.dimensions;
@@ -220,7 +220,7 @@ void BRepPreview::redo_box()
     }
 }
 
-BRepPreview::MeshBuffer BRepPreview::upload_mesh(const BRepMeshData &mesh) const
+auto BRepPreview::upload_mesh(const BRepMeshData &mesh) const -> MeshBuffer
 {
     const auto vertices = std::as_bytes(std::span{mesh.vertices});
     const auto indices = std::as_bytes(std::span{mesh.indices});

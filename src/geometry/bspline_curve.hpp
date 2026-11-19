@@ -65,10 +65,13 @@ struct SampledCurve
 [[nodiscard]] CurveDefinition make_uniform_cubic(std::span<const Vec3> poles, std::span<const double> weights = {});
 [[nodiscard]] SampledCurve sample_curve(const CurveDefinition &definition,
                                         std::span<const CurveDataPoint> data_points = {});
-[[nodiscard]] SampledCurve interpolate_curve(std::span<const Vec3> data_points);
-[[nodiscard]] SampledCurve approximate_curve(std::span<const Vec3> data_points, double tolerance);
-[[nodiscard]] CurveDefinition insert_curve_knot(const CurveDefinition &definition, double parameter);
-[[nodiscard]] CurveDefinition elevate_curve_degree(const CurveDefinition &definition, int target_degree);
+
+// clang-format off
+[[nodiscard]] auto interpolate_curve(std::span<const Vec3> data_points)                       -> SampledCurve;
+[[nodiscard]] auto approximate_curve(std::span<const Vec3> data_points, double tolerance)     -> SampledCurve;
+[[nodiscard]] auto insert_curve_knot(const CurveDefinition &definition, double parameter)     -> CurveDefinition;
+[[nodiscard]] auto elevate_curve_degree(const CurveDefinition &definition, int target_degree) -> CurveDefinition;
+// clang-format on
 
 // Samples a non-periodic cubic B-spline with uniformly spaced interior knots, including both endpoints.
 // An empty weight span assigns unit weight to every pole.
