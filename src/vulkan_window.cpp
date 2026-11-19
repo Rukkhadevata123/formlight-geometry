@@ -1,6 +1,7 @@
 #include "vulkan_window.hpp"
 
 #include "render/brep_preview.hpp"
+#include "render/curve_preview.hpp"
 #include "render/orbit_camera.hpp"
 
 #include <SDL3/SDL.h>
@@ -415,7 +416,14 @@ private:
     std::unique_ptr<ImGuiContext, decltype(&ImGui::DestroyContext)> context_{nullptr, ImGui::DestroyContext};
 };
 
-void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewShape &shape,
+enum class PreviewMode
+{
+    box,
+    cylinder,
+    bspline,
+};
+
+void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
                        ProjectionMode &projection, OrbitCamera &camera)
 {
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
@@ -435,10 +443,10 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         ImGui::SeparatorText("Preview");
         const float combo_width = 9.0F * ImGui::GetFontSize();
         ImGui::SetNextItemWidth(combo_width);
-        auto shape_index = static_cast<int>(shape);
-        if (ImGui::Combo("Shape", &shape_index, "Box\0Cylinder\0"))
+        auto mode_index = static_cast<int>(mode);
+        if (ImGui::Combo("Shape", &mode_index, "Box\0Cylinder\0B-spline\0"))
         {
-            shape = static_cast<PreviewShape>(shape_index);
+            mode = static_cast<PreviewMode>(mode_index);
         }
 
         ImGui::SetNextItemWidth(combo_width);
@@ -593,16 +601,29 @@ public:
 
         imgui_.begin_frame();
         update_camera_input();
-        draw_status_panel(selected_, swapchain, shape_, projection_, camera_);
-        if (shape_ == PreviewShape::box)
+        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_);
+        if (preview_mode_ == PreviewMode::box)
         {
             // The last submission has finished, so the editor can replace or restore a mesh.
             draw_box_editor();
         }
+
+        std::optional<PreviewShape> solid;
+        if (preview_mode_ != PreviewMode::bspline)
+        {
+            solid = preview_mode_ == PreviewMode::box ? PreviewShape::box : PreviewShape::cylinder;
+        }
+        const double view_scale = solid ? preview_.view_scale(*solid) : 1.0;
+        const auto transform =
+            camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_, view_scale);
+        if (!solid)
+        {
+            curve_preview_.draw(transform);
+        }
         ImGui::Render();
 
         const auto &image = swapchain.images[image_index];
-        record_frame(image, swapchain, ImGui::GetDrawData());
+        record_frame(image, swapchain, solid, transform, ImGui::GetDrawData());
 
         const vk::SemaphoreSubmitInfo acquire_wait{*image_available_, 0, color_output_stage};
         const vk::CommandBufferSubmitInfo commands{*command_buffer_, 1};
@@ -775,7 +796,8 @@ private:
         imgui_.initialize_renderer(info);
     }
 
-    void record_frame(const SwapchainImage &image, const Swapchain &swapchain, ImDrawData *draw_data) const
+    void record_frame(const SwapchainImage &image, const Swapchain &swapchain, const std::optional<PreviewShape> solid,
+                      const ClipTransform &transform, ImDrawData *draw_data) const
     {
         command_buffer_.reset();
         command_buffer_.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
@@ -810,9 +832,10 @@ private:
         rendering.setColorAttachments(color_attachment);
         rendering.pDepthAttachment = &depth_attachment;
         command_buffer_.beginRendering(rendering);
-        const auto transform = camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_,
-                                                      preview_.view_scale(shape_));
-        preview_.record(command_buffer_, swapchain.extent, shape_, transform);
+        if (solid)
+        {
+            preview_.record(command_buffer_, swapchain.extent, *solid, transform);
+        }
         ImGui_ImplVulkan_RenderDrawData(draw_data, *command_buffer_);
         command_buffer_.endRendering();
 
@@ -840,9 +863,10 @@ private:
     vk::raii::Semaphore image_available_;
     vk::raii::Fence frame_finished_;
     BRepPreview preview_;
+    CurvePreview curve_preview_;
     BoxDimensions box_draft_ = preview_.box_dimensions();
     std::string box_error_;
-    PreviewShape shape_ = PreviewShape::box;
+    PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;
     bool orbiting_ = false;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vec3.hpp"
+
 #include <array>
 #include <cstddef>
 #include <expected>
@@ -7,13 +9,6 @@
 
 namespace occt_lab::geometry
 {
-struct Vec3
-{
-    double x;
-    double y;
-    double z;
-};
-
 struct SurfaceSample
 {
     Vec3 position;

@@ -24,7 +24,9 @@ add_executable(occt_lab
     src/vulkan_window.cpp
     src/geometry/box_model.cpp
     src/geometry/brep_mesh.cpp
+    src/geometry/bspline_curve.cpp
     src/render/brep_preview.cpp
+    src/render/curve_preview.cpp
     src/render/orbit_camera.cpp
 )
 target_include_directories(occt_lab PRIVATE src)
@@ -68,18 +70,21 @@ include(CTest)
 if(BUILD_TESTING)
     foreach(check IN ITEMS occt_box_check occt_cylinder_check)
         add_executable(${check} tests/${check}.cpp src/geometry/brep_mesh.cpp)
-        target_compile_features(${check} PRIVATE cxx_std_23)
-        target_include_directories(${check} PRIVATE src)
         target_include_directories(${check} SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
         target_link_libraries(${check} PRIVATE TKMesh TKPrim TKTopAlgo TKBRep TKernel)
-        set_target_properties(${check} PROPERTIES CXX_EXTENSIONS OFF)
-        add_test(NAME ${check} COMMAND ${check})
     endforeach()
     target_sources(occt_box_check PRIVATE src/geometry/box_model.cpp)
 
     add_executable(bezier_patch_check tests/bezier_patch_check.cpp src/geometry/bezier_patch.cpp)
-    target_compile_features(bezier_patch_check PRIVATE cxx_std_23)
-    target_include_directories(bezier_patch_check PRIVATE src)
-    set_target_properties(bezier_patch_check PROPERTIES CXX_EXTENSIONS OFF)
-    add_test(NAME bezier_patch_check COMMAND bezier_patch_check)
+
+    add_executable(bspline_curve_check tests/bspline_curve_check.cpp src/geometry/bspline_curve.cpp)
+    target_include_directories(bspline_curve_check SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
+    target_link_libraries(bspline_curve_check PRIVATE TKG3d TKernel)
+
+    foreach(check IN ITEMS occt_box_check occt_cylinder_check bezier_patch_check bspline_curve_check)
+        target_compile_features(${check} PRIVATE cxx_std_23)
+        target_include_directories(${check} PRIVATE src)
+        set_target_properties(${check} PROPERTIES CXX_EXTENSIONS OFF)
+        add_test(NAME ${check} COMMAND ${check})
+    endforeach()
 endif()
