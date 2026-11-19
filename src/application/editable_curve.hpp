@@ -21,6 +21,7 @@ class EditableCurve
     [[nodiscard]] std::expected<void, std::string> insert_knot(double parameter);
     [[nodiscard]] std::expected<void, std::string> elevate_degree(int target_degree);
     [[nodiscard]] std::expected<void, std::string> interpolate_through_poles();
+    [[nodiscard]] std::expected<void, std::string> approximate_data_points(double tolerance);
     [[nodiscard]] bool history_changes_knots() const
     {
         return history_ && history_->definition.knots != current_.definition.knots;

@@ -47,13 +47,14 @@ void EditableCurve::commit(Curve candidate)
 
 void EditableCurve::commit_refinement(const Definition &definition)
 {
-    auto candidate = sample_curve(definition, current_.interpolation_points);
+    auto candidate = sample_curve(definition, current_.data_points);
     candidate.refinement = occt_lab::geometry::RefinementComparison{
         .previous_degree = current_.definition.degree,
         .previous_pole_count = current_.definition.poles.size(),
         .max_sample_deviation = max_sample_deviation(current_.samples, candidate.samples),
     };
     candidate.framing_extent = current_.framing_extent;
+    candidate.approximation = current_.approximation;
     commit(std::move(candidate));
 }
 
@@ -105,6 +106,29 @@ std::expected<void, std::string> EditableCurve::interpolate_through_poles()
     try
     {
         commit(occt_lab::geometry::interpolate_curve(current_.definition.poles));
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(std::string{error.what()});
+    }
+}
+
+std::expected<void, std::string> EditableCurve::approximate_data_points(const double tolerance)
+{
+    if (current_.approximation && !current_.refinement && current_.approximation->requested_tolerance == tolerance)
+    {
+        return {};
+    }
+    try
+    {
+        std::vector<occt_lab::geometry::Vec3> saved_positions;
+        for (const auto &input : current_.data_points)
+        {
+            saved_positions.push_back(input.position);
+        }
+        const auto &positions = saved_positions.empty() ? current_.definition.poles : saved_positions;
+        commit(occt_lab::geometry::approximate_curve(positions, tolerance));
         return {};
     }
     catch (const std::exception &error)

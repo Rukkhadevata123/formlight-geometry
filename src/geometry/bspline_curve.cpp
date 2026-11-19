@@ -1,6 +1,5 @@
-#include "bspline_curve.hpp"
+#include "occt_bspline.hpp"
 
-#include <GeomAPI_Interpolate.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
 #include <Precision.hxx>
@@ -129,7 +128,9 @@ void sample_positions(const Geom_BSplineCurve &curve, const std::span<Vec3> samp
     }
 }
 
-CurveDefinition read_definition(const Geom_BSplineCurve &curve, const double weight_scale)
+} // namespace
+
+CurveDefinition read_bspline_definition(const Geom_BSplineCurve &curve, const double weight_scale)
 {
     // Restore the common factor removed when creating the OCCT curve.
     CurveDefinition result{.degree = curve.Degree()};
@@ -145,50 +146,6 @@ CurveDefinition read_definition(const Geom_BSplineCurve &curve, const double wei
     }
     return result;
 }
-
-std::vector<InterpolationPoint> parameterize_by_chord_length(const std::span<const Vec3> data_points)
-{
-    if (data_points.size() < 2 || data_points.size() > std::numeric_limits<int>::max() - 2)
-    {
-        throw std::invalid_argument("Interpolation requires at least two points and an OCCT-sized array");
-    }
-    std::vector<InterpolationPoint> inputs;
-    inputs.reserve(data_points.size());
-    double length = 0.0;
-    for (const auto &point : data_points)
-    {
-        const auto &[x, y, z] = point;
-        if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
-        {
-            throw std::invalid_argument("Interpolation points must have finite coordinates");
-        }
-        if (!inputs.empty())
-        {
-            const auto &[last_x, last_y, last_z] = inputs.back().position;
-            const double chord = std::hypot(x - last_x, y - last_y, z - last_z);
-            if (chord <= Precision::Confusion())
-            {
-                throw std::invalid_argument("Adjacent interpolation points are coincident within OCCT tolerance");
-            }
-            length += chord;
-        }
-        inputs.push_back({.position = point, .parameter = length});
-    }
-    if (!std::isfinite(length))
-    {
-        throw std::invalid_argument("Total chord length exceeds the finite coordinate range");
-    }
-    for (std::size_t i = 0; i < inputs.size(); ++i)
-    {
-        inputs[i].parameter /= length;
-        if (i > 0 && inputs[i].parameter <= inputs[i - 1].parameter)
-        {
-            throw std::invalid_argument("Chord lengths produce indistinguishable interpolation parameters");
-        }
-    }
-    return inputs;
-}
-} // namespace
 
 CurveDefinition make_uniform_cubic(const std::span<const Vec3> poles, const std::span<const double> weights)
 {
@@ -219,23 +176,21 @@ void sample_clamped_cubic_bspline(const std::span<const Vec3> control_points, co
     sample_positions(make_curve(make_uniform_cubic(control_points, weights)), samples);
 }
 
-SampledCurve sample_curve(const CurveDefinition &definition,
-                          const std::span<const InterpolationPoint> interpolation_points)
+SampledCurve sample_curve(const CurveDefinition &definition, const std::span<const CurveDataPoint> data_points)
 {
     SampledCurve result{.definition = definition};
     const auto curve = make_curve(definition);
     sample_positions(curve, result.samples);
-    for (const auto &input : interpolation_points)
+    for (const auto &input : data_points)
     {
         const auto &[x, y, z] = input.position;
         const gp_Pnt position = curve.EvalD0(input.parameter);
         const double residual = std::hypot(position.X() - x, position.Y() - y, position.Z() - z);
         if (!std::isfinite(residual))
         {
-            throw std::runtime_error("Interpolation residual exceeded the finite coordinate range");
+            throw std::runtime_error("Point residual exceeded the finite coordinate range");
         }
-        result.interpolation_points.push_back(
-            {.position = input.position, .parameter = input.parameter, .residual = residual});
+        result.data_points.push_back({.position = input.position, .parameter = input.parameter, .residual = residual});
     }
     const auto &weights = definition.weights;
     if (!std::ranges::all_of(weights, [&weights](const double weight) { return weight == weights.front(); }))
@@ -247,29 +202,6 @@ SampledCurve sample_curve(const CurveDefinition &definition,
         result.framing_extent = std::max({result.framing_extent, std::abs(x), std::abs(y), std::abs(z)});
     }
     return result;
-}
-
-SampledCurve interpolate_curve(const std::span<const Vec3> data_points)
-{
-    const auto inputs = parameterize_by_chord_length(data_points);
-    const int count = static_cast<int>(inputs.size());
-    const occ::handle points{new NCollection_HArray1<gp_Pnt>(1, count)};
-    const occ::handle parameters{new NCollection_HArray1<double>(1, count)};
-    for (std::size_t i = 0; i < inputs.size(); ++i)
-    {
-        const int index = static_cast<int>(i) + 1;
-        const auto &[x, y, z] = inputs[i].position;
-        points->SetValue(index, gp_Pnt{x, y, z});
-        parameters->SetValue(index, inputs[i].parameter);
-    }
-
-    GeomAPI_Interpolate interpolation{points, parameters, false, Precision::Confusion()};
-    interpolation.Perform();
-    if (!interpolation.IsDone())
-    {
-        throw std::runtime_error("OCCT could not interpolate these points");
-    }
-    return sample_curve(read_definition(*interpolation.Curve(), 1.0), inputs);
 }
 
 CurveDefinition insert_curve_knot(const CurveDefinition &definition, const double parameter)
@@ -288,7 +220,7 @@ CurveDefinition insert_curve_knot(const CurveDefinition &definition, const doubl
     {
         throw std::invalid_argument("This knot's multiplicity already equals the curve degree");
     }
-    return read_definition(curve, std::ranges::max(definition.weights));
+    return read_bspline_definition(curve, std::ranges::max(definition.weights));
 }
 
 CurveDefinition elevate_curve_degree(const CurveDefinition &definition, const int target_degree)
@@ -299,6 +231,6 @@ CurveDefinition elevate_curve_degree(const CurveDefinition &definition, const in
     }
     auto curve = make_curve(definition);
     curve.IncreaseDegree(target_degree);
-    return read_definition(curve, std::ranges::max(definition.weights));
+    return read_bspline_definition(curve, std::ranges::max(definition.weights));
 }
 } // namespace occt_lab::geometry

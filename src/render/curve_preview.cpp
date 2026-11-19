@@ -51,6 +51,11 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
         constexpr ImU32 reference_color = IM_COL32(192, 198, 204, 255);
         draw_polyline(*curve.unit_weight_samples, reference_color, 1.5F);
     }
+    if (curve.approximation)
+    {
+        constexpr ImU32 interpolated_color = IM_COL32(206, 156, 242, 255);
+        draw_polyline(curve.approximation->interpolated_samples, interpolated_color, 2.0F);
+    }
     draw_polyline(curve.samples, curve_color, 2.5F);
     for (const auto &pole : poles)
     {
@@ -58,7 +63,7 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
     }
     draw_list.AddCircle(project(poles.at(selected_pole)), 7.0F, IM_COL32(255, 255, 255, 255), 0, 1.5F);
     constexpr ImU32 data_color = IM_COL32(104, 226, 153, 255);
-    for (const auto &input : curve.interpolation_points)
+    for (const auto &input : curve.data_points)
     {
         const auto [x, y] = project(input.position);
         constexpr float radius = 6.0F;

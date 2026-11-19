@@ -35,29 +35,38 @@ struct RefinementComparison
     bool operator==(const RefinementComparison &) const = default;
 };
 
-struct InterpolationPoint
+struct CurveDataPoint
 {
     Vec3 position{};
     double parameter = 0.0;
     double residual = 0.0;
-    bool operator==(const InterpolationPoint &) const = default;
+    bool operator==(const CurveDataPoint &) const = default;
 };
 
 struct SampledCurve
 {
     using Samples = std::array<Vec3, 129>;
+    struct ApproximationComparison
+    {
+        double requested_tolerance = 0.0;
+        Samples interpolated_samples{};
+        std::vector<double> interpolated_residuals;
+        bool operator==(const ApproximationComparison &) const = default;
+    };
     CurveDefinition definition;
     Samples samples{};
     std::optional<Samples> unit_weight_samples;
     double framing_extent = 0.0;
     std::optional<RefinementComparison> refinement;
-    std::vector<InterpolationPoint> interpolation_points;
+    std::vector<CurveDataPoint> data_points;
+    std::optional<ApproximationComparison> approximation;
 };
 
 [[nodiscard]] CurveDefinition make_uniform_cubic(std::span<const Vec3> poles, std::span<const double> weights = {});
 [[nodiscard]] SampledCurve sample_curve(const CurveDefinition &definition,
-                                        std::span<const InterpolationPoint> interpolation_points = {});
+                                        std::span<const CurveDataPoint> data_points = {});
 [[nodiscard]] SampledCurve interpolate_curve(std::span<const Vec3> data_points);
+[[nodiscard]] SampledCurve approximate_curve(std::span<const Vec3> data_points, double tolerance);
 [[nodiscard]] CurveDefinition insert_curve_knot(const CurveDefinition &definition, double parameter);
 [[nodiscard]] CurveDefinition elevate_curve_degree(const CurveDefinition &definition, int target_degree);
 

@@ -55,7 +55,7 @@ void CurveEditor::draw(EditableCurve &curve)
             ImGui::TextUnformatted("Gold: weighted   Gray: all weights = 1");
         }
         draw_refinement(curve);
-        draw_interpolation(curve);
+        draw_point_fitting(curve);
         if (!error_.empty())
         {
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
@@ -160,30 +160,65 @@ void CurveEditor::finish_curve_operation(const EditableCurve &curve, const std::
     error_.clear();
 }
 
-void CurveEditor::draw_interpolation(EditableCurve &curve)
+void CurveEditor::draw_point_fitting(EditableCurve &curve)
 {
-    ImGui::SeparatorText("Point interpolation");
+    ImGui::SeparatorText("Point fitting");
     ImGui::BeginDisabled(draft_ != curve.current().definition);
     if (ImGui::Button("Interpolate through applied poles"))
     {
         const auto result = curve.interpolate_through_poles();
         finish_curve_operation(curve, result);
     }
+    ImGui::SetNextItemWidth(9.0F * ImGui::GetFontSize());
+    if (ImGui::InputDouble("Target tolerance (mm)", &fit_tolerance_, 0.0, 0.0, "%.8g"))
+    {
+        error_.clear();
+    }
+    const bool use_poles = curve.current().data_points.empty();
+    if (ImGui::Button(use_poles ? "Approximate applied poles" : "Approximate same data points"))
+    {
+        const auto result = curve.approximate_data_points(fit_tolerance_);
+        finish_curve_operation(curve, result);
+    }
     ImGui::EndDisabled();
 
-    const auto &points = curve.current().interpolation_points;
+    const auto &current = curve.current();
+    const auto &points = current.data_points;
     if (points.empty())
     {
         return;
     }
-    const auto largest = std::ranges::max_element(points, {}, &occt_lab::geometry::InterpolationPoint::residual);
+    const auto largest = std::ranges::max_element(points, {}, &occt_lab::geometry::CurveDataPoint::residual);
     ImGui::Text("Green diamonds: %zu data points", points.size());
-    ImGui::Text("Max point residual: %.3g mm", largest->residual);
+    if (current.approximation)
+    {
+        const auto &comparison = *current.approximation;
+        ImGui::Text("Applied target: %.8g mm", comparison.requested_tolerance);
+        ImGui::Text("Max at chord parameters (mm)");
+        ImGui::Text("Gold fit: %.3g   Purple interpolant: %.3g", largest->residual,
+                    std::ranges::max(comparison.interpolated_residuals));
+    }
+    else
+    {
+        ImGui::Text("Max point residual: %.3g mm", largest->residual);
+    }
     if (ImGui::TreeNode("Chord parameters and residuals"))
     {
+        if (current.approximation)
+        {
+            ImGui::TextUnformatted("Point    u      Fit / interpolant (mm)");
+        }
         for (std::size_t i = 0; i < points.size(); ++i)
         {
-            ImGui::Text("%zu   u = %.8g   %.3g mm", i + 1, points[i].parameter, points[i].residual);
+            if (current.approximation)
+            {
+                ImGui::Text("%zu   %.8g   %.3g / %.3g", i + 1, points[i].parameter, points[i].residual,
+                            current.approximation->interpolated_residuals[i]);
+            }
+            else
+            {
+                ImGui::Text("%zu   u = %.8g   %.3g mm", i + 1, points[i].parameter, points[i].residual);
+            }
         }
         ImGui::TreePop();
     }
