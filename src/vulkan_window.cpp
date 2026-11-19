@@ -3,6 +3,8 @@
 #include "render/brep_preview.hpp"
 #include "render/curve_preview.hpp"
 #include "render/orbit_camera.hpp"
+#include "ui/box_editor.hpp"
+#include "ui/curve_editor.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -605,7 +607,11 @@ public:
         if (preview_mode_ == PreviewMode::box)
         {
             // The last submission has finished, so the editor can replace or restore a mesh.
-            draw_box_editor();
+            box_editor_.draw(preview_);
+        }
+        else if (preview_mode_ == PreviewMode::bspline)
+        {
+            curve_editor_.draw(curve_);
         }
 
         std::optional<PreviewShape> solid;
@@ -618,7 +624,7 @@ public:
             camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_, view_scale);
         if (!solid)
         {
-            curve_preview_.draw(transform);
+            draw_curve_preview(curve_.current(), transform, curve_editor_.selected_index());
         }
         ImGui::Render();
 
@@ -651,91 +657,6 @@ public:
     }
 
 private:
-    void draw_box_editor()
-    {
-        const auto *viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
-                                ImGuiCond_FirstUseEver, {1.0F, 0.0F});
-        if (ImGui::Begin("Box dimensions (mm)", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-        {
-            constexpr auto input_flags = ImGuiInputTextFlags_ParseEmptyRefVal;
-            // Update the draft while typing so the actions reflect edits before the field loses focus.
-            ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
-            ImGui::PushItemWidth(8.0F * ImGui::GetFontSize());
-            const bool length_changed = ImGui::InputDouble("Length", &box_draft_.length, 0.0, 0.0, "%.8g", input_flags);
-            const bool width_changed = ImGui::InputDouble("Width", &box_draft_.width, 0.0, 0.0, "%.8g", input_flags);
-            const bool height_changed = ImGui::InputDouble("Height", &box_draft_.height, 0.0, 0.0, "%.8g", input_flags);
-            ImGui::PopItemWidth();
-            ImGui::PopItemFlag();
-            if (length_changed || width_changed || height_changed)
-            {
-                box_error_.clear();
-            }
-
-            ImGui::BeginDisabled(box_draft_ == preview_.box_dimensions());
-            if (ImGui::Button("Rebuild"))
-            {
-                if (auto result = preview_.rebuild_box(box_draft_); !result)
-                {
-                    box_error_ = std::move(result.error());
-                }
-                else
-                {
-                    box_error_.clear();
-                }
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel"))
-            {
-                box_draft_ = preview_.box_dimensions();
-                box_error_.clear();
-            }
-            ImGui::EndDisabled();
-
-            draw_box_history();
-            const auto [length, width, height] = preview_.box_dimensions();
-            ImGui::Text("Applied: %.8g x %.8g x %.8g", length, width, height);
-            if (!box_error_.empty())
-            {
-                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
-                ImGui::Text("Rebuild failed: %s", box_error_.c_str());
-                ImGui::PopTextWrapPos();
-            }
-        }
-        ImGui::End();
-    }
-
-    void draw_box_history()
-    {
-        ImGui::BeginDisabled(!preview_.can_undo_box());
-        const bool undo = ImGui::Button("Undo");
-        ImGui::EndDisabled();
-        ImGui::SameLine();
-        ImGui::BeginDisabled(!preview_.can_redo_box());
-        const bool redo = ImGui::Button("Redo");
-        ImGui::EndDisabled();
-        if (!undo && !redo)
-        {
-            return;
-        }
-
-        const bool draft_is_clean = box_draft_ == preview_.box_dimensions();
-        if (undo)
-        {
-            preview_.undo_box();
-        }
-        else
-        {
-            preview_.redo_box();
-        }
-
-        if (draft_is_clean)
-        {
-            box_draft_ = preview_.box_dimensions();
-        }
-        box_error_.clear();
-    }
-
     void update_camera_input()
     {
         const auto &io = ImGui::GetIO();
@@ -863,9 +784,9 @@ private:
     vk::raii::Semaphore image_available_;
     vk::raii::Fence frame_finished_;
     BRepPreview preview_;
-    CurvePreview curve_preview_;
-    BoxDimensions box_draft_ = preview_.box_dimensions();
-    std::string box_error_;
+    BoxEditor box_editor_{preview_.box_dimensions()};
+    EditableCurve curve_;
+    CurveEditor curve_editor_{curve_};
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;

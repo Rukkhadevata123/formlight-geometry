@@ -1,21 +1,15 @@
 #include "curve_preview.hpp"
 
-#include "geometry/bspline_curve.hpp"
 #include "orbit_camera.hpp"
 
 #include <imgui.h>
 
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
 using occt_lab::geometry::Vec3;
-
-// The control hull stays inside the camera's depth range throughout its orbit.
-constexpr std::array control_points{
-    Vec3{.x = 42.0, .y = -42.0, .z = 0.0}, Vec3{.x = 5.0, .y = -38.0, .z = 0.0}, Vec3{.x = -10.0, .y = -26.0, .z = 0.0},
-    Vec3{.x = 10.0, .y = 26.0, .z = 0.0},  Vec3{.x = -5.0, .y = 38.0, .z = 0.0}, Vec3{.x = -42.0, .y = 42.0, .z = 0.0},
-};
 
 double clip_component(const ClipRow &row, const Vec3 &point)
 {
@@ -24,12 +18,13 @@ double clip_component(const ClipRow &row, const Vec3 &point)
 
 template <std::size_t Count>
 std::array<ImVec2, Count> project_points(const std::array<Vec3, Count> &points, const ClipTransform &transform,
-                                         const ImGuiViewport &viewport)
+                                         const ImGuiViewport &viewport, const double scale)
 {
     std::array<ImVec2, Count> projected;
     std::ranges::transform(points, projected.begin(),
-                           [&transform, &viewport](const Vec3 &point)
+                           [&transform, &viewport, scale](const Vec3 &world)
                            {
+                               const Vec3 point{.x = world.x / scale, .y = world.y / scale, .z = world.z / scale};
                                const double w = clip_component(transform.w, point);
                                const double x = 0.5 + 0.5 * clip_component(transform.x, point) / w;
                                const double y = 0.5 + 0.5 * clip_component(transform.y, point) / w;
@@ -42,17 +37,20 @@ std::array<ImVec2, Count> project_points(const std::array<Vec3, Count> &points, 
 }
 } // namespace
 
-CurvePreview::CurvePreview()
-{
-    occt_lab::geometry::sample_clamped_cubic_bspline(control_points, samples_);
-}
-
-void CurvePreview::draw(const ClipTransform &transform) const
+void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
+                        const std::size_t selected_pole)
 {
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
-    const auto projected_controls = project_points(control_points, transform, *viewport);
-    const auto projected_samples = project_points(samples_, transform, *viewport);
+    // Bound the entire control hull before perspective division, including at the closest zoom.
+    double scale = 1.0;
+    for (const auto &[x, y, z] : curve.poles)
+    {
+        constexpr double half_extent = 45.0;
+        scale = std::max(scale, std::max({std::abs(x), std::abs(y), std::abs(z)}) / half_extent);
+    }
+    const auto projected_controls = project_points(curve.poles, transform, *viewport, scale);
+    const auto projected_samples = project_points(curve.samples, transform, *viewport, scale);
 
     constexpr ImU32 polygon_color = IM_COL32(80, 145, 185, 225);
     constexpr ImU32 curve_color = IM_COL32(255, 185, 43, 255);
@@ -63,4 +61,5 @@ void CurvePreview::draw(const ClipTransform &transform) const
     {
         draw_list.AddCircleFilled(position, 4.0F, pole_color);
     }
+    draw_list.AddCircle(projected_controls.at(selected_pole), 7.0F, IM_COL32(255, 255, 255, 255), 0, 1.5F);
 }

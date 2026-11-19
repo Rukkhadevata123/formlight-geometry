@@ -1,3 +1,4 @@
+#include "application/editable_curve.hpp"
 #include "geometry/bspline_curve.hpp"
 
 #include <array>
@@ -5,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <limits>
 #include <print>
 #include <stdexcept>
 
@@ -38,6 +40,46 @@ void check_curve_samples()
         throw std::runtime_error("Unexpected cubic B-spline sample at the middle knot");
     }
 }
+void check_curve_edits()
+{
+    EditableCurve curve;
+    const auto [original_poles, original_samples] = curve.current();
+    auto edited = original_poles;
+    edited.front().z = 18.0;
+    edited[2].y += 10.0;
+    constexpr auto middle = original_samples.size() / 2;
+    if (!curve.apply(edited) || curve.current().poles != edited ||
+        !near(curve.current().samples.front(), edited.front()) ||
+        near(curve.current().samples[middle], original_samples[middle]))
+    {
+        throw std::runtime_error("An applied edit must replace the poles and sampled curve together");
+    }
+    const auto edited_samples = curve.current().samples;
+    curve.undo();
+    if (!curve.can_redo() || curve.can_undo() || curve.current().poles != original_poles ||
+        curve.current().samples != original_samples)
+    {
+        throw std::runtime_error("Undo failed to restore the original curve");
+    }
+    auto invalid = edited;
+    invalid[1].x = std::numeric_limits<double>::infinity();
+    if (curve.apply(invalid) || !curve.apply(original_poles) || !curve.can_redo() ||
+        curve.current().poles != original_poles || curve.current().samples != original_samples)
+    {
+        throw std::runtime_error("Failed or unchanged edits must preserve the curve and redo entry");
+    }
+    curve.redo();
+    if (curve.current().poles != edited || curve.current().samples != edited_samples)
+    {
+        throw std::runtime_error("Redo failed to restore the edited curve");
+    }
+    curve.undo();
+    edited.back().z = -5.0;
+    if (!curve.apply(edited) || curve.can_redo() || !curve.can_undo())
+    {
+        throw std::runtime_error("A replacement edit must start a new history branch");
+    }
+}
 } // namespace
 
 int main()
@@ -45,7 +87,8 @@ int main()
     try
     {
         check_curve_samples();
-        std::println("Cubic B-spline endpoint and interior knot samples verified");
+        check_curve_edits();
+        std::println("Cubic B-spline samples, edits and history verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

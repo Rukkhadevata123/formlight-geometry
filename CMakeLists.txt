@@ -21,6 +21,7 @@ target_link_libraries(occt_lab_dependencies INTERFACE
 
 add_executable(occt_lab
     src/main.cpp
+    src/application/editable_curve.cpp
     src/vulkan_window.cpp
     src/geometry/box_model.cpp
     src/geometry/brep_mesh.cpp
@@ -28,6 +29,8 @@ add_executable(occt_lab
     src/render/brep_preview.cpp
     src/render/curve_preview.cpp
     src/render/orbit_camera.cpp
+    src/ui/box_editor.cpp
+    src/ui/curve_editor.cpp
 )
 target_include_directories(occt_lab PRIVATE src)
 target_link_libraries(occt_lab PRIVATE occt_lab_dependencies)
@@ -77,7 +80,7 @@ if(BUILD_TESTING)
 
     add_executable(bezier_patch_check tests/bezier_patch_check.cpp src/geometry/bezier_patch.cpp)
 
-    add_executable(bspline_curve_check tests/bspline_curve_check.cpp src/geometry/bspline_curve.cpp)
+    add_executable(bspline_curve_check tests/bspline_curve_check.cpp src/geometry/bspline_curve.cpp src/application/editable_curve.cpp)
     target_include_directories(bspline_curve_check SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
     target_link_libraries(bspline_curve_check PRIVATE TKG3d TKernel)
 

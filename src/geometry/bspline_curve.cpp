@@ -58,6 +58,10 @@ void sample_clamped_cubic_bspline(const std::span<const Vec3> control_points, co
     {
         const double parameter = std::lerp(first, last, static_cast<double>(index) / intervals);
         const gp_Pnt point = curve.EvalD0(parameter);
+        if (!std::isfinite(point.X()) || !std::isfinite(point.Y()) || !std::isfinite(point.Z()))
+        {
+            throw std::runtime_error("Curve evaluation exceeded the finite coordinate range");
+        }
         samples[index] = Vec3{.x = point.X(), .y = point.Y(), .z = point.Z()};
     }
 }
