@@ -2,6 +2,7 @@
 
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
+#include <gp.hxx>
 #include <gp_Pnt.hxx>
 
 #include <algorithm>
@@ -11,7 +12,37 @@
 
 namespace occt_lab::geometry
 {
-void sample_clamped_cubic_bspline(const std::span<const Vec3> control_points, const std::span<Vec3> samples)
+namespace
+{
+NCollection_Array1<double> normalized_weights(const std::span<const double> weights, const int pole_count)
+{
+    if (weights.size() != static_cast<std::size_t>(pole_count))
+    {
+        throw std::invalid_argument("Each B-spline pole requires one weight");
+    }
+    if (!std::ranges::all_of(weights, [](const double weight) { return std::isfinite(weight) && weight > 0.0; }))
+    {
+        throw std::invalid_argument("Every B-spline weight must be finite and greater than zero");
+    }
+
+    // Common scaling preserves the curve and keeps large weights out of homogeneous products.
+    const double largest = std::ranges::max(weights);
+    NCollection_Array1<double> normalized{1, pole_count};
+    for (std::size_t i = 0; i < weights.size(); ++i)
+    {
+        const double ratio = weights[i] / largest;
+        if (ratio <= gp::Resolution())
+        {
+            throw std::invalid_argument("The weight ratio is too small for OCCT curve evaluation");
+        }
+        normalized(static_cast<int>(i) + 1) = ratio;
+    }
+    return normalized;
+}
+} // namespace
+
+void sample_clamped_cubic_bspline(const std::span<const Vec3> control_points, const std::span<Vec3> samples,
+                                  const std::span<const double> weights)
 {
     constexpr int degree = 3;
     if (control_points.size() < degree + 1 || control_points.size() > std::numeric_limits<int>::max())
@@ -50,7 +81,10 @@ void sample_clamped_cubic_bspline(const std::span<const Vec3> control_points, co
     }
 
     constexpr bool periodic = false;
-    const Geom_BSplineCurve curve{poles, knots, multiplicities, degree, periodic};
+    const Geom_BSplineCurve curve = weights.empty() ? Geom_BSplineCurve{poles, knots, multiplicities, degree, periodic}
+                                                    : Geom_BSplineCurve{poles,  normalized_weights(weights, pole_count),
+                                                                        knots,  multiplicities,
+                                                                        degree, periodic};
     const double first = curve.FirstParameter();
     const double last = curve.LastParameter();
     const auto intervals = static_cast<double>(samples.size() - 1);

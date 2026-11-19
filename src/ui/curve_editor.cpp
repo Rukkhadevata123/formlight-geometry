@@ -7,26 +7,29 @@ void CurveEditor::draw(EditableCurve &curve)
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
-    if (ImGui::Begin("B-spline control points (mm)", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("B-spline control points", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::PushItemWidth(9.0F * ImGui::GetFontSize());
-        ImGui::SliderInt("Pole", &pole_number_, 1, static_cast<int>(draft_.size()), "%d", ImGuiSliderFlags_AlwaysClamp);
-        auto &[draft_x, draft_y, draft_z] = draft_[selected_index()];
+        ImGui::SliderInt("Pole", &pole_number_, 1, static_cast<int>(draft_.poles.size()), "%d",
+                         ImGuiSliderFlags_AlwaysClamp);
+        const auto index = selected_index();
+        auto &[draft_x, draft_y, draft_z] = draft_.poles[index];
         ImGui::PushID(pole_number_);
         ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
         constexpr auto flags = ImGuiInputTextFlags_ParseEmptyRefVal;
-        const bool x_changed = ImGui::InputDouble("X", &draft_x, 0.0, 0.0, "%.8g", flags);
-        const bool y_changed = ImGui::InputDouble("Y", &draft_y, 0.0, 0.0, "%.8g", flags);
-        const bool z_changed = ImGui::InputDouble("Z", &draft_z, 0.0, 0.0, "%.8g", flags);
+        const bool x_changed = ImGui::InputDouble("X (mm)", &draft_x, 0.0, 0.0, "%.8g", flags);
+        const bool y_changed = ImGui::InputDouble("Y (mm)", &draft_y, 0.0, 0.0, "%.8g", flags);
+        const bool z_changed = ImGui::InputDouble("Z (mm)", &draft_z, 0.0, 0.0, "%.8g", flags);
+        const bool weight_changed = ImGui::InputDouble("Weight", &draft_.weights[index], 0.0, 0.0, "%.8g", flags);
         ImGui::PopItemFlag();
         ImGui::PopID();
         ImGui::PopItemWidth();
-        if (x_changed || y_changed || z_changed)
+        if (x_changed || y_changed || z_changed || weight_changed)
         {
             error_.clear();
         }
 
-        ImGui::BeginDisabled(draft_ == curve.current().poles);
+        ImGui::BeginDisabled(draft_ == curve.current().definition);
         if (ImGui::Button("Apply"))
         {
             const auto result = curve.apply(draft_);
@@ -35,12 +38,12 @@ void CurveEditor::draw(EditableCurve &curve)
         ImGui::SameLine();
         if (ImGui::Button("Cancel"))
         {
-            draft_ = curve.current().poles;
+            draft_ = curve.current().definition;
             error_.clear();
         }
         ImGui::EndDisabled();
 
-        const bool clean = draft_ == curve.current().poles;
+        const bool clean = draft_ == curve.current().definition;
         ImGui::BeginDisabled(!curve.can_undo());
         const bool undo = ImGui::Button("Undo");
         ImGui::EndDisabled();
@@ -60,12 +63,18 @@ void CurveEditor::draw(EditableCurve &curve)
             }
             if (clean)
             {
-                draft_ = curve.current().poles;
+                draft_ = curve.current().definition;
             }
             error_.clear();
         }
-        const auto &[x, y, z] = curve.current().poles[selected_index()];
-        ImGui::Text("Applied: %.8g, %.8g, %.8g", x, y, z);
+        const auto &[poles, weights] = curve.current().definition;
+        const auto &[x, y, z] = poles[index];
+        ImGui::Text("Applied: (%.8g, %.8g, %.8g) mm", x, y, z);
+        ImGui::Text("Applied weight: %.8g", weights[index]);
+        if (curve.current().unit_weight_samples)
+        {
+            ImGui::TextUnformatted("Gold: weighted   Gray: all weights = 1");
+        }
         if (!error_.empty())
         {
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());

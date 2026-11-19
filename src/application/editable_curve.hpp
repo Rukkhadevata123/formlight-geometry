@@ -10,13 +10,14 @@ class EditableCurve
 {
   public:
     using Curve = occt_lab::geometry::SampledCurve;
+    using Definition = occt_lab::geometry::CurveDefinition;
     EditableCurve();
 
     [[nodiscard]] const Curve &current() const
     {
         return current_;
     }
-    [[nodiscard]] std::expected<void, std::string> apply(const Curve::Poles &poles);
+    [[nodiscard]] std::expected<void, std::string> apply(const Definition &definition);
     [[nodiscard]] bool can_undo() const
     {
         return history_.has_value() && !undone_;

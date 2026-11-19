@@ -44,18 +44,25 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
     // Bound the entire control hull before perspective division, including at the closest zoom.
     double scale = 1.0;
-    for (const auto &[x, y, z] : curve.poles)
+    const auto &poles = curve.definition.poles;
+    for (const auto &[x, y, z] : poles)
     {
         constexpr double half_extent = 45.0;
         scale = std::max(scale, std::max({std::abs(x), std::abs(y), std::abs(z)}) / half_extent);
     }
-    const auto projected_controls = project_points(curve.poles, transform, *viewport, scale);
+    const auto projected_controls = project_points(poles, transform, *viewport, scale);
     const auto projected_samples = project_points(curve.samples, transform, *viewport, scale);
 
     constexpr ImU32 polygon_color = IM_COL32(80, 145, 185, 225);
     constexpr ImU32 curve_color = IM_COL32(255, 185, 43, 255);
     constexpr ImU32 pole_color = IM_COL32(116, 187, 226, 255);
     draw_list.AddPolyline(projected_controls.data(), static_cast<int>(projected_controls.size()), polygon_color, 1.5F);
+    if (curve.unit_weight_samples)
+    {
+        const auto reference = project_points(*curve.unit_weight_samples, transform, *viewport, scale);
+        constexpr ImU32 reference_color = IM_COL32(192, 198, 204, 255);
+        draw_list.AddPolyline(reference.data(), static_cast<int>(reference.size()), reference_color, 1.5F);
+    }
     draw_list.AddPolyline(projected_samples.data(), static_cast<int>(projected_samples.size()), curve_color, 2.5F);
     for (const auto &position : projected_controls)
     {

@@ -5,7 +5,7 @@
 class CurveEditor
 {
   public:
-    explicit CurveEditor(const EditableCurve &curve) : draft_(curve.current().poles)
+    explicit CurveEditor(const EditableCurve &curve) : draft_(curve.current().definition)
     {
     }
     void draw(EditableCurve &curve);
@@ -15,7 +15,7 @@ class CurveEditor
     }
 
   private:
-    EditableCurve::Curve::Poles draft_;
+    EditableCurve::Definition draft_;
     int pole_number_ = 1;
     std::string error_;
 };
