@@ -15,7 +15,10 @@ class CurveEditor
     }
 
   private:
+    void draw_history(EditableCurve &curve);
+    void draw_knot_insertion(EditableCurve &curve);
     EditableCurve::Definition draft_;
     int pole_number_ = 1;
+    double knot_parameter_ = 0.5;
     std::string error_;
 };

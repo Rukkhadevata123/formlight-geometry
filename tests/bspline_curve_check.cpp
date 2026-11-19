@@ -143,6 +143,85 @@ void check_curve_edits()
         throw std::runtime_error("A replacement edit must start a new history branch");
     }
 }
+
+void check_knot_insertion(const bool rational)
+{
+    EditableCurve curve;
+    auto definition = curve.current().definition;
+    definition.weights.assign(definition.poles.size(), 2.0);
+    if (rational)
+    {
+        definition.weights[2] = 8.0;
+    }
+    if (!curve.apply(definition))
+    {
+        throw std::runtime_error("Failed to prepare the knot insertion fixture");
+    }
+    const auto original = curve.current();
+    constexpr double parameter = 0.25;
+    if (!curve.insert_knot(parameter))
+    {
+        throw std::runtime_error("An interior knot could not be inserted");
+    }
+    const auto refined = curve.current();
+    const auto &knots = refined.definition.knots;
+    if (refined.definition.poles.size() != original.definition.poles.size() + 1 ||
+        knots.size() != original.definition.knots.size() + 1 || knots[1].value != parameter ||
+        knots[1].multiplicity != 1 || knots.front() != definition.knots.front() ||
+        knots.back() != definition.knots.back())
+    {
+        throw std::runtime_error("Insertion must add one simple interior knot and one pole");
+    }
+    if (!refined.insertion_sample_error || *refined.insertion_sample_error > 1e-12 ||
+        refined.framing_extent != original.framing_extent || refined.unit_weight_samples.has_value() != rational ||
+        refined.definition.weights.front() != definition.weights.front())
+    {
+        throw std::runtime_error("Insertion changed the sampled shape, framing or weight scale");
+    }
+    for (std::size_t i = 0; i < original.samples.size(); ++i)
+    {
+        if (!near(original.samples[i], refined.samples[i]))
+        {
+            throw std::runtime_error("The refined curve moved at a shared parameter");
+        }
+    }
+
+    curve.undo();
+    for (const double invalid : {0.0, 1.0, -0.25, 1.25, std::numeric_limits<double>::quiet_NaN()})
+    {
+        if (curve.insert_knot(invalid) || !curve.can_redo() || curve.current().definition != definition)
+        {
+            throw std::runtime_error("Invalid insertion must preserve the original definition and redo entry");
+        }
+    }
+    curve.redo();
+    if (curve.current().definition != refined.definition || curve.current().samples != refined.samples ||
+        curve.current().insertion_sample_error != refined.insertion_sample_error)
+    {
+        throw std::runtime_error("Redo must restore the complete refined curve");
+    }
+
+    for (int multiplicity = 2; multiplicity <= 3; ++multiplicity)
+    {
+        if (!curve.insert_knot(parameter) || curve.current().definition.knots.size() != knots.size() ||
+            curve.current().definition.knots[1].multiplicity != multiplicity)
+        {
+            throw std::runtime_error("Inserting an existing knot must increase its multiplicity");
+        }
+    }
+    const auto saturated = curve.current().definition;
+    if (curve.insert_knot(parameter) || curve.current().definition != saturated)
+    {
+        throw std::runtime_error("Inserting a saturated knot must preserve the cubic definition");
+    }
+    auto edited = saturated;
+    edited.poles.back().z += 5.0;
+    if (!curve.apply(edited) || curve.current().definition.knots != saturated.knots ||
+        !near(curve.current().samples.back(), edited.poles.back()) || curve.current().insertion_sample_error)
+    {
+        throw std::runtime_error("Pole editing must use the refined knots and clear the old deviation");
+    }
+}
 } // namespace
 
 int main()
@@ -151,7 +230,9 @@ int main()
     {
         check_curve_samples();
         check_curve_edits();
-        std::println("Polynomial and rational B-spline samples, weight edits and history verified");
+        check_knot_insertion(false);
+        check_knot_insertion(true);
+        std::println("B-spline samples, weight edits, knot insertion and history verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
