@@ -596,6 +596,7 @@ public:
         draw_status_panel(selected_, swapchain, shape_, projection_, camera_);
         if (shape_ == PreviewShape::box)
         {
+            // The last submission has finished, so the editor can replace or restore a mesh.
             draw_box_editor();
         }
         ImGui::Render();
@@ -650,7 +651,6 @@ private:
             ImGui::BeginDisabled(box_draft_ == preview_.box_dimensions());
             if (ImGui::Button("Rebuild"))
             {
-                // draw_frame waited for the last submission before opening this editor.
                 if (auto result = preview_.rebuild_box(box_draft_); !result)
                 {
                     box_error_ = std::move(result.error());
@@ -668,6 +668,7 @@ private:
             }
             ImGui::EndDisabled();
 
+            draw_box_history();
             const auto [length, width, height] = preview_.box_dimensions();
             ImGui::Text("Applied: %.8g x %.8g x %.8g", length, width, height);
             if (!box_error_.empty())
@@ -680,11 +681,41 @@ private:
         ImGui::End();
     }
 
+    void draw_box_history()
+    {
+        ImGui::BeginDisabled(!preview_.can_undo_box());
+        const bool undo = ImGui::Button("Undo");
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!preview_.can_redo_box());
+        const bool redo = ImGui::Button("Redo");
+        ImGui::EndDisabled();
+        if (!undo && !redo)
+        {
+            return;
+        }
+
+        const bool draft_is_clean = box_draft_ == preview_.box_dimensions();
+        if (undo)
+        {
+            preview_.undo_box();
+        }
+        else
+        {
+            preview_.redo_box();
+        }
+
+        if (draft_is_clean)
+        {
+            box_draft_ = preview_.box_dimensions();
+        }
+        box_error_.clear();
+    }
+
     void update_camera_input()
     {
         const auto &io = ImGui::GetIO();
-        constexpr auto orbit_button = ImGuiMouseButton_Middle;
-        if (!ImGui::IsMouseDown(orbit_button))
+        if (constexpr auto orbit_button = ImGuiMouseButton_Middle; !ImGui::IsMouseDown(orbit_button))
         {
             orbiting_ = false;
         }

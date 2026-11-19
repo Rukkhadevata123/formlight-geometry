@@ -36,8 +36,14 @@ class BRepPreview
     [[nodiscard]] PreviewDepthTarget create_depth_target(vk::Extent2D extent) const;
     [[nodiscard]] BoxDimensions box_dimensions() const;
     [[nodiscard]] double view_scale(PreviewShape shape) const;
-    // All submitted draws using the current box must have completed before replacement.
+    [[nodiscard]] bool can_undo_box() const;
+    [[nodiscard]] bool can_redo_box() const;
+
+    // Finish submitted draws before changing the active box or releasing a history entry.
     [[nodiscard]] std::expected<void, std::string> rebuild_box(BoxDimensions dimensions);
+    void undo_box();
+    void redo_box();
+
     void create_pipeline(vk::Format color_format);
     void record(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, PreviewShape shape,
                 const ClipTransform &transform) const;
@@ -65,6 +71,9 @@ class BRepPreview
     vk::PhysicalDeviceMemoryProperties memory_properties_;
     vk::Format depth_format_;
     std::unique_ptr<BoxPreview> box_;
+    // One retained version is available through either Undo or Redo.
+    std::unique_ptr<BoxPreview> undo_box_;
+    std::unique_ptr<BoxPreview> redo_box_;
     MeshBuffer cylinder_;
     vk::raii::PipelineLayout layout_{nullptr};
     vk::raii::Pipeline pipeline_{nullptr};

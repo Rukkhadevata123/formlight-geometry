@@ -11,7 +11,6 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cstring>
 #include <exception>
 #include <format>
 #include <memory>
@@ -35,7 +34,7 @@ BRepMeshData make_cylinder_mesh()
     constexpr double radius = 40.0;
     constexpr double height = 60.0;
     BRepPrimAPI_MakeCylinder cylinder{radius, height};
-    const gp_Pnt center{0.0, 0.0, 0.5 * height};
+    constexpr gp_Pnt center{0.0, 0.0, 0.5 * height};
     return triangulate_brep(cylinder.Shape(), center, linear_deflection);
 }
 
@@ -170,11 +169,28 @@ double BRepPreview::view_scale(const PreviewShape shape) const
     return shape == PreviewShape::box ? box_->view_scale : 1.0;
 }
 
+bool BRepPreview::can_undo_box() const
+{
+    return undo_box_ != nullptr;
+}
+
+bool BRepPreview::can_redo_box() const
+{
+    return redo_box_ != nullptr;
+}
+
 std::expected<void, std::string> BRepPreview::rebuild_box(const BoxDimensions dimensions)
 {
+    if (dimensions == box_dimensions())
+    {
+        return {};
+    }
+
     try
     {
-        box_ = build_box(dimensions);
+        auto replacement = build_box(dimensions);
+        undo_box_ = std::exchange(box_, std::move(replacement));
+        redo_box_.reset();
         return {};
     }
     catch (const vk::DeviceLostError &)
@@ -185,6 +201,22 @@ std::expected<void, std::string> BRepPreview::rebuild_box(const BoxDimensions di
     {
         const std::string_view message{error.what()};
         return std::unexpected(message.empty() ? std::string{"Unknown error"} : std::string{message});
+    }
+}
+
+void BRepPreview::undo_box()
+{
+    if (undo_box_)
+    {
+        redo_box_ = std::exchange(box_, std::move(undo_box_));
+    }
+}
+
+void BRepPreview::redo_box()
+{
+    if (redo_box_)
+    {
+        undo_box_ = std::exchange(box_, std::move(redo_box_));
     }
 }
 
