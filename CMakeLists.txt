@@ -32,6 +32,7 @@ add_executable(occt_lab
     src/render/orbit_camera.cpp
     src/ui/box_editor.cpp
     src/ui/curve_editor.cpp
+    src/ui/fit_residuals.cpp
 )
 target_include_directories(occt_lab PRIVATE src)
 target_link_libraries(occt_lab PRIVATE occt_lab_dependencies)

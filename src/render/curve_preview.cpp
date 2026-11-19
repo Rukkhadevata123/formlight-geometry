@@ -1,5 +1,6 @@
 #include "curve_preview.hpp"
 
+#include "curve_colors.hpp"
 #include "orbit_camera.hpp"
 
 #include <imgui.h>
@@ -42,7 +43,6 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
     };
 
     constexpr ImU32 polygon_color = IM_COL32(80, 145, 185, 225);
-    constexpr ImU32 curve_color = IM_COL32(255, 185, 43, 255);
     constexpr ImU32 pole_color = IM_COL32(116, 187, 226, 255);
     const auto &poles = curve.definition.poles;
     draw_polyline(poles, polygon_color, 1.5F);
@@ -53,10 +53,9 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
     }
     if (curve.approximation)
     {
-        constexpr ImU32 interpolated_color = IM_COL32(206, 156, 242, 255);
-        draw_polyline(curve.approximation->interpolated_samples, interpolated_color, 2.0F);
+        draw_polyline(curve.approximation->interpolated_samples, curve_colors::interpolant_reference, 2.0F);
     }
-    draw_polyline(curve.samples, curve_color, 2.5F);
+    draw_polyline(curve.samples, curve_colors::current, 2.5F);
     for (const auto &pole : poles)
     {
         draw_list.AddCircleFilled(project(pole), 4.0F, pole_color);

@@ -1,8 +1,7 @@
 #include "curve_editor.hpp"
+#include "fit_residuals.hpp"
 
 #include <imgui.h>
-
-#include <algorithm>
 
 void CurveEditor::draw(EditableCurve &curve)
 {
@@ -174,52 +173,13 @@ void CurveEditor::draw_point_fitting(EditableCurve &curve)
     {
         error_.clear();
     }
-    const bool use_poles = curve.current().data_points.empty();
-    if (ImGui::Button(use_poles ? "Approximate applied poles" : "Approximate same data points"))
+    if (const bool use_poles = curve.current().data_points.empty();
+        ImGui::Button(use_poles ? "Approximate applied poles" : "Approximate same data points"))
     {
         const auto result = curve.approximate_data_points(fit_tolerance_);
         finish_curve_operation(curve, result);
     }
     ImGui::EndDisabled();
 
-    const auto &current = curve.current();
-    const auto &points = current.data_points;
-    if (points.empty())
-    {
-        return;
-    }
-    const auto largest = std::ranges::max_element(points, {}, &occt_lab::geometry::CurveDataPoint::residual);
-    ImGui::Text("Green diamonds: %zu data points", points.size());
-    if (current.approximation)
-    {
-        const auto &comparison = *current.approximation;
-        ImGui::Text("Applied target: %.8g mm", comparison.requested_tolerance);
-        ImGui::Text("Max at chord parameters (mm)");
-        ImGui::Text("Gold fit: %.3g   Purple interpolant: %.3g", largest->residual,
-                    std::ranges::max(comparison.interpolated_residuals));
-    }
-    else
-    {
-        ImGui::Text("Max point residual: %.3g mm", largest->residual);
-    }
-    if (ImGui::TreeNode("Chord parameters and residuals"))
-    {
-        if (current.approximation)
-        {
-            ImGui::TextUnformatted("Point    u      Fit / interpolant (mm)");
-        }
-        for (std::size_t i = 0; i < points.size(); ++i)
-        {
-            if (current.approximation)
-            {
-                ImGui::Text("%zu   %.8g   %.3g / %.3g", i + 1, points[i].parameter, points[i].residual,
-                            current.approximation->interpolated_residuals[i]);
-            }
-            else
-            {
-                ImGui::Text("%zu   u = %.8g   %.3g mm", i + 1, points[i].parameter, points[i].residual);
-            }
-        }
-        ImGui::TreePop();
-    }
+    draw_fit_residuals(curve.current());
 }
