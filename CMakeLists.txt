@@ -32,9 +32,11 @@ add_executable(occt_lab
     src/geometry/occt_bezier_patch.cpp
     src/render/bezier_patch_preview.cpp
     src/render/brep_preview.cpp
+    src/render/compute_buffer_check.cpp
     src/render/curve_preview.cpp
     src/render/orbit_camera.cpp
     src/render/viewport_projection.cpp
+    src/render/vulkan_resources.cpp
     src/ui/bezier_patch_inspector.cpp
     src/ui/box_editor.cpp
     src/ui/curve_editor.cpp
@@ -75,7 +77,21 @@ add_custom_command(
     VERBATIM
 )
 
-add_custom_target(occt_lab_shaders DEPENDS "${triangle_spv}" "${preview_vertex_spv}" "${preview_fragment_spv}")
+set(check_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/buffer_check.slang")
+set(check_spv "${shader_output_dir}/buffer_check.comp.spv")
+add_custom_command(
+    OUTPUT "${check_spv}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${shader_output_dir}"
+    COMMAND "${SLANG_EXECUTABLE}" "${check_shader}"
+        -entry computeMain -stage compute -target spirv -fvk-use-entrypoint-name -o "${check_spv}"
+    DEPENDS "${check_shader}"
+    COMMENT "Compiling storage buffer check to SPIR-V"
+    VERBATIM
+)
+
+add_custom_target(occt_lab_shaders DEPENDS
+    "${triangle_spv}" "${preview_vertex_spv}" "${preview_fragment_spv}" "${check_spv}"
+)
 add_dependencies(occt_lab occt_lab_shaders)
 
 include(CTest)

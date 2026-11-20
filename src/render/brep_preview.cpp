@@ -2,9 +2,9 @@
 
 #include "geometry/brep_mesh.hpp"
 #include "orbit_camera.hpp"
+#include "vulkan_resources.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
-#include <SDL3/SDL.h>
 #include <gp_Pnt.hxx>
 
 #include <algorithm>
@@ -12,16 +12,16 @@
 #include <cmath>
 #include <cstddef>
 #include <exception>
-#include <format>
 #include <memory>
 #include <span>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace
 {
+using occt_lab::render::find_memory_type;
+using occt_lab::render::load_shader;
 constexpr vk::ImageSubresourceRange depth_range{vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1};
 constexpr auto depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 constexpr double linear_deflection = 0.1;
@@ -38,20 +38,6 @@ BRepMeshData make_cylinder_mesh()
     return triangulate_brep(cylinder.Shape(), center, linear_deflection);
 }
 
-uint32_t find_memory_type(const vk::PhysicalDeviceMemoryProperties &properties, const uint32_t type_bits,
-                          const vk::MemoryPropertyFlags required)
-{
-    for (uint32_t index = 0; index < properties.memoryTypeCount; ++index)
-    {
-        if (const auto flags = properties.memoryTypes[index].propertyFlags;
-            (type_bits & (1u << index)) != 0 && (flags & required) == required)
-        {
-            return index;
-        }
-    }
-    throw std::runtime_error(std::format("No Vulkan memory type satisfies {}", vk::to_string(required)));
-}
-
 vk::Format choose_depth_format(const vk::raii::PhysicalDevice &physical_device)
 {
     for (const auto format : {vk::Format::eD32Sfloat, vk::Format::eD16Unorm})
@@ -65,36 +51,6 @@ vk::Format choose_depth_format(const vk::raii::PhysicalDevice &physical_device)
     throw std::runtime_error("No supported depth attachment format for the B-Rep preview");
 }
 
-vk::raii::ShaderModule load_shader(const vk::raii::Device &device, const std::string_view filename)
-{
-    const auto *base_path = SDL_GetBasePath();
-    if (!base_path)
-    {
-        throw std::runtime_error(std::format("SDL_GetBasePath: {}", SDL_GetError()));
-    }
-
-    const auto path = std::format("{}shaders/{}", base_path, filename);
-    std::size_t byte_count = 0;
-    const std::unique_ptr<void, decltype(&SDL_free)> bytes{SDL_LoadFile(path.c_str(), &byte_count), SDL_free};
-    if (!bytes)
-    {
-        throw std::runtime_error(std::format("Could not load shader {}: {}", path, SDL_GetError()));
-    }
-    if (byte_count < 5 * sizeof(uint32_t) || byte_count % sizeof(uint32_t) != 0)
-    {
-        throw std::runtime_error(std::format("Invalid SPIR-V size for {}", path));
-    }
-
-    std::vector<uint32_t> words(byte_count / sizeof(uint32_t));
-    std::memcpy(words.data(), bytes.get(), byte_count);
-    if (words.front() != 0x07230203u)
-    {
-        throw std::runtime_error(std::format("Invalid SPIR-V header for {}", path));
-    }
-    vk::ShaderModuleCreateInfo info;
-    info.setCode(words);
-    return vk::raii::ShaderModule{device, info};
-}
 } // namespace
 
 vk::ImageMemoryBarrier2 PreviewDepthTarget::render_barrier() const

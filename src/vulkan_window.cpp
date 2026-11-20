@@ -2,6 +2,7 @@
 
 #include "render/bezier_patch_preview.hpp"
 #include "render/brep_preview.hpp"
+#include "render/compute_buffer_check.hpp"
 #include "render/curve_preview.hpp"
 #include "render/orbit_camera.hpp"
 #include "ui/bezier_patch_inspector.hpp"
@@ -171,28 +172,35 @@ struct QueueFamilies
 
 std::optional<QueueFamilies> find_queue_families(const vk::raii::PhysicalDevice &device, const vk::SurfaceKHR surface)
 {
-    const auto queues = device.getQueueFamilyProperties();
+    const auto queues = device.getQueueFamilyProperties2();
     std::optional<uint32_t> graphics_family;
     std::optional<uint32_t> present_family;
+    int best_score = -1;
     for (uint32_t index = 0; index < queues.size(); ++index)
     {
-        if (queues[index].queueCount == 0)
+        const auto &queue = queues[index].queueFamilyProperties;
+        if (queue.queueCount == 0)
         {
             continue;
         }
-        const bool graphics = static_cast<bool>(queues[index].queueFlags & vk::QueueFlagBits::eGraphics);
         const bool present = device.getSurfaceSupportKHR(index, surface);
-        if (graphics && present)
-        {
-            return QueueFamilies{.graphics = index, .present = index};
-        }
-        if (graphics && !graphics_family)
-        {
-            graphics_family = index;
-        }
         if (present && !present_family)
         {
             present_family = index;
+        }
+        if (queue.queueFlags & vk::QueueFlagBits::eGraphics)
+        {
+            // Prefer a graphics/compute queue, then presentation on the same family.
+            const int score = (queue.queueFlags & vk::QueueFlagBits::eCompute ? 2 : 0) + static_cast<int>(present);
+            if (score > best_score)
+            {
+                best_score = score;
+                graphics_family = index;
+                if (present)
+                {
+                    present_family = index;
+                }
+            }
         }
     }
 
@@ -208,13 +216,14 @@ struct PresentationDevice
     vk::raii::PhysicalDevice physical_device;
     QueueFamilies families;
     vk::PhysicalDeviceProperties properties;
+    bool compute_supported;
 };
 
 PresentationDevice select_device(const vk::raii::Instance &instance, vk::SurfaceKHR surface)
 {
     for (auto &device : instance.enumeratePhysicalDevices())
     {
-        const auto properties = device.getProperties();
+        const auto properties = device.getProperties2().properties;
         if (properties.apiVersion < required_api_version)
         {
             continue;
@@ -240,16 +249,23 @@ PresentationDevice select_device(const vk::raii::Instance &instance, vk::Surface
             continue;
         }
 
-        const auto queue_flags = device.getQueueFamilyProperties()[families->graphics].queueFlags;
+        const auto queue = device.getQueueFamilyProperties2()[families->graphics].queueFamilyProperties;
         std::println("Vulkan GPU: {} (API {})", properties.deviceName.data(),
                      format_api_version(properties.apiVersion));
         std::println("Vulkan queue families: graphics {} {}, present {}", families->graphics,
-                     vk::to_string(queue_flags), families->present);
+                     vk::to_string(queue.queueFlags), families->present);
         std::println("Vulkan device extension: {}", VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        const auto &limits = properties.limits;
+        std::println("Compute limits: max local X {}, invocations {}, groups X {}, storage range {} bytes, "
+                     "queue timestamp bits {}, period {} ns",
+                     limits.maxComputeWorkGroupSize[0], limits.maxComputeWorkGroupInvocations,
+                     limits.maxComputeWorkGroupCount[0], limits.maxStorageBufferRange, queue.timestampValidBits,
+                     limits.timestampPeriod);
         return {
             .physical_device = std::move(device),
             .families = *families,
             .properties = properties,
+            .compute_supported = static_cast<bool>(queue.queueFlags & vk::QueueFlagBits::eCompute),
         };
     }
     throw std::runtime_error(
@@ -428,9 +444,11 @@ enum class PreviewMode
     bezier_patch,
 };
 
-void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
-                       ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole, PatchLayers &patch_layers)
+bool draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
+                       ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole, PatchLayers &patch_layers,
+                       const std::string &compute_status)
 {
+    bool run_check = false;
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -479,8 +497,27 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
         }
+        if (ImGui::CollapsingHeader("Vulkan compute"))
+        {
+            if (selected.compute_supported)
+            {
+                ImGui::TextUnformatted("out[i] = 3*i + 7, 2 groups x 64 lanes");
+                run_check = ImGui::Button("Run buffer check");
+                if (!compute_status.empty())
+                {
+                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
+                    ImGui::TextUnformatted(compute_status.c_str());
+                    ImGui::PopTextWrapPos();
+                }
+            }
+            else
+            {
+                ImGui::TextUnformatted("Graphics queue has no compute support.");
+            }
+        }
     }
     ImGui::End();
+    return run_check;
 }
 
 class Renderer
@@ -603,6 +640,18 @@ public:
         {
             throw vk::SystemError(vk::make_error_code(wait_result), "waiting for the previous frame");
         }
+        if (compute_readback_pending_)
+        {
+            compute_readback_pending_ = false;
+            try
+            {
+                compute_status_ = compute_check_->read_result();
+            }
+            catch (const std::exception &error)
+            {
+                compute_status_ = error.what();
+            }
+        }
 
         const auto &swapchain = *swapchain_;
         // A timed-out acquire leaves the output index unwritten.
@@ -629,8 +678,19 @@ public:
         {
             update_camera_input(swapchain.extent);
         }
-        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, curve_editor_.tracking_pole(),
-                          patch_layers_);
+        const bool run_compute = draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_,
+                                                   curve_editor_.tracking_pole(), patch_layers_, compute_status_);
+        if (run_compute && !compute_check_)
+        {
+            try
+            {
+                compute_check_.emplace(selected_.physical_device, device_);
+            }
+            catch (const std::exception &error)
+            {
+                compute_status_ = error.what();
+            }
+        }
         std::optional<PreviewShape> solid;
         switch (preview_mode_)
         {
@@ -664,7 +724,8 @@ public:
         ImGui::Render();
 
         const auto &image = swapchain.images[image_index];
-        record_frame(image, swapchain, solid, transform, ImGui::GetDrawData());
+        const bool dispatch_compute = run_compute && compute_check_.has_value();
+        record_frame(image, swapchain, solid, transform, ImGui::GetDrawData(), dispatch_compute);
 
         const vk::SemaphoreSubmitInfo acquire_wait{*image_available_, 0, color_output_stage};
         const vk::CommandBufferSubmitInfo commands{*command_buffer_, 1};
@@ -675,6 +736,7 @@ public:
             .setSignalSemaphoreInfos(present_signal);
         device_.resetFences(*frame_finished_);
         graphics_queue_.submit2(submit, *frame_finished_);
+        compute_readback_pending_ = dispatch_compute;
 
         vk::PresentInfoKHR present;
         present.setWaitSemaphores(*image.ready_to_present)
@@ -777,10 +839,14 @@ private:
     }
 
     void record_frame(const SwapchainImage &image, const Swapchain &swapchain, const std::optional<PreviewShape> solid,
-                      const ClipTransform &transform, ImDrawData *draw_data) const
+                      const ClipTransform &transform, ImDrawData *draw_data, const bool dispatch_compute) const
     {
         command_buffer_.reset();
         command_buffer_.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        if (dispatch_compute)
+        {
+            compute_check_->record(command_buffer_);
+        }
 
         // Match the acquire semaphore's wait stage before discarding the previous image contents.
         vk::ImageMemoryBarrier2 to_color;
@@ -843,6 +909,9 @@ private:
     vk::raii::Semaphore image_available_;
     vk::raii::Fence frame_finished_;
     BRepPreview preview_;
+    std::optional<ComputeBufferCheck> compute_check_;
+    std::string compute_status_;
+    bool compute_readback_pending_ = false;
     BoxEditor box_editor_{preview_.box_dimensions()};
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
