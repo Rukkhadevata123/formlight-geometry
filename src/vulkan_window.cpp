@@ -463,6 +463,10 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
             camera = OrbitCamera{};
         }
         ImGui::TextUnformatted("Middle-drag to orbit, wheel to zoom");
+        if (mode == PreviewMode::bspline)
+        {
+            ImGui::TextUnformatted("Left-click a blue control point to select it");
+        }
     }
     ImGui::End();
 }
@@ -616,7 +620,6 @@ public:
             solid = PreviewShape::cylinder;
             break;
         case PreviewMode::bspline:
-            curve_editor_.draw(curve_);
             break;
         }
 
@@ -625,6 +628,17 @@ public:
             camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_, view_scale);
         if (preview_mode_ == PreviewMode::bspline)
         {
+            const auto &io = ImGui::GetIO();
+            const bool selectable = !io.WantCaptureMouse && io.KeyMods == ImGuiMod_None &&
+                                    !ImGui::IsMouseDown(ImGuiMouseButton_Middle);
+            if (selectable && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                if (const auto hit = pick_curve_pole(curve_.current(), transform, ImGui::GetMousePos()))
+                {
+                    curve_editor_.select_pole(*hit);
+                }
+            }
+            curve_editor_.draw(curve_);
             draw_curve_preview(curve_.current(), transform, curve_editor_.selected_index());
         }
         ImGui::Render();

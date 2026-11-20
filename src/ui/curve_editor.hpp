@@ -9,6 +9,10 @@ class CurveEditor
     {
     }
     void draw(EditableCurve &curve);
+    void select_pole(const std::size_t index)
+    {
+        pole_number_ = static_cast<int>(index) + 1;
+    }
     [[nodiscard]] std::size_t selected_index() const
     {
         return static_cast<std::size_t>(pole_number_ - 1);

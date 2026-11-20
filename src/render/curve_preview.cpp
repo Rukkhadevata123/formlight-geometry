@@ -1,6 +1,7 @@
 #include "curve_preview.hpp"
 
 #include "curve_colors.hpp"
+#include "geometry/bspline_curve.hpp"
 #include "orbit_camera.hpp"
 
 #include <imgui.h>
@@ -15,24 +16,67 @@ double clip_component(const ClipRow &row, const Vec3 &point)
 {
     return row[0] * point.x + row[1] * point.y + row[2] * point.z + row[3];
 }
+
+struct CurveProjection
+{
+    static constexpr double half_extent = 45.0;
+    const ClipTransform &transform;
+    const ImGuiViewport &viewport;
+    double scale;
+
+    CurveProjection(const ClipTransform &transform, const ImGuiViewport &viewport, const double framing_extent)
+        : transform(transform), viewport(viewport), scale(std::max(1.0, framing_extent / half_extent))
+    {
+    }
+
+    [[nodiscard]] ImVec2 operator()(const Vec3 &world) const
+    {
+        const Vec3 point{.x = world.x / scale, .y = world.y / scale, .z = world.z / scale};
+        const double w = clip_component(transform.w, point);
+        const double x = 0.5 + 0.5 * clip_component(transform.x, point) / w;
+        const double y = 0.5 + 0.5 * clip_component(transform.y, point) / w;
+        return {viewport.Pos.x + static_cast<float>(x * viewport.Size.x),
+                viewport.Pos.y + static_cast<float>(y * viewport.Size.y)};
+    }
+};
 } // namespace
+
+auto pick_curve_pole(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform, const ImVec2 cursor)
+    -> std::optional<std::size_t>
+{
+    const auto &viewport = *ImGui::GetMainViewport();
+    if (cursor.x < viewport.Pos.x || cursor.x >= viewport.Pos.x + viewport.Size.x || cursor.y < viewport.Pos.y ||
+        cursor.y >= viewport.Pos.y + viewport.Size.y)
+    {
+        return std::nullopt;
+    }
+
+    const CurveProjection project{transform, viewport, curve.framing_extent};
+    constexpr float hit_radius = 9.0F;
+    float best_distance_squared = hit_radius * hit_radius;
+    std::optional<std::size_t> hit;
+    const auto &poles = curve.definition.poles;
+    for (std::size_t index = 0; index < poles.size(); ++index)
+    {
+        const auto point = project(poles[index]);
+        const float dx = cursor.x - point.x;
+        const float dy = cursor.y - point.y;
+        // At equal distance the last marker drawn is on top.
+        if (const float distance_squared = dx * dx + dy * dy; distance_squared <= best_distance_squared)
+        {
+            best_distance_squared = distance_squared;
+            hit = index;
+        }
+    }
+    return hit;
+}
 
 void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
                         const std::size_t selected_pole)
 {
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
-    constexpr double half_extent = 45.0;
-    const double scale = std::max(1.0, curve.framing_extent / half_extent);
-    const auto project = [&](const Vec3 &world)
-    {
-        const Vec3 point{.x = world.x / scale, .y = world.y / scale, .z = world.z / scale};
-        const double w = clip_component(transform.w, point);
-        const double x = 0.5 + 0.5 * clip_component(transform.x, point) / w;
-        const double y = 0.5 + 0.5 * clip_component(transform.y, point) / w;
-        return ImVec2{viewport->Pos.x + static_cast<float>(x * viewport->Size.x),
-                      viewport->Pos.y + static_cast<float>(y * viewport->Size.y)};
-    };
+    const CurveProjection project{transform, *viewport, curve.framing_extent};
     const auto draw_polyline = [&](const std::span<const Vec3> points, const ImU32 color, const float width)
     {
         for (const auto &point : points)
