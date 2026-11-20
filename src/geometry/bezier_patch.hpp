@@ -24,12 +24,14 @@ enum class PatchError
     ParameterOutOfRange,
     DegenerateNormal,
     InvalidSampling,
+    NonFiniteEvaluation,
 };
 
 class CubicBezierPatch
 {
   public:
     static constexpr std::size_t side_length = 4;
+    static constexpr double normal_tolerance = 1e-12;
     using ControlNet = std::array<Vec3, side_length * side_length>;
 
     // The control points are stored row-major, with u along columns and v along rows.

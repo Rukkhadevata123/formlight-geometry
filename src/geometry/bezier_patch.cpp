@@ -26,11 +26,6 @@ constexpr Vec3 cross(const Vec3 &left, const Vec3 &right)
     };
 }
 
-double length(const Vec3 &value)
-{
-    return std::sqrt(value.x * value.x + value.y * value.y + value.z * value.z);
-}
-
 struct CubicBasis
 {
     std::array<double, 4> value;
@@ -108,8 +103,13 @@ std::expected<SurfaceSample, PatchError> CubicBezierPatch::evaluate(const double
     }
 
     const Vec3 unnormalized_normal = cross(tangent_u, tangent_v);
-    const double normal_length = length(unnormalized_normal);
-    if (constexpr double normal_tolerance = 1e-12; normal_length <= normal_tolerance)
+    const double normal_length = std::hypot(unnormalized_normal.x, unnormalized_normal.y, unnormalized_normal.z);
+    if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z) ||
+        !std::isfinite(normal_length))
+    {
+        return std::unexpected(PatchError::NonFiniteEvaluation);
+    }
+    if (normal_length <= normal_tolerance)
     {
         return std::unexpected(PatchError::DegenerateNormal);
     }

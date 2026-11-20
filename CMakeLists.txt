@@ -29,6 +29,7 @@ add_executable(occt_lab
     src/geometry/brep_mesh.cpp
     src/geometry/bspline_curve.cpp
     src/geometry/curve_fitting.cpp
+    src/geometry/occt_bezier_patch.cpp
     src/render/bezier_patch_preview.cpp
     src/render/brep_preview.cpp
     src/render/curve_preview.cpp
@@ -86,7 +87,10 @@ if(BUILD_TESTING)
     endforeach()
     target_sources(occt_box_check PRIVATE src/geometry/box_model.cpp)
 
-    add_executable(bezier_patch_check tests/bezier_patch_check.cpp src/geometry/bezier_patch.cpp)
+    add_executable(bezier_patch_check tests/bezier_patch_check.cpp src/geometry/bezier_patch.cpp
+        src/geometry/occt_bezier_patch.cpp)
+    target_include_directories(bezier_patch_check SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
+    target_link_libraries(bezier_patch_check PRIVATE TKG3d TKMath TKernel)
 
     add_executable(bspline_curve_check tests/bspline_curve_check.cpp src/geometry/bspline_curve.cpp
         src/geometry/curve_fitting.cpp src/application/editable_curve.cpp src/document/curve_project.cpp

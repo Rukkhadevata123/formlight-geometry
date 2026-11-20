@@ -4,9 +4,26 @@
 
 #include <imgui.h>
 
-BezierPatchInspector::BezierPatchInspector(BezierPatchPreview &preview)
-    : preview_(preview), sample_(preview_.patch().evaluate(u_, v_))
+namespace
 {
+void draw_surface_sample(const occt_lab::geometry::SurfaceSample &sample)
+{
+    const auto &[position, normal] = sample;
+    ImGui::Text("Position (mm)   (%.5f, %.5f, %.5f)", position.x, position.y, position.z);
+    ImGui::Text("Unit normal     (%.5f, %.5f, %.5f)", normal.x, normal.y, normal.z);
+}
+} // namespace
+
+BezierPatchInspector::BezierPatchInspector(BezierPatchPreview &preview)
+    : preview_(preview), reference_patch_(preview.patch())
+{
+    update_samples();
+}
+
+void BezierPatchInspector::update_samples()
+{
+    sample_ = preview_.patch().evaluate(u_, v_);
+    reference_sample_ = reference_patch_.evaluate(u_, v_);
 }
 
 void BezierPatchInspector::draw()
@@ -26,26 +43,47 @@ void BezierPatchInspector::draw()
         ImGui::PopItemWidth();
         if (u_changed || v_changed)
         {
-            sample_ = preview_.patch().evaluate(u_, v_);
+            update_samples();
         }
 
+        ImGui::SeparatorText("Bernstein evaluation");
         if (sample_)
         {
-            const auto &[position, normal] = *sample_;
-            ImGui::Text("Position (mm)   (%.5f, %.5f, %.5f)", position.x, position.y, position.z);
-            ImGui::Text("Unit normal     (%.5f, %.5f, %.5f)", normal.x, normal.y, normal.z);
+            draw_surface_sample(*sample_);
         }
         else if (sample_.error() == occt_lab::geometry::PatchError::DegenerateNormal)
         {
             ImGui::TextUnformatted("The surface normal is undefined at this parameter.");
         }
+        else if (sample_.error() == occt_lab::geometry::PatchError::NonFiniteEvaluation)
+        {
+            ImGui::TextUnformatted("Bernstein evaluation exceeded the finite coordinate range.");
+        }
         else
         {
             ImGui::TextUnformatted("Choose finite u and v values between 0 and 1.");
         }
+        draw_reference();
         draw_sampling_controls();
     }
     ImGui::End();
+}
+
+void BezierPatchInspector::draw_reference() const
+{
+    ImGui::SeparatorText("OCCT reference");
+    if (!reference_sample_)
+    {
+        ImGui::TextUnformatted(reference_sample_.error().c_str());
+        return;
+    }
+    draw_surface_sample(*reference_sample_);
+    if (sample_)
+    {
+        const auto [distance_mm, angle_degrees] = compare_surface_samples(*sample_, *reference_sample_);
+        ImGui::Text("Position distance: %.3g mm", distance_mm);
+        ImGui::Text("Normal angle: %.3g deg", angle_degrees);
+    }
 }
 
 void BezierPatchInspector::draw_sampling_controls()

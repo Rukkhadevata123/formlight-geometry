@@ -1,4 +1,5 @@
 #include "geometry/bezier_patch.hpp"
+#include "geometry/occt_bezier_patch.hpp"
 
 #include <array>
 #include <cmath>
@@ -8,15 +9,18 @@
 #include <exception>
 #include <format>
 #include <limits>
+#include <numbers>
 #include <print>
 #include <stdexcept>
 
 namespace
 {
 using occt_lab::geometry::CubicBezierPatch;
+using occt_lab::geometry::OcctBezierPatch;
 using occt_lab::geometry::PatchError;
 using occt_lab::geometry::PatchIsolines;
 using occt_lab::geometry::PatchSampling;
+using occt_lab::geometry::SurfaceSample;
 using occt_lab::geometry::Vec3;
 
 constexpr std::size_t side_length = 4;
@@ -54,7 +58,7 @@ bool near(const Vec3 &actual, const Vec3 &expected)
     return std::hypot(actual.x - expected.x, actual.y - expected.y, actual.z - expected.z) <= tolerance;
 }
 
-void check_samples(const CubicBezierPatch &patch)
+void check_samples(const CubicBezierPatch &patch, const OcctBezierPatch &reference)
 {
     constexpr Vec3 up{.x = 0.0, .y = 0.0, .z = 1.0};
     // The z slopes relative to x and y at (0.25, 0.75) are +0.1125 and -0.1125.
@@ -92,6 +96,51 @@ void check_samples(const CubicBezierPatch &patch)
         {
             throw std::runtime_error(std::format("Unexpected normal at ({}, {})", u, v));
         }
+        const auto occt_sample = reference.evaluate(u, v);
+        if (!occt_sample || !near(occt_sample->position, position) || !near(occt_sample->normal, normal))
+        {
+            throw std::runtime_error(std::format("Unexpected OCCT position or oriented normal at ({}, {})", u, v));
+        }
+        if (const auto [distance, angle] = compare_surface_samples(*sample, *occt_sample);
+            !(distance <= 1e-12 && angle <= 1e-10))
+        {
+            throw std::runtime_error(std::format("Bezier evaluators differ by {} mm and {} deg", distance, angle));
+        }
+    }
+}
+
+void check_comparison_metrics()
+{
+    constexpr SurfaceSample up{.position = {}, .normal = {.x = 0.0, .y = 0.0, .z = 1.0}};
+    constexpr SurfaceSample down{.position = {.x = 3.0, .y = 4.0, .z = 0.0}, .normal = {.x = 0.0, .y = 0.0, .z = -1.0}};
+    if (const auto [distance, angle] = compare_surface_samples(up, down);
+        distance != 5.0 || !(std::abs(angle - 180.0) <= 1e-12))
+    {
+        throw std::runtime_error("Opposite normals must differ by 180 degrees");
+    }
+
+    constexpr double small_angle = 1e-10;
+    const SurfaceSample tilted{.position = {},
+                               .normal = {.x = std::sin(small_angle), .y = 0.0, .z = std::cos(small_angle)}};
+    const double degrees = compare_surface_samples(up, tilted).normal_angle_degrees;
+    constexpr double expected_degrees = small_angle * (180.0 / std::numbers::pi);
+    if (!(std::abs(degrees - expected_degrees) <= 1e-14))
+    {
+        throw std::runtime_error("A small resolvable normal angle rounded to an incorrect value");
+    }
+}
+
+void check_reference_failures(const OcctBezierPatch &reference)
+{
+    if (reference.evaluate(-0.1, 0.5) || reference.evaluate(0.0, std::numeric_limits<double>::quiet_NaN()))
+    {
+        throw std::runtime_error("OCCT reference accepted invalid patch parameters");
+    }
+    constexpr ControlNet coincident{};
+    if (const auto collapsed = CubicBezierPatch::create(coincident).value();
+        OcctBezierPatch{collapsed}.evaluate(0.5, 0.5))
+    {
+        throw std::runtime_error("OCCT reference returned a normal for a collapsed patch");
     }
 }
 
@@ -109,6 +158,32 @@ void check_invalid_inputs(const CubicBezierPatch &patch)
     if (const auto empty = CubicBezierPatch::create({}); empty || empty.error() != PatchError::WrongControlPointCount)
     {
         throw std::runtime_error("Expected a control point count error");
+    }
+}
+
+void check_large_normal()
+{
+    auto flat = raised_patch();
+    for (auto &[x, y, z] : flat)
+    {
+        x *= 1e100;
+        y *= 1e100;
+        z = 0.0;
+    }
+    if (const auto sample = CubicBezierPatch::create(flat).value().evaluate(0.5, 0.5);
+        !sample || !near(sample->normal, {.x = 0.0, .y = 0.0, .z = 1.0}))
+    {
+        throw std::runtime_error("A large finite cross product must still yield a unit normal");
+    }
+    for (auto &p : flat)
+    {
+        p.x *= 1e100;
+        p.y *= 1e100;
+    }
+    if (const auto overflow = CubicBezierPatch::create(flat).value().evaluate(0.5, 0.5);
+        overflow || overflow.error() != PatchError::NonFiniteEvaluation)
+    {
+        throw std::runtime_error("An overflowing cross product must not be compared as a valid normal");
     }
 }
 
@@ -187,10 +262,15 @@ int main()
             throw std::runtime_error("Could not create the sample Bezier patch");
         }
 
-        check_samples(*patch);
+        const OcctBezierPatch reference{*patch};
+        check_samples(*patch, reference);
+        check_comparison_metrics();
+        check_reference_failures(reference);
         check_isolines(*patch);
         check_invalid_inputs(*patch);
-        std::println("Bezier patch positions, normals, adjustable isoline sampling and invalid inputs verified");
+        check_large_normal();
+        std::println(
+            "Bezier patch positions, normals, OCCT comparison, adjustable sampling and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
