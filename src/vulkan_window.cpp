@@ -462,7 +462,8 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         {
             camera = OrbitCamera{};
         }
-        ImGui::TextUnformatted("Middle-drag to orbit, wheel to zoom");
+        ImGui::TextUnformatted("Middle-drag to orbit, Shift + middle-drag to pan");
+        ImGui::TextUnformatted("Mouse wheel to zoom");
         if (mode == PreviewMode::bspline)
         {
             ImGui::TextUnformatted("Left-click a blue control point to select it");
@@ -606,7 +607,7 @@ public:
         }
 
         imgui_.begin_frame();
-        update_camera_input();
+        update_camera_input(swapchain.extent);
         draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_);
         std::optional<PreviewShape> solid;
         switch (preview_mode_)
@@ -672,20 +673,44 @@ public:
     }
 
 private:
-    void update_camera_input()
+    enum class CameraDrag
+    {
+        none,
+        orbit,
+        pan,
+    };
+
+    void update_camera_input(const vk::Extent2D extent)
     {
         const auto &io = ImGui::GetIO();
-        if (constexpr auto orbit_button = ImGuiMouseButton_Middle; !ImGui::IsMouseDown(orbit_button))
+        if (!ImGui::IsMouseDown(ImGuiMouseButton_Middle))
         {
-            orbiting_ = false;
+            camera_drag_ = CameraDrag::none;
         }
-        else if (ImGui::IsMouseClicked(orbit_button))
+        else if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
         {
-            orbiting_ = !io.WantCaptureMouse && io.KeyMods == ImGuiMod_None;
+            camera_drag_ = CameraDrag::none;
+            if (!io.WantCaptureMouse && io.KeyMods == ImGuiMod_Shift)
+            {
+                camera_drag_ = CameraDrag::pan;
+            }
+            else if (!io.WantCaptureMouse && io.KeyMods == ImGuiMod_None)
+            {
+                camera_drag_ = CameraDrag::orbit;
+            }
         }
-        else if (orbiting_ && !io.WantCaptureMouse)
+        else if (camera_drag_ == CameraDrag::orbit && !io.WantCaptureMouse)
         {
             camera_.orbit(io.MouseDelta.x, io.MouseDelta.y);
+        }
+        else if (camera_drag_ == CameraDrag::pan && !io.WantCaptureMouse)
+        {
+            if (const auto size = ImGui::GetMainViewport()->Size; size.x > 0.0F && size.y > 0.0F)
+            {
+                const double short_side = std::min(extent.width, extent.height);
+                camera_.pan(io.MouseDelta.x / size.x * (extent.width / short_side),
+                            io.MouseDelta.y / size.y * (extent.height / short_side));
+            }
         }
 
         if (!io.WantCaptureMouse && io.MouseWheel != 0.0F)
@@ -805,7 +830,7 @@ private:
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;
-    bool orbiting_ = false;
+    CameraDrag camera_drag_ = CameraDrag::none;
     std::optional<Swapchain> swapchain_;
     ImGuiSession imgui_;
 };
