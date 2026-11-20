@@ -39,6 +39,10 @@ EditableCurve::EditableCurve() : current_(sample_curve(occt_lab::geometry::make_
 {
 }
 
+EditableCurve::EditableCurve(Curve curve) : current_(std::move(curve))
+{
+}
+
 auto EditableCurve::current() const -> const Curve &
 {
     return current_;

@@ -10,6 +10,8 @@
 #include <print>
 #include <stdexcept>
 
+void check_curve_projects();
+
 namespace
 {
 using occt_lab::geometry::sample_clamped_cubic_bspline;
@@ -548,7 +550,8 @@ int main()
         check_interpolation_failure();
         check_off_grid_residual();
         check_approximation();
-        std::println("B-spline sampling, editing, refinement, interpolation, approximation and history verified");
+        check_curve_projects();
+        std::println("B-spline geometry, editing, history and project round trips verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

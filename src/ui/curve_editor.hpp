@@ -1,6 +1,7 @@
 #pragma once
 
 #include "application/editable_curve.hpp"
+#include "document/curve_project.hpp"
 
 struct ClipTransform;
 
@@ -19,18 +20,19 @@ class CurveEditor
     }
     [[nodiscard]] std::size_t selected_index() const
     {
-        return static_cast<std::size_t>(pole_number_ - 1);
+        return static_cast<std::size_t>(settings_.pole_number - 1);
     }
 
   private:
+    void draw_project(EditableCurve &curve);
     void draw_history(EditableCurve &curve);
     void draw_refinement(EditableCurve &curve);
     void draw_point_fitting(EditableCurve &curve);
     void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
-    int pole_number_ = 1;
+    occt_lab::document::CurveProjectSettings settings_;
+    std::string project_path_ = "curve.occtlab";
+    std::string project_status_;
     bool tracking_pole_ = false;
-    double knot_parameter_ = 0.5;
-    double fit_tolerance_ = 1.0;
     std::string error_;
 };

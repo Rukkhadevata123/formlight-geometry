@@ -26,7 +26,7 @@ void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransfor
         }
         if (const auto hit = pick_curve_pole(curve.current(), transform, ImGui::GetMousePos()))
         {
-            pole_number_ = static_cast<int>(*hit) + 1;
+            settings_.pole_number = static_cast<int>(*hit) + 1;
             tracking_pole_ = draft_ == curve.current().definition;
         }
         return;
@@ -69,12 +69,13 @@ void CurveEditor::draw(EditableCurve &curve)
     if (ImGui::Begin("B-spline control points", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::BeginDisabled(tracking_pole_);
+        draw_project(curve);
         ImGui::PushItemWidth(9.0F * ImGui::GetFontSize());
-        ImGui::SliderInt("Pole", &pole_number_, 1, static_cast<int>(draft_.poles.size()), "%d",
+        ImGui::SliderInt("Pole", &settings_.pole_number, 1, static_cast<int>(draft_.poles.size()), "%d",
                          ImGuiSliderFlags_AlwaysClamp);
         const auto index = selected_index();
         auto &[draft_x, draft_y, draft_z] = draft_.poles[index];
-        ImGui::PushID(pole_number_);
+        ImGui::PushID(settings_.pole_number);
         ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
         constexpr auto flags = ImGuiInputTextFlags_ParseEmptyRefVal;
         const bool x_changed = ImGui::InputDouble("X (mm)", &draft_x, 0.0, 0.0, "%.8g", flags);
@@ -155,7 +156,7 @@ void CurveEditor::draw_history(EditableCurve &curve)
     }
     if (changes_knots)
     {
-        pole_number_ = 1;
+        settings_.pole_number = 1;
     }
     error_.clear();
 }
@@ -164,7 +165,7 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
 {
     ImGui::SeparatorText("Curve refinement");
     ImGui::SetNextItemWidth(9.0F * ImGui::GetFontSize());
-    if (ImGui::InputDouble("Parameter u", &knot_parameter_, 0.0, 0.0, "%.12g"))
+    if (ImGui::InputDouble("Parameter u", &settings_.knot_parameter, 0.0, 0.0, "%.12g"))
     {
         error_.clear();
     }
@@ -176,8 +177,8 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
     ImGui::EndDisabled();
     if (insert || elevate)
     {
-        const auto result =
-            insert ? curve.insert_knot(knot_parameter_) : curve.elevate_degree(curve.current().definition.degree + 1);
+        const auto result = insert ? curve.insert_knot(settings_.knot_parameter)
+                                   : curve.elevate_degree(curve.current().definition.degree + 1);
         finish_curve_operation(curve, result);
     }
     if (dirty && !tracking_pole_)
@@ -215,7 +216,7 @@ void CurveEditor::finish_curve_operation(const EditableCurve &curve, const std::
         return;
     }
     draft_ = curve.current().definition;
-    pole_number_ = 1;
+    settings_.pole_number = 1;
     error_.clear();
 }
 
@@ -229,14 +230,14 @@ void CurveEditor::draw_point_fitting(EditableCurve &curve)
         finish_curve_operation(curve, result);
     }
     ImGui::SetNextItemWidth(9.0F * ImGui::GetFontSize());
-    if (ImGui::InputDouble("Target tolerance (mm)", &fit_tolerance_, 0.0, 0.0, "%.8g"))
+    if (ImGui::InputDouble("Target tolerance (mm)", &settings_.fit_tolerance, 0.0, 0.0, "%.8g"))
     {
         error_.clear();
     }
     if (const bool use_poles = curve.current().data_points.empty();
         ImGui::Button(use_poles ? "Approximate applied poles" : "Approximate same data points"))
     {
-        const auto result = curve.approximate_data_points(fit_tolerance_);
+        const auto result = curve.approximate_data_points(settings_.fit_tolerance);
         finish_curve_operation(curve, result);
     }
     ImGui::EndDisabled();

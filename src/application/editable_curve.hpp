@@ -13,6 +13,7 @@ class EditableCurve
     using Definition = occt_lab::geometry::CurveDefinition;
 
     EditableCurve();
+    explicit EditableCurve(Curve curve);
 
     [[nodiscard]] auto current() const -> const Curve &;
     [[nodiscard]] auto displayed() const -> const Curve &;

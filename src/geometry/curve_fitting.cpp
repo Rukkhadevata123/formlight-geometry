@@ -8,7 +8,6 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
-#include <utility>
 
 namespace occt_lab::geometry
 {
@@ -93,18 +92,24 @@ SampledCurve fit_curve(const std::span<const Vec3> data_points, const std::optio
         throw std::runtime_error("OCCT could not approximate these points with the requested tolerance");
     }
     auto fitted = sample_curve(read_bspline_definition(*solver.Curve(), 1.0), inputs);
-    SampledCurve::ApproximationComparison comparison{.requested_tolerance = *tolerance,
-                                                      .interpolated_samples = interpolated.samples,
-                                                      .interpolated_residuals = {}};
-    for (const auto &input : interpolated.data_points)
-    {
-        comparison.interpolated_residuals.push_back(input.residual);
-    }
-    fitted.approximation = std::move(comparison);
+    fitted.approximation = compare_to_interpolant(interpolated, *tolerance);
     fitted.framing_extent = std::max(fitted.framing_extent, interpolated.framing_extent);
     return fitted;
 }
 } // namespace
+
+SampledCurve::ApproximationComparison compare_to_interpolant(const SampledCurve &interpolated,
+                                                             const double requested_tolerance)
+{
+    SampledCurve::ApproximationComparison comparison{.requested_tolerance = requested_tolerance,
+                                                     .interpolated_samples = interpolated.samples,
+                                                     .interpolated_residuals = {}};
+    for (const auto &input : interpolated.data_points)
+    {
+        comparison.interpolated_residuals.push_back(input.residual);
+    }
+    return comparison;
+}
 
 SampledCurve interpolate_curve(const std::span<const Vec3> data_points)
 {

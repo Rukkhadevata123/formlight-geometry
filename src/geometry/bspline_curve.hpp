@@ -65,6 +65,8 @@ struct SampledCurve
 [[nodiscard]] CurveDefinition make_uniform_cubic(std::span<const Vec3> poles, std::span<const double> weights = {});
 [[nodiscard]] SampledCurve sample_curve(const CurveDefinition &definition,
                                         std::span<const CurveDataPoint> data_points = {});
+[[nodiscard]] SampledCurve::ApproximationComparison compare_to_interpolant(const SampledCurve &interpolated,
+                                                                           double requested_tolerance);
 
 // clang-format off
 [[nodiscard]] auto interpolate_curve(std::span<const Vec3> data_points)                       -> SampledCurve;
