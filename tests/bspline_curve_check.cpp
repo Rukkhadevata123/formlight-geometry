@@ -68,6 +68,64 @@ void check_curve_samples()
     }
 }
 
+void check_pole_drag()
+{
+    EditableCurve curve;
+    const auto original = curve.current();
+    constexpr Vec3 intermediate{.x = 50.0, .y = -42.0, .z = 2.0};
+    constexpr Vec3 final_position{.x = 72.0, .y = -42.0, .z = 4.0};
+    if (!curve.preview_pole_move(0, intermediate) || !curve.preview_pole_move(0, final_position) ||
+        !near(curve.displayed().samples.front(), final_position) || curve.current().definition != original.definition ||
+        curve.displayed().framing_extent != original.framing_extent || curve.can_undo())
+    {
+        throw std::runtime_error("Dragging must preview the endpoint at fixed scale without changing history");
+    }
+    curve.accept_pole_move();
+    if (!near(curve.current().samples.front(), final_position))
+    {
+        throw std::runtime_error("Release must apply the last preview");
+    }
+    curve.undo();
+    if (curve.current().definition != original.definition)
+    {
+        throw std::runtime_error("One undo must restore the curve from before the drag");
+    }
+    if (!curve.preview_pole_move(0, intermediate))
+    {
+        throw std::runtime_error("Could not preview a new drag after undo");
+    }
+    curve.cancel_pole_move();
+    if (curve.displayed().definition != original.definition || !curve.can_redo())
+    {
+        throw std::runtime_error("Cancelling a drag must restore the curve and retain redo");
+    }
+    auto invalid = intermediate;
+    invalid.z = std::numeric_limits<double>::infinity();
+    if (!curve.preview_pole_move(0, intermediate) || curve.preview_pole_move(0, invalid))
+    {
+        throw std::runtime_error("Invalid pole coordinates must fail after a valid preview");
+    }
+    curve.accept_pole_move();
+    if (curve.current().definition != original.definition || !curve.can_redo())
+    {
+        throw std::runtime_error("A failed drag must discard the stale preview and preserve history");
+    }
+    if (!curve.preview_pole_move(0, intermediate) || !curve.preview_pole_move(0, original.definition.poles.front()))
+    {
+        throw std::runtime_error("Could not return the pole to its starting position");
+    }
+    curve.accept_pole_move();
+    if (!curve.can_redo())
+    {
+        throw std::runtime_error("Returning to the drag origin must preserve redo");
+    }
+    curve.redo();
+    if (!near(curve.current().samples.front(), final_position))
+    {
+        throw std::runtime_error("Redo must restore the released position");
+    }
+}
+
 void check_curve_edits()
 {
     EditableCurve curve;
@@ -481,6 +539,7 @@ int main()
     {
         check_curve_samples();
         check_curve_edits();
+        check_pole_drag();
         check_knot_insertion(false);
         check_knot_insertion(true);
         check_degree_elevation(false);

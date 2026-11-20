@@ -1,7 +1,65 @@
 #include "curve_editor.hpp"
 #include "fit_residuals.hpp"
+#include "render/curve_preview.hpp"
 
 #include <imgui.h>
+
+void CurveEditor::cancel_drag(EditableCurve &curve)
+{
+    if (tracking_pole_)
+    {
+        curve.cancel_pole_move();
+        draft_.poles[selected_index()] = curve.current().definition.poles[selected_index()];
+        tracking_pole_ = false;
+    }
+}
+
+void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransform &transform)
+{
+    constexpr auto button = ImGuiMouseButton_Left;
+    if (!tracking_pole_)
+    {
+        if (const auto &io = ImGui::GetIO(); !ImGui::IsMouseClicked(button) || io.WantCaptureMouse ||
+                                             io.KeyMods != ImGuiMod_None || ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+        {
+            return;
+        }
+        if (const auto hit = pick_curve_pole(curve.current(), transform, ImGui::GetMousePos()))
+        {
+            pole_number_ = static_cast<int>(*hit) + 1;
+            tracking_pole_ = draft_ == curve.current().definition;
+        }
+        return;
+    }
+
+    const bool released = ImGui::IsMouseReleased(button);
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape) || !ImGui::IsMousePosValid() || (!ImGui::IsMouseDown(button) && !released))
+    {
+        cancel_drag(curve);
+        return;
+    }
+
+    // ImGui keeps the press-to-cursor delta on the release frame and filters ordinary click jitter.
+    const auto delta = ImGui::GetMouseDragDelta(button);
+    const auto index = selected_index();
+    const auto position = dragged_pole_position(curve.current(), transform, index, delta);
+    if (const auto result = curve.preview_pole_move(index, position); !result)
+    {
+        error_ = result.error();
+        cancel_drag(curve);
+        return;
+    }
+    if (draft_.poles[index] != position)
+    {
+        draft_.poles[index] = position;
+        error_.clear();
+    }
+    if (released)
+    {
+        curve.accept_pole_move();
+        tracking_pole_ = false;
+    }
+}
 
 void CurveEditor::draw(EditableCurve &curve)
 {
@@ -10,6 +68,7 @@ void CurveEditor::draw(EditableCurve &curve)
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
     if (ImGui::Begin("B-spline control points", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        ImGui::BeginDisabled(tracking_pole_);
         ImGui::PushItemWidth(9.0F * ImGui::GetFontSize());
         ImGui::SliderInt("Pole", &pole_number_, 1, static_cast<int>(draft_.poles.size()), "%d",
                          ImGuiSliderFlags_AlwaysClamp);
@@ -49,12 +108,13 @@ void CurveEditor::draw(EditableCurve &curve)
         const auto &[x, y, z] = applied.poles[selected_index()];
         ImGui::Text("Applied: (%.8g, %.8g, %.8g) mm", x, y, z);
         ImGui::Text("Applied weight: %.8g", applied.weights[selected_index()]);
-        if (curve.current().unit_weight_samples)
+        if (curve.displayed().unit_weight_samples)
         {
             ImGui::TextUnformatted("Gold: weighted   Gray: all weights = 1");
         }
         draw_refinement(curve);
         draw_point_fitting(curve);
+        ImGui::EndDisabled();
         if (!error_.empty())
         {
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
@@ -120,11 +180,11 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
             insert ? curve.insert_knot(knot_parameter_) : curve.elevate_degree(curve.current().definition.degree + 1);
         finish_curve_operation(curve, result);
     }
-    if (dirty)
+    if (dirty && !tracking_pole_)
     {
-        ImGui::TextUnformatted("Apply or cancel pole edits before curve operations.");
+        ImGui::TextUnformatted("Apply or cancel edits before dragging or running curve operations.");
     }
-    const auto &current = curve.current();
+    const auto &current = curve.displayed();
     if (current.refinement)
     {
         const auto &[previous_degree, previous_poles, deviation] = *current.refinement;
@@ -181,5 +241,5 @@ void CurveEditor::draw_point_fitting(EditableCurve &curve)
     }
     ImGui::EndDisabled();
 
-    draw_fit_residuals(curve.current());
+    draw_fit_residuals(curve.displayed());
 }

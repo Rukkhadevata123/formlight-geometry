@@ -162,6 +162,28 @@ auto pick_curve_pole(const occt_lab::geometry::SampledCurve &curve, const ClipTr
     return hit;
 }
 
+auto dragged_pole_position(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
+                           const std::size_t index, const ImVec2 screen_delta) -> Vec3
+{
+    const auto &viewport = *ImGui::GetMainViewport();
+    const CurveProjection project{transform, viewport, curve.framing_extent};
+    const auto &origin = curve.definition.poles.at(index);
+    const double w = project.clip_point(origin).w;
+
+    // At the pole's depth w is constant. The orthogonal X/Y rows give two independent screen-plane axes.
+    const auto axis_offset = [w](const ClipRow &row, const double pixels, const double size)
+    {
+        const gp_XYZ axis{row[0], row[1], row[2]};
+        const double clip_delta = 2.0 * pixels / size * w;
+        return axis * (clip_delta / axis.SquareModulus());
+    };
+    const auto offset = axis_offset(transform.x, screen_delta.x, viewport.Size.x) +
+                        axis_offset(transform.y, screen_delta.y, viewport.Size.y);
+    return {.x = origin.x + offset.X() * project.scale,
+            .y = origin.y + offset.Y() * project.scale,
+            .z = origin.z + offset.Z() * project.scale};
+}
+
 void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
                         const std::size_t selected_pole)
 {

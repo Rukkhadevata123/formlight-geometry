@@ -44,8 +44,55 @@ auto EditableCurve::current() const -> const Curve &
     return current_;
 }
 
+auto EditableCurve::displayed() const -> const Curve &
+{
+    return pole_preview_ ? *pole_preview_ : current_;
+}
+
+auto EditableCurve::preview_pole_move(const std::size_t index, const occt_lab::geometry::Vec3 &position)
+    -> std::expected<void, std::string>
+{
+    try
+    {
+        if (current_.definition.poles.at(index) == position)
+        {
+            cancel_pole_move();
+            return {};
+        }
+        if (displayed().definition.poles[index] != position)
+        {
+            auto definition = current_.definition;
+            definition.poles[index] = position;
+            auto candidate = sample_curve(definition);
+            // Keep the grabbed point under the cursor even when it becomes the new outermost pole.
+            candidate.framing_extent = current_.framing_extent;
+            pole_preview_ = std::move(candidate);
+        }
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        cancel_pole_move();
+        return std::unexpected(std::string{error.what()});
+    }
+}
+
+void EditableCurve::accept_pole_move()
+{
+    if (pole_preview_)
+    {
+        commit(std::move(*pole_preview_));
+    }
+}
+
+void EditableCurve::cancel_pole_move()
+{
+    pole_preview_.reset();
+}
+
 void EditableCurve::commit(Curve candidate)
 {
+    cancel_pole_move();
     history_ = std::exchange(current_, std::move(candidate));
     undone_ = false;
 }
@@ -144,6 +191,7 @@ std::expected<void, std::string> EditableCurve::approximate_data_points(const do
 
 void EditableCurve::undo()
 {
+    cancel_pole_move();
     if (can_undo())
     {
         std::swap(current_, *history_);
@@ -153,6 +201,7 @@ void EditableCurve::undo()
 
 void EditableCurve::redo()
 {
+    cancel_pole_move();
     if (can_redo())
     {
         std::swap(current_, *history_);

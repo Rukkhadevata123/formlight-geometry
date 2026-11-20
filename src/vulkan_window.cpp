@@ -426,7 +426,7 @@ enum class PreviewMode
 };
 
 void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
-                       ProjectionMode &projection, OrbitCamera &camera)
+                       ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole)
 {
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -443,6 +443,7 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         ImGui::Text("Frame rate   %.1f FPS", static_cast<double>(ImGui::GetIO().Framerate));
 
         ImGui::SeparatorText("Preview");
+        ImGui::BeginDisabled(moving_pole);
         const float combo_width = 9.0F * ImGui::GetFontSize();
         ImGui::SetNextItemWidth(combo_width);
         auto mode_index = static_cast<int>(mode);
@@ -462,11 +463,12 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         {
             camera = OrbitCamera{};
         }
+        ImGui::EndDisabled();
         ImGui::TextUnformatted("Middle-drag to orbit, Shift + middle-drag to pan");
         ImGui::TextUnformatted("Mouse wheel to zoom");
         if (mode == PreviewMode::bspline)
         {
-            ImGui::TextUnformatted("Left-click a blue control point to select it");
+            ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
         }
     }
     ImGui::End();
@@ -500,8 +502,15 @@ public:
     Renderer(const Renderer &) = delete;
     Renderer &operator=(const Renderer &) = delete;
 
+    void cancel_viewport_gesture()
+    {
+        curve_editor_.cancel_drag(curve_);
+        camera_drag_ = CameraDrag::none;
+    }
+
     bool rebuild_swapchain(const vk::Extent2D window_extent)
     {
+        cancel_viewport_gesture();
         const auto capabilities = selected_.physical_device.getSurfaceCapabilitiesKHR(surface_);
         const auto extent = choose_extent(capabilities, window_extent);
         if (extent.width == 0 || extent.height == 0)
@@ -607,8 +616,11 @@ public:
         }
 
         imgui_.begin_frame();
-        update_camera_input(swapchain.extent);
-        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_);
+        if (!curve_editor_.tracking_pole())
+        {
+            update_camera_input(swapchain.extent);
+        }
+        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, curve_editor_.tracking_pole());
         std::optional<PreviewShape> solid;
         switch (preview_mode_)
         {
@@ -629,18 +641,9 @@ public:
             camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_, view_scale);
         if (preview_mode_ == PreviewMode::bspline)
         {
-            const auto &io = ImGui::GetIO();
-            const bool selectable = !io.WantCaptureMouse && io.KeyMods == ImGuiMod_None &&
-                                    !ImGui::IsMouseDown(ImGuiMouseButton_Middle);
-            if (selectable && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-            {
-                if (const auto hit = pick_curve_pole(curve_.current(), transform, ImGui::GetMousePos()))
-                {
-                    curve_editor_.select_pole(*hit);
-                }
-            }
+            curve_editor_.handle_viewport_input(curve_, transform);
             curve_editor_.draw(curve_);
-            draw_curve_preview(curve_.current(), transform, curve_editor_.selected_index());
+            draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
         }
         ImGui::Render();
 
@@ -852,6 +855,10 @@ void run_event_loop(SDL_Window *window, Renderer &renderer)
             case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             case SDL_EVENT_WINDOW_RESTORED:
                 rebuild_swapchain = true;
+                break;
+            case SDL_EVENT_WINDOW_FOCUS_LOST:
+            case SDL_EVENT_WINDOW_MINIMIZED:
+                renderer.cancel_viewport_gesture();
                 break;
             default:
                 break;

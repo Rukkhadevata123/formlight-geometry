@@ -15,6 +15,11 @@ class EditableCurve
     EditableCurve();
 
     [[nodiscard]] auto current() const -> const Curve &;
+    [[nodiscard]] auto displayed() const -> const Curve &;
+    [[nodiscard]] auto preview_pole_move(std::size_t index, const occt_lab::geometry::Vec3 &position)
+        -> std::expected<void, std::string>;
+    void accept_pole_move();
+    void cancel_pole_move();
 
     // clang-format off
     [[nodiscard]] auto apply(const Definition &definition)       -> std::expected<void, std::string>;
@@ -43,6 +48,7 @@ class EditableCurve
     void commit(Curve candidate);
     void commit_refinement(const Definition &definition);
     Curve current_;
+    std::optional<Curve> pole_preview_;
     std::optional<Curve> history_;
     bool undone_ = false;
 };

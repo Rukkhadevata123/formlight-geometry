@@ -2,6 +2,8 @@
 
 #include "application/editable_curve.hpp"
 
+struct ClipTransform;
+
 class CurveEditor
 {
   public:
@@ -9,9 +11,11 @@ class CurveEditor
     {
     }
     void draw(EditableCurve &curve);
-    void select_pole(const std::size_t index)
+    void handle_viewport_input(EditableCurve &curve, const ClipTransform &transform);
+    void cancel_drag(EditableCurve &curve);
+    [[nodiscard]] bool tracking_pole() const
     {
-        pole_number_ = static_cast<int>(index) + 1;
+        return tracking_pole_;
     }
     [[nodiscard]] std::size_t selected_index() const
     {
@@ -25,6 +29,7 @@ class CurveEditor
     void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
     int pole_number_ = 1;
+    bool tracking_pole_ = false;
     double knot_parameter_ = 0.5;
     double fit_tolerance_ = 1.0;
     std::string error_;
