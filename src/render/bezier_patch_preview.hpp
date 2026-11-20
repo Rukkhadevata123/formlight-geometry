@@ -15,9 +15,14 @@ class BezierPatchPreview
 {
   public:
     BezierPatchPreview();
-    void draw(const ClipTransform &transform, const PatchLayers &layers) const;
+    [[nodiscard]] auto patch() const -> const occt_lab::geometry::CubicBezierPatch &
+    {
+        return patch_;
+    }
+    void draw(const ClipTransform &transform, const PatchLayers &layers,
+              const occt_lab::geometry::SurfaceSample *selected) const;
 
   private:
-    occt_lab::geometry::CubicBezierPatch::ControlNet control_net_;
+    occt_lab::geometry::CubicBezierPatch patch_;
     occt_lab::geometry::PatchIsolines isolines_;
 };

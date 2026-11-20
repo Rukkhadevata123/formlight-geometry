@@ -4,6 +4,7 @@
 #include "render/brep_preview.hpp"
 #include "render/curve_preview.hpp"
 #include "render/orbit_camera.hpp"
+#include "ui/bezier_patch_inspector.hpp"
 #include "ui/box_editor.hpp"
 #include "ui/curve_editor.hpp"
 
@@ -657,7 +658,8 @@ public:
         }
         else if (preview_mode_ == PreviewMode::bezier_patch)
         {
-            patch_preview_.draw(transform, patch_layers_);
+            patch_inspector_.draw();
+            patch_preview_.draw(transform, patch_layers_, patch_inspector_.selected_sample());
         }
         ImGui::Render();
 
@@ -845,6 +847,7 @@ private:
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
     BezierPatchPreview patch_preview_;
+    BezierPatchInspector patch_inspector_{patch_preview_.patch()};
     PatchLayers patch_layers_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;

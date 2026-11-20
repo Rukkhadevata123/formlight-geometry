@@ -2,7 +2,9 @@
 
 #include "viewport_projection.hpp"
 
+#include <algorithm>
 #include <array>
+#include <cmath>
 #include <stdexcept>
 
 namespace
@@ -35,27 +37,66 @@ CubicBezierPatch::ControlNet make_control_net()
     return net;
 }
 
-PatchIsolines make_isolines(const CubicBezierPatch::ControlNet &net)
+CubicBezierPatch make_patch()
 {
-    const auto patch = CubicBezierPatch::create(net);
+    const auto patch = CubicBezierPatch::create(make_control_net());
     if (!patch)
     {
         throw std::runtime_error("Invalid Bezier preview control net");
     }
-    const auto lines = sample_patch_isolines(*patch);
+    return *patch;
+}
+
+PatchIsolines make_isolines(const CubicBezierPatch &patch)
+{
+    const auto lines = sample_patch_isolines(patch);
     if (!lines)
     {
         throw std::runtime_error("Could not sample the Bezier preview isolines");
     }
     return *lines;
 }
+
+void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::ViewportProjection &project,
+                         const occt_lab::geometry::SurfaceSample &sample)
+{
+    const auto &[point, normal] = sample;
+    const auto base = project.visible_point(point);
+    if (!base)
+    {
+        return;
+    }
+    constexpr double arrow_length_mm = 12.0;
+    const Vec3 tip{.x = point.x + arrow_length_mm * normal.x,
+                   .y = point.y + arrow_length_mm * normal.y,
+                   .z = point.z + arrow_length_mm * normal.z};
+    constexpr ImU32 color = IM_COL32(255, 150, 118, 255);
+    project.draw_polyline(draw_list, std::array{point, tip}, color, 2.5F);
+    if (const auto end = project.visible_point(tip))
+    {
+        const float dx = end->x - base->x;
+        const float dy = end->y - base->y;
+        if (const float length = std::hypot(dx, dy); length > 1.0F)
+        {
+            // Size the arrowhead in screen space and shrink it when the normal points toward the eye.
+            const float scale = std::min(8.0F / length, 0.4F);
+            const ImVec2 back{end->x - scale * dx, end->y - scale * dy};
+            const ImVec2 wing{-0.5F * scale * dy, 0.5F * scale * dx};
+            draw_list.AddTriangleFilled(*end, {back.x + wing.x, back.y + wing.y}, {back.x - wing.x, back.y - wing.y},
+                                        color);
+        }
+    }
+    draw_list.AddCircleFilled(*base, 4.0F, color);
+    draw_list.AddCircle(*base, 6.0F, IM_COL32_WHITE, 0, 1.5F);
+}
 } // namespace
 
-BezierPatchPreview::BezierPatchPreview() : control_net_(make_control_net()), isolines_(make_isolines(control_net_))
+BezierPatchPreview::BezierPatchPreview() : patch_(make_patch()), isolines_(make_isolines(patch_))
 {
 }
 
-void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers &layers) const
+void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers &layers,
+                              const occt_lab::geometry::SurfaceSample *selected) const
 {
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
@@ -63,7 +104,7 @@ void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers 
     constexpr ImU32 net_color = IM_COL32(111, 178, 216, 210);
     if (layers.control_net)
     {
-        const std::span net{control_net_};
+        const std::span net{patch_.control_net()};
         for (std::size_t i = 0; i < side; ++i)
         {
             project.draw_polyline(draw_list, net.subspan(i * side, side), net_color, 1.25F);
@@ -91,12 +132,16 @@ void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers 
     }
     if (layers.control_net)
     {
-        for (const auto &pole : control_net_)
+        for (const auto &pole : patch_.control_net())
         {
             if (const auto point = project.visible_point(pole))
             {
                 draw_list.AddCircleFilled(*point, 4.0F, net_color);
             }
         }
+    }
+    if (selected)
+    {
+        draw_surface_normal(draw_list, project, *selected);
     }
 }

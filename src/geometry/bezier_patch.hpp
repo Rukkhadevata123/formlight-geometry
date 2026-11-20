@@ -33,6 +33,10 @@ class CubicBezierPatch
     // The control points are stored row-major, with u along columns and v along rows.
     [[nodiscard]] static std::expected<CubicBezierPatch, PatchError> create(std::span<const Vec3> control_points);
     [[nodiscard]] std::expected<SurfaceSample, PatchError> evaluate(double u, double v) const;
+    [[nodiscard]] auto control_net() const -> const ControlNet &
+    {
+        return control_points_;
+    }
 
   private:
     explicit CubicBezierPatch(const ControlNet &control_points);

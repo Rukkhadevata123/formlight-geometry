@@ -34,6 +34,7 @@ add_executable(occt_lab
     src/render/curve_preview.cpp
     src/render/orbit_camera.cpp
     src/render/viewport_projection.cpp
+    src/ui/bezier_patch_inspector.cpp
     src/ui/box_editor.cpp
     src/ui/curve_editor.cpp
     src/ui/curve_project_panel.cpp
