@@ -847,7 +847,7 @@ private:
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
     BezierPatchPreview patch_preview_;
-    BezierPatchInspector patch_inspector_{patch_preview_.patch()};
+    BezierPatchInspector patch_inspector_{patch_preview_};
     PatchLayers patch_layers_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;

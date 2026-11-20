@@ -1,9 +1,11 @@
 #include "bezier_patch_inspector.hpp"
 
+#include "render/bezier_patch_preview.hpp"
+
 #include <imgui.h>
 
-BezierPatchInspector::BezierPatchInspector(const occt_lab::geometry::CubicBezierPatch &patch)
-    : patch_(patch), sample_(patch_.evaluate(u_, v_))
+BezierPatchInspector::BezierPatchInspector(BezierPatchPreview &preview)
+    : preview_(preview), sample_(preview_.patch().evaluate(u_, v_))
 {
 }
 
@@ -24,7 +26,7 @@ void BezierPatchInspector::draw()
         ImGui::PopItemWidth();
         if (u_changed || v_changed)
         {
-            sample_ = patch_.evaluate(u_, v_);
+            sample_ = preview_.patch().evaluate(u_, v_);
         }
 
         if (sample_)
@@ -41,6 +43,30 @@ void BezierPatchInspector::draw()
         {
             ImGui::TextUnformatted("Choose finite u and v values between 0 and 1.");
         }
+        draw_sampling_controls();
     }
     ImGui::End();
+}
+
+void BezierPatchInspector::draw_sampling_controls()
+{
+    using occt_lab::geometry::PatchSampling;
+    auto sampling = preview_.sampling();
+    ImGui::SeparatorText("Isoline sampling");
+    ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
+    ImGui::SliderInt("Constant u lines", &sampling.constant_u_lines, PatchSampling::minimum_count,
+                     PatchSampling::max_lines, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("Constant v lines", &sampling.constant_v_lines, PatchSampling::minimum_count,
+                     PatchSampling::max_lines, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("Points per line", &sampling.samples_per_line, PatchSampling::minimum_count,
+                     PatchSampling::max_samples, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::PopItemWidth();
+    if (sampling != preview_.sampling())
+    {
+        sampling_failed_ = !preview_.resample(sampling);
+    }
+    if (sampling_failed_)
+    {
+        ImGui::TextUnformatted("Could not sample the isolines. The previous settings are still in use.");
+    }
 }

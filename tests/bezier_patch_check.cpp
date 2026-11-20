@@ -15,6 +15,8 @@ namespace
 {
 using occt_lab::geometry::CubicBezierPatch;
 using occt_lab::geometry::PatchError;
+using occt_lab::geometry::PatchIsolines;
+using occt_lab::geometry::PatchSampling;
 using occt_lab::geometry::Vec3;
 
 constexpr std::size_t side_length = 4;
@@ -110,28 +112,65 @@ void check_invalid_inputs(const CubicBezierPatch &patch)
     }
 }
 
-void check_isolines(const CubicBezierPatch &patch)
+void check_family(const PatchIsolines::Family &lines, const int line_count, const int samples_per_line,
+                  const bool constant_u)
 {
-    const auto lines = sample_patch_isolines(patch);
-    if (!lines)
+    if (lines.size() != static_cast<std::size_t>(line_count))
     {
-        throw std::runtime_error("Could not sample the raised patch isolines");
+        throw std::runtime_error("Unexpected number of isolines in the requested direction");
     }
-    for (std::size_t i = 0; i < lines->constant_u.size(); ++i)
+    for (std::size_t i = 0; i < lines.size(); ++i)
     {
-        const double fixed = static_cast<double>(i) / (lines->constant_u.size() - 1);
-        const auto &u_line = lines->constant_u[i];
-        const auto &v_line = lines->constant_v[i];
-        for (std::size_t j = 0; j < u_line.size(); ++j)
+        const double fixed = static_cast<double>(i) / (line_count - 1);
+        const auto &line = lines[i];
+        if (line.size() != static_cast<std::size_t>(samples_per_line))
         {
-            const double t = static_cast<double>(j) / (u_line.size() - 1);
+            throw std::runtime_error("Unexpected number of samples along the isoline");
+        }
+        for (std::size_t j = 0; j < line.size(); ++j)
+        {
+            const double t = static_cast<double>(j) / (samples_per_line - 1);
             // The four raised interior poles contribute (B1 + B2)(u) * (B1 + B2)(v) * 0.4.
             const double z = 3.6 * fixed * (1.0 - fixed) * t * (1.0 - t);
-            if (!near(u_line[j], {.x = 3.0 * fixed, .y = 3.0 * t, .z = z}) ||
-                !near(v_line[j], {.x = 3.0 * t, .y = 3.0 * fixed, .z = z}))
+            const double u = constant_u ? fixed : t;
+            const double v = constant_u ? t : fixed;
+            if (!near(line[j], {.x = 3.0 * u, .y = 3.0 * v, .z = z}))
             {
                 throw std::runtime_error(std::format("Unexpected isoline position at line {}, sample {}", i, j));
             }
+        }
+    }
+}
+
+void check_isolines(const CubicBezierPatch &patch)
+{
+    const auto defaults = sample_patch_isolines(patch);
+    if (!defaults)
+    {
+        throw std::runtime_error("Could not sample the raised patch with the default settings");
+    }
+    check_family(defaults->constant_u, 9, 33, true);
+    check_family(defaults->constant_v, 9, 33, false);
+
+    for (const auto sampling : {PatchSampling{.constant_u_lines = 2, .constant_v_lines = 7, .samples_per_line = 2},
+                                PatchSampling{.constant_u_lines = 13, .constant_v_lines = 3, .samples_per_line = 17},
+                                PatchSampling{.constant_u_lines = 33, .constant_v_lines = 33, .samples_per_line = 129}})
+    {
+        const auto lines = sample_patch_isolines(patch, sampling);
+        if (!lines)
+        {
+            throw std::runtime_error("A valid isoline sampling request failed");
+        }
+        check_family(lines->constant_u, sampling.constant_u_lines, sampling.samples_per_line, true);
+        check_family(lines->constant_v, sampling.constant_v_lines, sampling.samples_per_line, false);
+    }
+    for (const auto invalid : {PatchSampling{.constant_u_lines = 1}, PatchSampling{.constant_v_lines = 34},
+                               PatchSampling{.samples_per_line = -1}, PatchSampling{.samples_per_line = 130}})
+    {
+        if (const auto result = sample_patch_isolines(patch, invalid);
+            result || result.error() != PatchError::InvalidSampling)
+        {
+            throw std::runtime_error("Expected an invalid isoline sampling error");
         }
     }
 }
@@ -151,7 +190,7 @@ int main()
         check_samples(*patch);
         check_isolines(*patch);
         check_invalid_inputs(*patch);
-        std::println("Bezier patch positions, normals, isolines and invalid inputs verified");
+        std::println("Bezier patch positions, normals, adjustable isoline sampling and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

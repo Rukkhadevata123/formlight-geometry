@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <expected>
 #include <span>
+#include <vector>
 
 namespace occt_lab::geometry
 {
@@ -22,6 +23,7 @@ enum class PatchError
     NonFiniteParameter,
     ParameterOutOfRange,
     DegenerateNormal,
+    InvalidSampling,
 };
 
 class CubicBezierPatch
@@ -43,13 +45,26 @@ class CubicBezierPatch
     ControlNet control_points_;
 };
 
+struct PatchSampling
+{
+    static constexpr int minimum_count = 2;
+    static constexpr int max_lines = 33;
+    static constexpr int max_samples = 129;
+
+    int constant_u_lines = 9;
+    int constant_v_lines = 9;
+    int samples_per_line = 33;
+    bool operator==(const PatchSampling &) const = default;
+};
+
 struct PatchIsolines
 {
-    using Line = std::array<Vec3, 33>;
-    using Family = std::array<Line, 9>;
+    using Line = std::vector<Vec3>;
+    using Family = std::vector<Line>;
     Family constant_u;
     Family constant_v;
 };
 
-[[nodiscard]] auto sample_patch_isolines(const CubicBezierPatch &patch) -> std::expected<PatchIsolines, PatchError>;
+[[nodiscard]] auto sample_patch_isolines(const CubicBezierPatch &patch, PatchSampling sampling = {})
+    -> std::expected<PatchIsolines, PatchError>;
 } // namespace occt_lab::geometry

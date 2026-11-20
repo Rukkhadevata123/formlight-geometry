@@ -6,11 +6,13 @@
 #include <array>
 #include <cmath>
 #include <stdexcept>
+#include <utility>
 
 namespace
 {
 using occt_lab::geometry::CubicBezierPatch;
-using occt_lab::geometry::PatchIsolines;
+using occt_lab::geometry::PatchError;
+using occt_lab::geometry::PatchSampling;
 using occt_lab::geometry::Vec3;
 constexpr auto side = CubicBezierPatch::side_length;
 constexpr double half_width = 45.0;
@@ -47,16 +49,6 @@ CubicBezierPatch make_patch()
     return *patch;
 }
 
-PatchIsolines make_isolines(const CubicBezierPatch &patch)
-{
-    const auto lines = sample_patch_isolines(patch);
-    if (!lines)
-    {
-        throw std::runtime_error("Could not sample the Bezier preview isolines");
-    }
-    return *lines;
-}
-
 void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::ViewportProjection &project,
                          const occt_lab::geometry::SurfaceSample &sample)
 {
@@ -91,8 +83,24 @@ void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::Viewport
 }
 } // namespace
 
-BezierPatchPreview::BezierPatchPreview() : patch_(make_patch()), isolines_(make_isolines(patch_))
+BezierPatchPreview::BezierPatchPreview() : patch_(make_patch())
 {
+    if (!resample(sampling_))
+    {
+        throw std::runtime_error("Could not sample the Bezier preview isolines");
+    }
+}
+
+auto BezierPatchPreview::resample(const PatchSampling sampling) -> std::expected<void, PatchError>
+{
+    auto lines = sample_patch_isolines(patch_, sampling);
+    if (!lines)
+    {
+        return std::unexpected(lines.error());
+    }
+    isolines_ = std::move(*lines);
+    sampling_ = sampling;
+    return {};
 }
 
 void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers &layers,
