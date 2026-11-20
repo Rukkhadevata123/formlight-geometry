@@ -1,5 +1,6 @@
 #include "vulkan_window.hpp"
 
+#include "render/bezier_patch_preview.hpp"
 #include "render/brep_preview.hpp"
 #include "render/curve_preview.hpp"
 #include "render/orbit_camera.hpp"
@@ -423,10 +424,11 @@ enum class PreviewMode
     box,
     cylinder,
     bspline,
+    bezier_patch,
 };
 
 void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
-                       ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole)
+                       ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole, PatchLayers &patch_layers)
 {
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -447,7 +449,7 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         const float combo_width = 9.0F * ImGui::GetFontSize();
         ImGui::SetNextItemWidth(combo_width);
         auto mode_index = static_cast<int>(mode);
-        if (ImGui::Combo("Shape", &mode_index, "Box\0Cylinder\0B-spline\0"))
+        if (ImGui::Combo("Shape", &mode_index, "Box\0Cylinder\0B-spline\0Bezier patch\0"))
         {
             mode = static_cast<PreviewMode>(mode_index);
         }
@@ -469,6 +471,12 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         if (mode == PreviewMode::bspline)
         {
             ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
+        }
+        else if (mode == PreviewMode::bezier_patch)
+        {
+            ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
+            ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
+            ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
         }
     }
     ImGui::End();
@@ -620,7 +628,8 @@ public:
         {
             update_camera_input(swapchain.extent);
         }
-        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, curve_editor_.tracking_pole());
+        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, curve_editor_.tracking_pole(),
+                          patch_layers_);
         std::optional<PreviewShape> solid;
         switch (preview_mode_)
         {
@@ -633,6 +642,7 @@ public:
             solid = PreviewShape::cylinder;
             break;
         case PreviewMode::bspline:
+        case PreviewMode::bezier_patch:
             break;
         }
 
@@ -644,6 +654,10 @@ public:
             curve_editor_.handle_viewport_input(curve_, transform);
             curve_editor_.draw(curve_);
             draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
+        }
+        else if (preview_mode_ == PreviewMode::bezier_patch)
+        {
+            patch_preview_.draw(transform, patch_layers_);
         }
         ImGui::Render();
 
@@ -830,6 +844,8 @@ private:
     BoxEditor box_editor_{preview_.box_dimensions()};
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
+    BezierPatchPreview patch_preview_;
+    PatchLayers patch_layers_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;

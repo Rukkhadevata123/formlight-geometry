@@ -24,13 +24,16 @@ add_executable(occt_lab
     src/application/editable_curve.cpp
     src/document/curve_project.cpp
     src/vulkan_window.cpp
+    src/geometry/bezier_patch.cpp
     src/geometry/box_model.cpp
     src/geometry/brep_mesh.cpp
     src/geometry/bspline_curve.cpp
     src/geometry/curve_fitting.cpp
+    src/render/bezier_patch_preview.cpp
     src/render/brep_preview.cpp
     src/render/curve_preview.cpp
     src/render/orbit_camera.cpp
+    src/render/viewport_projection.cpp
     src/ui/box_editor.cpp
     src/ui/curve_editor.cpp
     src/ui/curve_project_panel.cpp

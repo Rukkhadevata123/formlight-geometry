@@ -61,7 +61,7 @@ CubicBasis cubic_basis(const double parameter)
 
 std::expected<CubicBezierPatch, PatchError> CubicBezierPatch::create(const std::span<const Vec3> control_points)
 {
-    if (control_points.size() != control_point_count)
+    if (control_points.size() != side_length * side_length)
     {
         return std::unexpected(PatchError::WrongControlPointCount);
     }
@@ -74,7 +74,7 @@ std::expected<CubicBezierPatch, PatchError> CubicBezierPatch::create(const std::
         return std::unexpected(PatchError::NonFiniteControlPoint);
     }
 
-    std::array<Vec3, control_point_count> copied_points{};
+    ControlNet copied_points{};
     std::ranges::copy(control_points, copied_points.begin());
     return CubicBezierPatch{copied_points};
 }
@@ -120,8 +120,35 @@ std::expected<SurfaceSample, PatchError> CubicBezierPatch::evaluate(const double
     };
 }
 
-CubicBezierPatch::CubicBezierPatch(const std::array<Vec3, control_point_count> &control_points)
-    : control_points_(control_points)
+CubicBezierPatch::CubicBezierPatch(const ControlNet &control_points) : control_points_(control_points)
 {
+}
+
+auto sample_patch_isolines(const CubicBezierPatch &patch) -> std::expected<PatchIsolines, PatchError>
+{
+    PatchIsolines lines{};
+    for (std::size_t i = 0; i < lines.constant_u.size(); ++i)
+    {
+        const double fixed = static_cast<double>(i) / (lines.constant_u.size() - 1);
+        auto &u_line = lines.constant_u[i];
+        auto &v_line = lines.constant_v[i];
+        for (std::size_t j = 0; j < u_line.size(); ++j)
+        {
+            const double t = static_cast<double>(j) / (u_line.size() - 1);
+            const auto u_sample = patch.evaluate(fixed, t);
+            if (!u_sample)
+            {
+                return std::unexpected(u_sample.error());
+            }
+            const auto v_sample = patch.evaluate(t, fixed);
+            if (!v_sample)
+            {
+                return std::unexpected(v_sample.error());
+            }
+            u_line[j] = u_sample->position;
+            v_line[j] = v_sample->position;
+        }
+    }
+    return lines;
 }
 } // namespace occt_lab::geometry

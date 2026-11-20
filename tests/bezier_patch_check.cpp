@@ -109,6 +109,32 @@ void check_invalid_inputs(const CubicBezierPatch &patch)
         throw std::runtime_error("Expected a control point count error");
     }
 }
+
+void check_isolines(const CubicBezierPatch &patch)
+{
+    const auto lines = sample_patch_isolines(patch);
+    if (!lines)
+    {
+        throw std::runtime_error("Could not sample the raised patch isolines");
+    }
+    for (std::size_t i = 0; i < lines->constant_u.size(); ++i)
+    {
+        const double fixed = static_cast<double>(i) / (lines->constant_u.size() - 1);
+        const auto &u_line = lines->constant_u[i];
+        const auto &v_line = lines->constant_v[i];
+        for (std::size_t j = 0; j < u_line.size(); ++j)
+        {
+            const double t = static_cast<double>(j) / (u_line.size() - 1);
+            // The four raised interior poles contribute (B1 + B2)(u) * (B1 + B2)(v) * 0.4.
+            const double z = 3.6 * fixed * (1.0 - fixed) * t * (1.0 - t);
+            if (!near(u_line[j], {.x = 3.0 * fixed, .y = 3.0 * t, .z = z}) ||
+                !near(v_line[j], {.x = 3.0 * t, .y = 3.0 * fixed, .z = z}))
+            {
+                throw std::runtime_error(std::format("Unexpected isoline position at line {}, sample {}", i, j));
+            }
+        }
+    }
+}
 } // namespace
 
 int main()
@@ -123,8 +149,9 @@ int main()
         }
 
         check_samples(*patch);
+        check_isolines(*patch);
         check_invalid_inputs(*patch);
-        std::println("Bezier patch positions, normals and invalid inputs verified");
+        std::println("Bezier patch positions, normals, isolines and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
