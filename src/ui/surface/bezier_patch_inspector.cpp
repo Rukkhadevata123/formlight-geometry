@@ -1,5 +1,6 @@
 #include "bezier_patch_inspector.hpp"
 #include "isoline_sampling.hpp"
+#include "surface_grid_controls.hpp"
 
 #include "application/editable_patch.hpp"
 #include "document/patch_project.hpp"
@@ -19,14 +20,7 @@ void draw_mesh_controls(PatchMeshControls &mesh, const bool show_report)
     ImGui::Checkbox("Show GPU mesh", &mesh.visible);
     if (mesh.visible)
     {
-        constexpr uint32_t minimum = 1;
-        constexpr uint32_t maximum = occt_lab::geometry::PatchGrid::max_segments;
-        const auto previous = mesh.grid;
-        ImGui::SliderScalar("U subdivisions", ImGuiDataType_U32, &mesh.grid.u_segments, &minimum, &maximum, "%u",
-                            ImGuiSliderFlags_AlwaysClamp);
-        ImGui::SliderScalar("V subdivisions", ImGuiDataType_U32, &mesh.grid.v_segments, &minimum, &maximum, "%u",
-                            ImGuiSliderFlags_AlwaysClamp);
-        if (previous != mesh.grid)
+        if (draw_grid_subdivisions(mesh.grid))
         {
             mesh.report.clear();
         }

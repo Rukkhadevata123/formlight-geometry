@@ -15,7 +15,8 @@ class NurbsSurfaceSession
         return inspector_.tracking_pole();
     }
     void cancel_drag();
-    void draw(const ClipTransform &transform, const PatchLayers &layers, bool pole_click);
+    [[nodiscard]] const EditableNurbsSurface::Snapshot &draw(const ClipTransform &transform, const PatchLayers &layers,
+                                                             bool pole_click, NurbsComparisonControls *comparison);
 
   private:
     EditableNurbsSurface model_;

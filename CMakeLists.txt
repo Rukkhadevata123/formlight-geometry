@@ -70,6 +70,10 @@ add_executable(occt_lab
     src/render/compute/compute_buffer_check.hpp
     src/render/compute/compute_pyramid.cpp
     src/render/compute/compute_pyramid.hpp
+    src/render/compute/nurbs_position_comparison.cpp
+    src/render/compute/nurbs_position_comparison.hpp
+    src/render/compute/nurbs_position_input.cpp
+    src/render/compute/nurbs_position_input.hpp
     src/render/compute/storage_buffer_kernel.cpp
     src/render/compute/storage_buffer_kernel.hpp
     src/render/preview/brep_preview.cpp
@@ -118,6 +122,8 @@ add_executable(occt_lab
     src/ui/surface/nurbs_surface_project_panel.cpp
     src/ui/surface/nurbs_surface_session.cpp
     src/ui/surface/nurbs_surface_session.hpp
+    src/ui/surface/surface_grid_controls.cpp
+    src/ui/surface/surface_grid_controls.hpp
 )
 target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
@@ -151,7 +157,7 @@ add_custom_command(
     VERBATIM
 )
 
-foreach(name IN ITEMS buffer_check compute_pyramid bezier_patch)
+foreach(name IN ITEMS buffer_check compute_pyramid bezier_patch nurbs_positions)
     set(source "${CMAKE_CURRENT_SOURCE_DIR}/shaders/${name}.slang")
     set(output "${shader_output_dir}/${name}.comp.spv")
     add_custom_command(
@@ -195,6 +201,7 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/bezier_import_checks.cpp
         tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/grid_checks.cpp
+        tests/bspline_surface_check/gpu_input_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
         tests/bspline_surface_check/project_checks.cpp
@@ -202,6 +209,7 @@ if(BUILD_TESTING)
         tests/support/project_test_directory.hpp
         src/application/editable_nurbs_surface.cpp
         src/application/nurbs_surface_creation.cpp
+        src/render/compute/nurbs_position_input.cpp
         src/document/nurbs_surface_project.cpp
         src/document/project_io.cpp
         src/document/surface_project_io.cpp

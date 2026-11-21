@@ -4,6 +4,7 @@
 #include "render/compute/compute_bezier_patch.hpp"
 #include "render/compute/compute_buffer_check.hpp"
 #include "render/compute/compute_pyramid.hpp"
+#include "render/compute/nurbs_position_comparison.hpp"
 #include "render/preview/brep_preview.hpp"
 #include "render/preview/curve_preview.hpp"
 #include "render/preview/surface/bezier_patch_preview.hpp"
@@ -485,6 +486,22 @@ public:
         {
             throw vk::SystemError(vk::make_error_code(wait_result), "waiting for the previous frame");
         }
+        if (nurbs_job_)
+        {
+            try
+            {
+                nurbs_comparison_.report = nurbs_job_->read_report();
+            }
+            catch (const vk::DeviceLostError &)
+            {
+                throw;
+            }
+            catch (const std::exception &error)
+            {
+                nurbs_comparison_.report = error.what();
+            }
+            nurbs_job_.reset();
+        }
         if (patch_readback_pending_)
         {
             patch_readback_pending_ = false;
@@ -648,7 +665,25 @@ public:
             {
                 nurbs_.emplace();
             }
-            nurbs_->draw(transform, patch_layers_, pole_click);
+            const auto &snapshot = nurbs_->draw(transform, patch_layers_, pole_click,
+                                                selected_.compute_supported ? &nurbs_comparison_ : nullptr);
+            if (selected_.compute_supported && nurbs_comparison_.requested)
+            {
+                try
+                {
+                    const auto input = occt_lab::render::pack_nurbs_positions(
+                        snapshot.definition, nurbs_comparison_.grid, selected_.properties.limits.maxStorageBufferRange);
+                    nurbs_job_.emplace(selected_.physical_device, device_, input, snapshot.surface);
+                }
+                catch (const vk::DeviceLostError &)
+                {
+                    throw;
+                }
+                catch (const std::exception &error)
+                {
+                    nurbs_comparison_.report = error.what();
+                }
+            }
         }
         ImGui::Render();
 
@@ -774,6 +809,10 @@ private:
     {
         command_buffer_.reset();
         command_buffer_.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+        if (nurbs_job_)
+        {
+            nurbs_job_->record(command_buffer_);
+        }
         if (dispatch_compute)
         {
             compute_check_->record(command_buffer_);
@@ -875,6 +914,8 @@ private:
     bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
     std::optional<NurbsSurfaceSession> nurbs_;
+    NurbsComparisonControls nurbs_comparison_;
+    std::optional<NurbsPositionComparison> nurbs_job_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;

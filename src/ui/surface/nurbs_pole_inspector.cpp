@@ -82,7 +82,8 @@ void NurbsPoleInspector::handle_viewport_input(EditableNurbsSurface &model,
     }
 }
 
-const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model)
+const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model,
+                                                                NurbsComparisonControls *comparison)
 {
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
@@ -185,6 +186,28 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         if (!sampling_error_.empty())
         {
             ImGui::TextWrapped("%s", sampling_error_.c_str());
+        }
+    }
+    if (comparison)
+    {
+        comparison->requested = false;
+        if (probed_surface_ != model.displayed().surface)
+        {
+            comparison->report.clear();
+        }
+        if (visible && ImGui::CollapsingHeader("GPU position comparison"))
+        {
+            if (draw_grid_subdivisions(comparison->grid))
+            {
+                comparison->report.clear();
+            }
+            ImGui::BeginDisabled(tracking_pole_ || has_edits(model.current().definition));
+            comparison->requested = ImGui::Button("Compare positions with OCCT");
+            ImGui::EndDisabled();
+            if (!comparison->report.empty())
+            {
+                ImGui::TextUnformatted(comparison->report.c_str());
+            }
         }
     }
     const auto *probe = update_probe(

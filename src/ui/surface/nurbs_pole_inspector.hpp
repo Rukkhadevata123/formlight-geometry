@@ -3,6 +3,7 @@
 #include "application/editable_nurbs_surface.hpp"
 #include "application/nurbs_surface_creation.hpp"
 #include "ui/project_file_controls.hpp"
+#include "surface_grid_controls.hpp"
 
 namespace occt_lab::render
 {
@@ -24,7 +25,8 @@ class NurbsPoleInspector
     {
         return selected_pole_;
     }
-    [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model);
+    [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model,
+                                                               NurbsComparisonControls *comparison);
 
   private:
     void draw_creation_dialog(EditableNurbsSurface &model);

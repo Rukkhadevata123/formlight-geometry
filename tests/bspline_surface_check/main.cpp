@@ -18,6 +18,7 @@ void check_nurbs_surface_projects();
 void check_bezier_project_import();
 void check_nurbs_resampling();
 void check_nurbs_reference_grid();
+void check_nurbs_gpu_input();
 
 namespace
 {
@@ -220,13 +221,14 @@ int main()
         check_bezier_project_import();
         check_nurbs_resampling();
         check_nurbs_reference_grid();
+        check_nurbs_gpu_input();
         check_singular_probe(definition);
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
                      "saddle preset and custom plane creation verified; independent U/V degrees verified; "
                      "custom knots verified; NURBS project round trips verified; Bezier import verified; "
                      "NURBS resampling verified; NURBS probe verified; Bezier surface presets verified; "
-                     "NURBS reference grid verified");
+                     "NURBS reference grid verified; NURBS GPU input verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
