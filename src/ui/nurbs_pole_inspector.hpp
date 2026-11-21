@@ -2,6 +2,7 @@
 
 #include "application/editable_nurbs_surface.hpp"
 #include "application/nurbs_surface_creation.hpp"
+#include "project_file_controls.hpp"
 
 namespace occt_lab::render
 {
@@ -27,6 +28,7 @@ class NurbsPoleInspector
 
   private:
     void draw_creation_dialog(EditableNurbsSurface &model);
+    void draw_project(EditableNurbsSurface &model);
     void reset_draft(const EditableNurbsSurface &model);
     [[nodiscard]] bool has_edits(const EditableNurbsSurface::Definition &surface) const;
     std::size_t selected_pole_ = 0;
@@ -37,4 +39,5 @@ class NurbsPoleInspector
     std::string error_;
     occt_lab::PlanarSurfaceParameters creation_parameters_;
     std::string creation_error_;
+    ProjectFileControls project_file_{.path = "surface.occtlab"};
 };

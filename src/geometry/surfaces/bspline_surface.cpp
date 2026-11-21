@@ -12,6 +12,17 @@
 
 namespace occt_lab::geometry
 {
+std::size_t BSplineSurfaceDefinition::control_net_size() const
+{
+    const auto count = static_cast<std::int64_t>(u.pole_count) * v.pole_count;
+    // OCCT's 1-based Array2 also computes the backing array's offset using int.
+    if (u.pole_count < 2 || v.pole_count < 2 || count + v.pole_count + 1 > std::numeric_limits<int>::max())
+    {
+        throw std::invalid_argument("Surface control net dimensions are outside the OCCT array range");
+    }
+    return static_cast<std::size_t>(count);
+}
+
 namespace
 {
 bool finite(const Vec3 &p)
@@ -34,15 +45,9 @@ Geom_BSplineSurface make_surface(const BSplineSurfaceDefinition &definition)
     const auto v = axis_knots(definition.v);
     const int columns = definition.u.pole_count;
     const int rows = definition.v.pole_count;
-    const auto count = static_cast<std::int64_t>(columns) * rows;
-    if (count != static_cast<std::int64_t>(definition.poles.size()))
+    if (definition.control_net_size() != definition.poles.size())
     {
         throw std::invalid_argument("Control net dimensions do not match the number of surface poles");
-    }
-    // OCCT's 1-based Array2 also computes the backing array's offset using int.
-    if (count + rows + 1 > std::numeric_limits<int>::max())
-    {
-        throw std::invalid_argument("Surface control net exceeds the OCCT array range");
     }
     NCollection_Array2<gp_Pnt> poles(1, columns, 1, rows);
     for (int row = 0; row < rows; ++row)

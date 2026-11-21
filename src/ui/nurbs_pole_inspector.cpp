@@ -14,6 +14,8 @@ NurbsPoleInspector::NurbsPoleInspector(const EditableNurbsSurface &model)
 void NurbsPoleInspector::reset_draft(const EditableNurbsSurface &model)
 {
     const auto &definition = model.current().definition;
+    poles_.reserve(definition.poles.size());
+    weights_.reserve(definition.weights.size());
     if (draft_columns_ != definition.u.pole_count || poles_.size() != definition.poles.size())
     {
         selected_pole_ = 0;
@@ -92,6 +94,9 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
     ImGui::SetNextWindowSizeConstraints({min_width, 0.0F}, {unlimited, unlimited});
     if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        ImGui::BeginDisabled(tracking_pole_);
+        draw_project(model);
+        ImGui::EndDisabled();
         const auto &surface = model.current().definition;
         const auto selected_pole = selected_pole_;
         const auto columns = static_cast<std::size_t>(surface.u.pole_count);

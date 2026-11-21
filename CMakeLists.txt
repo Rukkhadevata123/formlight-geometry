@@ -52,6 +52,8 @@ add_executable(occt_lab
     src/application/single_step_history.hpp
     src/document/curve_project.cpp
     src/document/curve_project.hpp
+    src/document/nurbs_surface_project.cpp
+    src/document/nurbs_surface_project.hpp
     src/document/patch_project.cpp
     src/document/patch_project.hpp
     src/document/project_io.cpp
@@ -99,6 +101,7 @@ add_executable(occt_lab
     src/ui/nurbs_pole_inspector.cpp
     src/ui/nurbs_pole_inspector.hpp
     src/ui/nurbs_surface_creation_dialog.cpp
+    src/ui/nurbs_surface_project_panel.cpp
     src/ui/pole_drag.hpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
@@ -180,8 +183,12 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
+        tests/bspline_surface_check/project_checks.cpp
+        tests/support/project_test_directory.hpp
         src/application/editable_nurbs_surface.cpp
         src/application/nurbs_surface_creation.cpp
+        src/document/nurbs_surface_project.cpp
+        src/document/project_io.cpp
     )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
