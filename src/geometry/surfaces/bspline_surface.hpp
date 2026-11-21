@@ -16,6 +16,7 @@ struct BSplineSurfaceAxis
     int degree;
     int pole_count;
     std::vector<BSplineKnot> knots;
+    bool operator==(const BSplineSurfaceAxis &) const = default;
 };
 
 struct BSplineSurfaceDefinition
@@ -24,6 +25,7 @@ struct BSplineSurfaceDefinition
     BSplineSurfaceAxis v;
     std::vector<Vec3> poles;     // v rows, with u varying fastest.
     std::vector<double> weights; // Same order as poles. An empty array assigns unit weights.
+    bool operator==(const BSplineSurfaceDefinition &) const = default;
 };
 
 struct SurfaceD1

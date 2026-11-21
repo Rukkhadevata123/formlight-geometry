@@ -10,13 +10,22 @@ class EditableNurbsSurface
   public:
     using Definition = occt_lab::geometry::BSplineSurfaceDefinition;
 
+    struct Framing
+    {
+        occt_lab::geometry::Vec3 center;
+        double span;
+        bool operator==(const Framing &) const = default;
+    };
+
     struct Snapshot
     {
         Definition definition;
         occt_lab::geometry::PatchIsolines isolines;
+        Framing framing;
     };
 
     explicit EditableNurbsSurface(Definition definition);
+    [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
     [[nodiscard]] const Snapshot &current() const
     {
         return history_.current();

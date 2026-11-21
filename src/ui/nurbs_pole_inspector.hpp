@@ -25,9 +25,11 @@ class NurbsPoleInspector
     void draw(EditableNurbsSurface &model);
 
   private:
+    void draw_preset_buttons(EditableNurbsSurface &model);
     void reset_draft(const EditableNurbsSurface &model);
     [[nodiscard]] bool has_edits(const EditableNurbsSurface::Definition &surface) const;
     std::size_t selected_pole_ = 0;
+    int draft_columns_ = 0;
     bool tracking_pole_ = false;
     std::vector<occt_lab::geometry::Vec3> poles_;
     std::vector<double> weights_;

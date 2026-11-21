@@ -171,8 +171,10 @@ if(BUILD_TESTING)
         src/document/project_io.cpp
     )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
+    target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/pole_edit_checks.cpp
+        tests/bspline_surface_check/preset_checks.cpp
         src/application/editable_nurbs_surface.cpp
         src/application/nurbs_surface_example.cpp
     )

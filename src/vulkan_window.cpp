@@ -364,15 +364,14 @@ struct Swapchain
 
 struct NurbsSurfaceSession
 {
-    EditableNurbsSurface model{occt_lab::make_nurbs_surface_example()};
-    NurbsSurfacePreview preview{model.current().definition.poles};
+    EditableNurbsSurface model{occt_lab::make_saddle_surface()};
     NurbsPoleInspector inspector{model};
 
     void draw(const ClipTransform &transform, const PatchLayers &layers, const bool pole_click)
     {
-        const auto project = preview.projection(transform);
         if (layers.control_net)
         {
+            const auto project = nurbs_surface_projection(transform, model.current().framing);
             inspector.handle_viewport_input(model, project, pole_click);
         }
         else
@@ -380,7 +379,7 @@ struct NurbsSurfaceSession
             inspector.cancel_drag(model);
         }
         inspector.draw(model);
-        NurbsSurfacePreview::draw(model.displayed(), project, layers, inspector.selected_pole());
+        draw_nurbs_surface_preview(model.displayed(), transform, layers, inspector.selected_pole());
     }
 };
 

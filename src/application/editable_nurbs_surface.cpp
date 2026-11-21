@@ -1,11 +1,30 @@
 #include "editable_nurbs_surface.hpp"
 
+#include <Bnd_Box.hxx>
+
+#include <algorithm>
+#include <numeric>
 #include <stdexcept>
 #include <utility>
 
 namespace
 {
-EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition definition)
+EditableNurbsSurface::Framing frame_control_net(const std::vector<occt_lab::geometry::Vec3> &poles)
+{
+    Bnd_Box bounds;
+    for (const auto &[x, y, z] : poles)
+    {
+        bounds.Add(gp_Pnt{x, y, z});
+    }
+    const auto low = bounds.CornerMin();
+    const auto high = bounds.CornerMax();
+    return {.center = {std::midpoint(low.X(), high.X()), std::midpoint(low.Y(), high.Y()),
+                       std::midpoint(low.Z(), high.Z())},
+            .span = std::max({high.X() - low.X(), high.Y() - low.Y(), high.Z() - low.Z()})};
+}
+
+EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition definition,
+                                              std::optional<EditableNurbsSurface::Framing> framing = {})
 {
     if (definition.weights.empty())
     {
@@ -17,12 +36,37 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
     {
         throw std::runtime_error(lines.error());
     }
-    return {.definition = std::move(definition), .isolines = std::move(*lines)};
+    if (!framing)
+    {
+        framing = frame_control_net(definition.poles);
+    }
+    return {.definition = std::move(definition), .isolines = std::move(*lines), .framing = *framing};
 }
 } // namespace
 
 EditableNurbsSurface::EditableNurbsSurface(Definition definition) : history_(sample_surface(std::move(definition)))
 {
+}
+
+auto EditableNurbsSurface::replace(Definition definition) -> std::expected<void, std::string>
+{
+    try
+    {
+        auto next = sample_surface(std::move(definition));
+        if (next.definition != current().definition || next.framing != current().framing)
+        {
+            commit(std::move(next));
+        }
+        else
+        {
+            discard_preview();
+        }
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(error.what());
+    }
 }
 
 auto EditableNurbsSurface::apply(const std::vector<occt_lab::geometry::Vec3> &poles, const std::vector<double> &weights)
@@ -40,7 +84,7 @@ auto EditableNurbsSurface::apply(const std::vector<occt_lab::geometry::Vec3> &po
     }
     try
     {
-        commit(sample_surface({.u = applied.u, .v = applied.v, .poles = poles, .weights = weights}));
+        commit(sample_surface({.u = applied.u, .v = applied.v, .poles = poles, .weights = weights}, current().framing));
         return {};
     }
     catch (const std::exception &error)
@@ -62,7 +106,7 @@ auto EditableNurbsSurface::preview_pole_move(const std::size_t index, const occt
         {
             auto definition = current().definition;
             definition.poles[index] = position;
-            preview_ = sample_surface(std::move(definition));
+            preview_ = sample_surface(std::move(definition), current().framing);
         }
         return {};
     }

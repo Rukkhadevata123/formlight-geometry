@@ -1,10 +1,12 @@
 #include "nurbs_pole_inspector.hpp"
+#include "application/nurbs_surface_example.hpp"
 #include "pole_drag.hpp"
 #include "render/viewport/viewport_projection.hpp"
 
 #include <imgui.h>
 
 #include <limits>
+#include <utility>
 
 NurbsPoleInspector::NurbsPoleInspector(const EditableNurbsSurface &model)
 {
@@ -13,8 +15,14 @@ NurbsPoleInspector::NurbsPoleInspector(const EditableNurbsSurface &model)
 
 void NurbsPoleInspector::reset_draft(const EditableNurbsSurface &model)
 {
-    poles_ = model.current().definition.poles;
-    weights_ = model.current().definition.weights;
+    const auto &definition = model.current().definition;
+    if (draft_columns_ != definition.u.pole_count || poles_.size() != definition.poles.size())
+    {
+        selected_pole_ = 0;
+    }
+    draft_columns_ = definition.u.pole_count;
+    poles_ = definition.poles;
+    weights_ = definition.weights;
     error_.clear();
 }
 
@@ -146,14 +154,34 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
             reset_draft(model);
         }
         ImGui::EndDisabled();
+        ImGui::BeginDisabled(dirty);
+        draw_preset_buttons(model);
         ImGui::EndDisabled();
-        const auto &point = surface.poles.at(selected_pole);
+        ImGui::EndDisabled();
+        const auto &point = surface.poles.at(selected_pole_);
         ImGui::Text("Applied (mm)   (%.8g, %.8g, %.8g)", point.x, point.y, point.z);
-        ImGui::Text("Applied weight   %.8g", surface.weights.at(selected_pole));
+        ImGui::Text("Applied weight   %.8g", surface.weights.at(selected_pole_));
         if (!error_.empty())
         {
             ImGui::TextWrapped("%s", error_.c_str());
         }
     }
     ImGui::End();
+}
+
+void NurbsPoleInspector::draw_preset_buttons(EditableNurbsSurface &model)
+{
+    const bool saddle = ImGui::Button("New saddle");
+    ImGui::SameLine();
+    const bool analytic = ImGui::Button("New analytic example");
+    if (saddle || analytic)
+    {
+        auto definition = saddle ? occt_lab::make_saddle_surface() : occt_lab::make_nurbs_surface_example();
+        if (const auto result = model.replace(std::move(definition)); !result)
+        {
+            error_ = result.error();
+            return;
+        }
+        reset_draft(model);
+    }
 }

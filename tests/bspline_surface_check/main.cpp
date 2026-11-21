@@ -12,6 +12,7 @@
 
 void check_nurbs_pole_edits();
 void check_nurbs_pole_drag();
+void check_nurbs_presets();
 
 namespace
 {
@@ -185,8 +186,10 @@ int main()
         check_invalid_weights(definition);
         check_nurbs_pole_edits();
         check_nurbs_pole_drag();
+        check_nurbs_presets();
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
-                     "and rational weights verified; preview isolines, pole edit history and pole dragging verified");
+                     "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
+                     "saddle preset verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

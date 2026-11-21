@@ -6,15 +6,7 @@
 struct ClipTransform;
 struct PatchLayers;
 
-class NurbsSurfacePreview
-{
-  public:
-    explicit NurbsSurfacePreview(std::span<const occt_lab::geometry::Vec3> initial_poles);
-    [[nodiscard]] occt_lab::render::ViewportProjection projection(const ClipTransform &transform) const;
-    static void draw(const EditableNurbsSurface::Snapshot &surface, const occt_lab::render::ViewportProjection &project,
-                     const PatchLayers &layers, std::size_t selected_pole);
-
-  private:
-    occt_lab::geometry::Vec3 center_;
-    double scale_;
-};
+[[nodiscard]] occt_lab::render::ViewportProjection nurbs_surface_projection(const ClipTransform &transform,
+                                                                            const EditableNurbsSurface::Framing &frame);
+void draw_nurbs_surface_preview(const EditableNurbsSurface::Snapshot &surface, const ClipTransform &transform,
+                                const PatchLayers &layers, std::size_t selected_pole);
