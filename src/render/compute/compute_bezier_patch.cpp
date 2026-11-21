@@ -1,6 +1,6 @@
 #include "compute_bezier_patch.hpp"
 
-#include "brep_preview.hpp"
+#include "render/preview/brep_preview.hpp"
 #include "geometry/brep_mesh.hpp"
 #include "geometry/occt_bezier_patch.hpp"
 

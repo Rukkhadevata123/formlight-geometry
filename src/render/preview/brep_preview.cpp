@@ -1,8 +1,8 @@
 #include "brep_preview.hpp"
 
 #include "geometry/brep_mesh.hpp"
-#include "orbit_camera.hpp"
-#include "vulkan_resources.hpp"
+#include "render/viewport/orbit_camera.hpp"
+#include "render/vulkan_resources.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <gp_Pnt.hxx>

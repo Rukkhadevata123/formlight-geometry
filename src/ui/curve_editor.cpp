@@ -1,6 +1,6 @@
 #include "curve_editor.hpp"
 #include "fit_residuals.hpp"
-#include "render/curve_preview.hpp"
+#include "render/preview/curve_preview.hpp"
 
 #include <imgui.h>
 

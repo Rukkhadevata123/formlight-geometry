@@ -1,6 +1,6 @@
 #include "storage_buffer_kernel.hpp"
 
-#include "vulkan_resources.hpp"
+#include "render/vulkan_resources.hpp"
 
 #include <utility>
 

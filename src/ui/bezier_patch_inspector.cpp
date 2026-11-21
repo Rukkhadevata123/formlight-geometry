@@ -1,7 +1,7 @@
 #include "bezier_patch_inspector.hpp"
 
 #include "application/editable_patch.hpp"
-#include "render/bezier_patch_preview.hpp"
+#include "render/preview/bezier_patch_preview.hpp"
 
 #include <imgui.h>
 

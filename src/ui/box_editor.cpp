@@ -1,6 +1,6 @@
 #include "box_editor.hpp"
 
-#include "render/brep_preview.hpp"
+#include "render/preview/brep_preview.hpp"
 
 #include <imgui.h>
 

@@ -1,7 +1,7 @@
 #include "fit_residuals.hpp"
 
 #include "geometry/bspline_curve.hpp"
-#include "render/curve_colors.hpp"
+#include "render/preview/curve_colors.hpp"
 
 #include <imgui.h>
 

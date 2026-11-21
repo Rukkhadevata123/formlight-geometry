@@ -1,7 +1,7 @@
 #include "bezier_patch_preview.hpp"
 
 #include "application/editable_patch.hpp"
-#include "viewport_projection.hpp"
+#include "render/viewport/viewport_projection.hpp"
 
 #include <algorithm>
 #include <array>

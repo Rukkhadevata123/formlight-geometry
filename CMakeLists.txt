@@ -41,25 +41,25 @@ add_executable(occt_lab
     src/document/curve_project.hpp
     src/vulkan_window.cpp
     src/vulkan_window.hpp
-    src/render/bezier_patch_preview.cpp
-    src/render/bezier_patch_preview.hpp
-    src/render/brep_preview.cpp
-    src/render/brep_preview.hpp
-    src/render/compute_bezier_patch.cpp
-    src/render/compute_bezier_patch.hpp
-    src/render/compute_buffer_check.cpp
-    src/render/compute_buffer_check.hpp
-    src/render/compute_pyramid.cpp
-    src/render/compute_pyramid.hpp
-    src/render/curve_colors.hpp
-    src/render/curve_preview.cpp
-    src/render/curve_preview.hpp
-    src/render/orbit_camera.cpp
-    src/render/orbit_camera.hpp
-    src/render/storage_buffer_kernel.cpp
-    src/render/storage_buffer_kernel.hpp
-    src/render/viewport_projection.cpp
-    src/render/viewport_projection.hpp
+    src/render/compute/compute_bezier_patch.cpp
+    src/render/compute/compute_bezier_patch.hpp
+    src/render/compute/compute_buffer_check.cpp
+    src/render/compute/compute_buffer_check.hpp
+    src/render/compute/compute_pyramid.cpp
+    src/render/compute/compute_pyramid.hpp
+    src/render/compute/storage_buffer_kernel.cpp
+    src/render/compute/storage_buffer_kernel.hpp
+    src/render/preview/bezier_patch_preview.cpp
+    src/render/preview/bezier_patch_preview.hpp
+    src/render/preview/brep_preview.cpp
+    src/render/preview/brep_preview.hpp
+    src/render/preview/curve_colors.hpp
+    src/render/preview/curve_preview.cpp
+    src/render/preview/curve_preview.hpp
+    src/render/viewport/orbit_camera.cpp
+    src/render/viewport/orbit_camera.hpp
+    src/render/viewport/viewport_projection.cpp
+    src/render/viewport/viewport_projection.hpp
     src/render/vulkan_resources.cpp
     src/render/vulkan_resources.hpp
     src/ui/bezier_patch_inspector.cpp

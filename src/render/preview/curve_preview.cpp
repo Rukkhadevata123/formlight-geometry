@@ -2,7 +2,7 @@
 
 #include "curve_colors.hpp"
 #include "geometry/bspline_curve.hpp"
-#include "viewport_projection.hpp"
+#include "render/viewport/viewport_projection.hpp"
 
 using occt_lab::geometry::Vec3;
 using occt_lab::render::ViewportProjection;
