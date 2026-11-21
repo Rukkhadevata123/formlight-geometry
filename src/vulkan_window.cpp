@@ -519,7 +519,7 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
             if (patch_layers.control_net)
             {
-                ImGui::TextUnformatted("Left-click a blue pole to select it");
+                ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
             }
         }
         else if (mode == PreviewMode::compute_pyramid)
@@ -569,6 +569,7 @@ public:
     void cancel_viewport_gesture()
     {
         curve_editor_.cancel_drag(curve_);
+        patch_inspector_.cancel_drag();
         camera_drag_ = CameraDrag::none;
     }
 
@@ -708,11 +709,12 @@ public:
         }
 
         imgui_.begin_frame();
-        if (!curve_editor_.tracking_pole())
+        const bool moving_pole = curve_editor_.tracking_pole() || patch_inspector_.tracking_pole();
+        if (!moving_pole)
         {
             update_camera_input(swapchain.extent);
         }
-        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, curve_editor_.tracking_pole(),
+        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, moving_pole,
                           patch_layers_, show_diagnostics_, pyramid_controls_);
         const bool run_compute =
             draw_developer_diagnostics(show_diagnostics_, selected_.compute_supported, compute_status_);
@@ -774,12 +776,13 @@ public:
         }
         else if (preview_mode_ == PreviewMode::bezier_patch)
         {
-            if (pole_click && patch_layers_.control_net)
+            if (patch_layers_.control_net)
             {
-                if (const auto hit = pick_patch_pole(patch_, transform, ImGui::GetMousePos()))
-                {
-                    patch_inspector_.select_pole(*hit);
-                }
+                patch_inspector_.handle_viewport_input(transform, pole_click, patch_mesh_);
+            }
+            else
+            {
+                patch_inspector_.cancel_drag();
             }
             patch_inspector_.draw(patch_mesh_, selected_.compute_supported);
             if (patch_mesh_.visible && !gpu_patch_)
@@ -933,7 +936,7 @@ private:
         const bool draw_patch = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible;
         if (draw_patch)
         {
-            gpu_patch_->prepare(command_buffer_, patch_.current(), patch_mesh_.grid, patch_mesh_.compare_requested);
+            gpu_patch_->prepare(command_buffer_, patch_.displayed(), patch_mesh_.grid, patch_mesh_.compare_requested);
         }
         if (draw_pyramid)
         {

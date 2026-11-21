@@ -5,6 +5,7 @@
 #include <string>
 
 class EditablePatch;
+struct ClipTransform;
 
 struct PatchMeshControls
 {
@@ -19,7 +20,12 @@ class BezierPatchInspector
   public:
     explicit BezierPatchInspector(EditablePatch &model);
     void draw(PatchMeshControls &mesh, bool compute_supported);
-    void select_pole(std::size_t index);
+    void handle_viewport_input(const ClipTransform &transform, bool pole_click, PatchMeshControls &mesh);
+    void cancel_drag();
+    [[nodiscard]] bool tracking_pole() const
+    {
+        return tracking_pole_;
+    }
     [[nodiscard]] std::size_t selected_pole() const;
     [[nodiscard]] auto selected_sample() const -> const occt_lab::geometry::SurfaceSample *
     {
@@ -27,6 +33,7 @@ class BezierPatchInspector
     }
 
   private:
+    void select_pole(std::size_t index);
     void update_samples();
     void refresh_after_edit(PatchMeshControls &mesh);
     [[nodiscard]] bool draw_pole_editor();
@@ -38,6 +45,7 @@ class BezierPatchInspector
     int pole_u_ = 1;
     int pole_v_ = 1;
     bool reveal_selected_pole_ = false;
+    bool tracking_pole_ = false;
     std::string edit_error_;
     bool sampling_failed_ = false;
     double u_ = 0.5;

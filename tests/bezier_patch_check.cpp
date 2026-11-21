@@ -245,6 +245,73 @@ void check_control_net_edits()
     }
 }
 
+void check_pole_drag()
+{
+    EditablePatch model;
+    if (!model.create_plane())
+    {
+        throw std::runtime_error("Expected planar drag baseline");
+    }
+    model.undo();
+    const auto original = model.current().control_net();
+    constexpr std::size_t pole = 2 * side_length + 1;
+    const auto move_to = [&](const Vec3 &target)
+    {
+        if (!model.preview_pole_move(pole, target).value())
+        {
+            throw std::runtime_error("Expected the pole drag to update the preview");
+        }
+    };
+    auto position = original[pole];
+    position.z += 32;
+    move_to(position);
+    if (model.displayed().control_net()[pole] != position || model.current().control_net() != original ||
+        !model.can_redo())
+    {
+        throw std::runtime_error("A drag preview changed the committed patch or its redo history");
+    }
+    constexpr Vec3 center{.x = 0, .y = 0, .z = 16.03125 + 4.5};
+    if (!near(model.reference().evaluate(0.5, 0.5).value().position, center) ||
+        !near(model.isolines().constant_u.at(4).at(16), center))
+    {
+        throw std::runtime_error("The OCCT or isoline preview did not follow the dragged pole");
+    }
+    auto invalid = position;
+    invalid.x = std::numeric_limits<double>::infinity();
+    if (model.preview_pole_move(pole, invalid).has_value() || model.displayed().control_net()[pole] != position)
+    {
+        throw std::runtime_error("An invalid drag position replaced the last valid preview");
+    }
+    model.discard_preview();
+    if (model.displayed().control_net() != original || !model.can_redo() || model.commit_preview())
+    {
+        throw std::runtime_error("Cancelling a drag must restore the patch and preserve redo");
+    }
+    move_to(position);
+    move_to(original[pole]);
+    if (model.commit_preview() || !model.can_redo())
+    {
+        throw std::runtime_error("Dragging back to the origin must preserve redo");
+    }
+    move_to(position);
+    position.x += 3;
+    move_to(position);
+    if (!model.commit_preview() || model.can_redo() || model.current().control_net()[pole] != position)
+    {
+        throw std::runtime_error("Releasing a drag must commit the final position");
+    }
+    model.undo();
+    if (model.current().control_net() != original)
+    {
+        throw std::runtime_error("One undo should restore the original control net after multiple drag updates");
+    }
+    model.redo();
+    if (model.current().control_net()[pole] != position)
+    {
+        throw std::runtime_error("Redo should restore the final dragged position");
+    }
+}
+
 void check_invalid_inputs(const CubicBezierPatch &patch)
 {
     if (const auto sample = patch.evaluate(1.25, 0.5); sample || sample.error() != PatchError::ParameterOutOfRange)
@@ -367,13 +434,15 @@ int main()
         check_samples(*patch, reference);
         check_patch_creation();
         check_control_net_edits();
+        check_pole_drag();
         check_comparison_metrics();
         check_reference_failures(reference);
         check_isolines(*patch);
         check_invalid_inputs(*patch);
         check_large_normal();
         std::println(
-            "Bezier patch positions, normals, OCCT comparison, planar creation, control net edits, undo/redo, adjustable sampling and invalid inputs verified");
+            "Bezier patch positions, normals, OCCT comparison, planar creation, control net edits, pole dragging, "
+            "undo/redo, adjustable sampling and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

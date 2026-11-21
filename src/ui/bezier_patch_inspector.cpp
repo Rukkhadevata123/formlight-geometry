@@ -1,6 +1,7 @@
 #include "bezier_patch_inspector.hpp"
 
 #include "application/editable_patch.hpp"
+#include "render/bezier_patch_preview.hpp"
 
 #include <imgui.h>
 
@@ -8,7 +9,7 @@
 
 namespace
 {
-void draw_mesh_controls(PatchMeshControls &mesh)
+void draw_mesh_controls(PatchMeshControls &mesh, const bool show_report)
 {
     ImGui::SeparatorText("Vulkan surface mesh");
     ImGui::Checkbox("Show GPU mesh", &mesh.visible);
@@ -27,7 +28,7 @@ void draw_mesh_controls(PatchMeshControls &mesh)
         }
         mesh.compare_requested = ImGui::Button("Compare grid with OCCT");
     }
-    if (!mesh.report.empty())
+    if (show_report && !mesh.report.empty())
     {
         ImGui::TextUnformatted(mesh.report.c_str());
     }
@@ -107,9 +108,67 @@ bool BezierPatchInspector::draw_pole_editor()
     return apply;
 }
 
+void BezierPatchInspector::cancel_drag()
+{
+    if (tracking_pole_)
+    {
+        model_.discard_preview();
+        tracking_pole_ = false;
+        draft_ = model_.current().control_net();
+        update_samples();
+    }
+}
+
+void BezierPatchInspector::handle_viewport_input(const ClipTransform &transform, const bool pole_click,
+                                                 PatchMeshControls &mesh)
+{
+    constexpr auto button = ImGuiMouseButton_Left;
+    if (!tracking_pole_)
+    {
+        if (pole_click)
+        {
+            if (const auto hit = pick_patch_pole(model_, transform, ImGui::GetMousePos()))
+            {
+                select_pole(*hit);
+                tracking_pole_ = draft_ == model_.current().control_net();
+            }
+        }
+        return;
+    }
+
+    const bool released = ImGui::IsMouseReleased(button);
+    if (ImGui::IsKeyPressed(ImGuiKey_Escape) || !ImGui::IsMousePosValid() || (!ImGui::IsMouseDown(button) && !released))
+    {
+        cancel_drag();
+        return;
+    }
+
+    const auto index = selected_pole();
+    const auto position = dragged_patch_pole_position(model_, transform, index, ImGui::GetMouseDragDelta(button));
+    if (const auto changed = model_.preview_pole_move(index, position); !changed)
+    {
+        cancel_drag();
+        edit_error_ = changed.error();
+        return;
+    }
+    else if (*changed)
+    {
+        draft_[index] = position;
+        update_samples();
+    }
+    if (released)
+    {
+        tracking_pole_ = false;
+        if (model_.commit_preview())
+        {
+            refresh_after_edit(mesh);
+        }
+    }
+}
+
 void BezierPatchInspector::update_samples()
 {
-    sample_ = model_.current().evaluate(u_, v_);
+    sample_ = model_.displayed().evaluate(u_, v_);
     reference_sample_ = model_.reference().evaluate(u_, v_);
 }
 
@@ -189,6 +248,7 @@ void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supp
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
     if (ImGui::Begin("Bezier surface sample", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        ImGui::BeginDisabled(tracking_pole_);
         draw_patch_commands(mesh);
         constexpr double min_parameter = 0.0;
         constexpr double max_parameter = 1.0;
@@ -224,8 +284,9 @@ void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supp
         draw_sampling_controls();
         if (compute_supported)
         {
-            draw_mesh_controls(mesh);
+            draw_mesh_controls(mesh, !tracking_pole_);
         }
+        ImGui::EndDisabled();
     }
     ImGui::End();
 }

@@ -16,13 +16,17 @@ class EditablePatch
     {
         return current_->patch;
     }
+    [[nodiscard]] const Patch &displayed() const
+    {
+        return displayed_surface().patch;
+    }
     [[nodiscard]] const occt_lab::geometry::OcctBezierPatch &reference() const
     {
-        return current_->reference;
+        return displayed_surface().reference;
     }
     [[nodiscard]] const Isolines &isolines() const
     {
-        return isolines_;
+        return displayed_surface().isolines;
     }
     [[nodiscard]] Sampling sampling() const
     {
@@ -39,6 +43,10 @@ class EditablePatch
 
     [[nodiscard]] bool create_plane();
     [[nodiscard]] auto apply(const Patch::ControlNet &poles) -> std::expected<bool, std::string>;
+    [[nodiscard]] auto preview_pole_move(std::size_t index, const occt_lab::geometry::Vec3 &position)
+        -> std::expected<bool, std::string>;
+    bool commit_preview();
+    void discard_preview();
     void undo();
     void redo();
     [[nodiscard]] auto resample(Sampling sampling) -> std::expected<void, occt_lab::geometry::PatchError>;
@@ -48,14 +56,18 @@ class EditablePatch
     {
         Patch patch;
         occt_lab::geometry::OcctBezierPatch reference{patch};
+        Isolines isolines;
     };
 
-    // A successful swap leaves the previous surface in replacement for undo/redo.
-    void activate(std::unique_ptr<Surface> &replacement);
-    bool commit(const Patch &candidate);
+    [[nodiscard]] const Surface &displayed_surface() const
+    {
+        return preview_ ? *preview_ : *current_;
+    }
+    [[nodiscard]] auto prepare_preview(const Patch::ControlNet &poles) -> std::expected<bool, std::string>;
+    void swap_history();
+    Sampling sampling_;
     std::unique_ptr<Surface> current_;
+    std::unique_ptr<Surface> preview_;
     std::unique_ptr<Surface> history_;
     bool undone_ = false;
-    Sampling sampling_;
-    Isolines isolines_;
 };

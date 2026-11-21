@@ -36,17 +36,9 @@ Patch raised_example()
     net[2 * side + 2].z = 32;
     return Patch::create(net).value();
 }
-} // namespace
-
-EditablePatch::EditablePatch()
+EditablePatch::Isolines checked_isolines(const Patch &patch, const EditablePatch::Sampling sampling)
 {
-    auto initial = std::make_unique<Surface>(raised_example());
-    activate(initial);
-}
-
-void EditablePatch::activate(std::unique_ptr<Surface> &replacement)
-{
-    auto lines = sample_patch_isolines(replacement->patch, sampling_);
+    auto lines = sample_patch_isolines(patch, sampling);
     if (!lines)
     {
         if (lines.error() == occt_lab::geometry::PatchError::DegenerateNormal)
@@ -55,17 +47,36 @@ void EditablePatch::activate(std::unique_ptr<Surface> &replacement)
         }
         throw std::runtime_error("Could not sample the replacement Bezier patch");
     }
-    current_.swap(replacement);
-    isolines_ = std::move(*lines);
+    return std::move(*lines);
+}
+} // namespace
+
+EditablePatch::EditablePatch() : current_(std::make_unique<Surface>(raised_example()))
+{
+    current_->isolines = checked_isolines(current(), sampling_);
 }
 
 bool EditablePatch::create_plane()
 {
-    return commit(Patch::create(planar_control_net()).value());
+    const auto result = apply(planar_control_net());
+    if (!result)
+    {
+        throw std::runtime_error(result.error());
+    }
+    return *result;
 }
 
-auto EditablePatch::apply(const Patch::ControlNet &poles) -> std::expected<bool, std::string>
+auto EditablePatch::prepare_preview(const Patch::ControlNet &poles) -> std::expected<bool, std::string>
 {
+    if (displayed().control_net() == poles)
+    {
+        return false;
+    }
+    if (current().control_net() == poles)
+    {
+        discard_preview();
+        return true;
+    }
     const auto candidate = Patch::create(poles);
     if (!candidate)
     {
@@ -80,7 +91,10 @@ auto EditablePatch::apply(const Patch::ControlNet &poles) -> std::expected<bool,
     }
     try
     {
-        return commit(*candidate);
+        auto next = std::make_unique<Surface>(*candidate);
+        next->isolines = checked_isolines(*candidate, sampling_);
+        preview_ = std::move(next);
+        return true;
     }
     catch (const std::exception &error)
     {
@@ -88,25 +102,56 @@ auto EditablePatch::apply(const Patch::ControlNet &poles) -> std::expected<bool,
     }
 }
 
-bool EditablePatch::commit(const Patch &candidate)
+auto EditablePatch::apply(const Patch::ControlNet &poles) -> std::expected<bool, std::string>
 {
-    if (current().control_net() == candidate.control_net())
+    if (const auto result = prepare_preview(poles); !result)
+    {
+        return std::unexpected(result.error());
+    }
+    return commit_preview();
+}
+
+auto EditablePatch::preview_pole_move(const std::size_t index, const occt_lab::geometry::Vec3 &position)
+    -> std::expected<bool, std::string>
+{
+    auto poles = current().control_net();
+    if (index >= poles.size())
+    {
+        return std::unexpected("Control point index is outside the Bezier patch.");
+    }
+    poles[index] = position;
+    return prepare_preview(poles);
+}
+
+bool EditablePatch::commit_preview()
+{
+    if (!preview_)
     {
         return false;
     }
-    auto replacement = std::make_unique<Surface>(candidate);
-    activate(replacement);
-    history_ = std::move(replacement);
+    history_ = std::exchange(current_, std::move(preview_));
     undone_ = false;
     return true;
+}
+
+void EditablePatch::discard_preview()
+{
+    preview_.reset();
+}
+
+void EditablePatch::swap_history()
+{
+    history_->isolines = checked_isolines(history_->patch, sampling_);
+    current_.swap(history_);
+    discard_preview();
+    undone_ = !undone_;
 }
 
 void EditablePatch::undo()
 {
     if (can_undo())
     {
-        activate(history_);
-        undone_ = true;
+        swap_history();
     }
 }
 
@@ -114,8 +159,7 @@ void EditablePatch::redo()
 {
     if (can_redo())
     {
-        activate(history_);
-        undone_ = false;
+        swap_history();
     }
 }
 
@@ -126,7 +170,16 @@ auto EditablePatch::resample(const Sampling sampling) -> std::expected<void, occ
     {
         return std::unexpected(lines.error());
     }
-    isolines_ = std::move(*lines);
+    if (preview_)
+    {
+        auto preview_lines = sample_patch_isolines(preview_->patch, sampling);
+        if (!preview_lines)
+        {
+            return std::unexpected(preview_lines.error());
+        }
+        preview_->isolines = std::move(*preview_lines);
+    }
+    current_->isolines = std::move(*lines);
     sampling_ = sampling;
     return {};
 }
