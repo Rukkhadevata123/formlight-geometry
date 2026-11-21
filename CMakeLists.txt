@@ -10,6 +10,9 @@ find_package(slang CONFIG REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(occt_lab_geometry STATIC
+    src/geometry/bspline_knot.hpp
+    src/geometry/occt_bspline_knots.cpp
+    src/geometry/occt_bspline_knots.hpp
     src/geometry/brep/box_model.cpp
     src/geometry/brep/box_model.hpp
     src/geometry/brep/brep_mesh.cpp
@@ -20,6 +23,8 @@ add_library(occt_lab_geometry STATIC
     src/geometry/curves/occt_bspline.hpp
     src/geometry/surfaces/bezier_patch.cpp
     src/geometry/surfaces/bezier_patch.hpp
+    src/geometry/surfaces/bspline_surface.cpp
+    src/geometry/surfaces/bspline_surface.hpp
     src/geometry/surfaces/occt_bezier_patch.cpp
     src/geometry/surfaces/occt_bezier_patch.hpp
     src/geometry/vec3.hpp
@@ -138,7 +143,7 @@ add_dependencies(occt_lab occt_lab_shaders)
 
 include(CTest)
 if(BUILD_TESTING)
-    foreach(check IN ITEMS occt_box_check occt_cylinder_check bezier_patch_check bspline_curve_check)
+    foreach(check IN ITEMS occt_box_check occt_cylinder_check bezier_patch_check bspline_curve_check bspline_surface_check)
         add_executable(${check} tests/${check}.cpp)
         target_link_libraries(${check} PRIVATE occt_lab_geometry)
         add_test(NAME ${check} COMMAND ${check})

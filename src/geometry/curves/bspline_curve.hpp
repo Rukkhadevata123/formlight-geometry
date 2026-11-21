@@ -1,5 +1,6 @@
 #pragma once
 
+#include "geometry/bspline_knot.hpp"
 #include "geometry/vec3.hpp"
 
 #include <array>
@@ -10,12 +11,7 @@
 
 namespace occt_lab::geometry
 {
-struct CurveKnot
-{
-    double value;
-    int multiplicity;
-    bool operator==(const CurveKnot &) const = default;
-};
+using CurveKnot = BSplineKnot;
 
 struct CurveDefinition
 {

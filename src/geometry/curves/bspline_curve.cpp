@@ -1,5 +1,7 @@
 #include "occt_bspline.hpp"
 
+#include "geometry/occt_bspline_knots.hpp"
+
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
 #include <Precision.hxx>
@@ -8,7 +10,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <limits>
 #include <stdexcept>
 
@@ -59,10 +60,7 @@ Geom_BSplineCurve make_curve(const CurveDefinition &definition, const bool use_u
 {
     const int degree = definition.degree;
     const int pole_count = checked_pole_count(definition.poles.size(), degree);
-    if (definition.knots.size() < 2 || definition.knots.size() > definition.poles.size())
-    {
-        throw std::invalid_argument("Invalid number of distinct knots for a clamped B-spline");
-    }
+    const auto [knots, multiplicities] = make_clamped_knots(definition.knots, degree, pole_count);
     NCollection_Array1<gp_Pnt> poles{1, pole_count};
     for (std::size_t i = 0; i < definition.poles.size(); ++i)
     {
@@ -74,32 +72,6 @@ Geom_BSplineCurve make_curve(const CurveDefinition &definition, const bool use_u
         poles(static_cast<int>(i) + 1) = gp_Pnt{x, y, z};
     }
 
-    const int knot_count = static_cast<int>(definition.knots.size());
-    NCollection_Array1<double> knots{1, knot_count};
-    NCollection_Array1<int> multiplicities{1, knot_count};
-    std::int64_t total = 0;
-    for (std::size_t i = 0; i < definition.knots.size(); ++i)
-    {
-        const auto [value, multiplicity] = definition.knots[i];
-        const bool endpoint = i == 0 || i + 1 == definition.knots.size();
-        if (!std::isfinite(value) || (i > 0 && value <= definition.knots[i - 1].value))
-        {
-            throw std::invalid_argument("Distinct knots must be finite and strictly increasing");
-        }
-        const int minimum = endpoint ? degree + 1 : 1;
-        const int maximum = endpoint ? degree + 1 : degree;
-        if (multiplicity < minimum || multiplicity > maximum)
-        {
-            throw std::invalid_argument("Invalid knot multiplicity for this degree of clamped B-spline");
-        }
-        knots(static_cast<int>(i) + 1) = value;
-        multiplicities(static_cast<int>(i) + 1) = multiplicity;
-        total += multiplicity;
-    }
-    if (total - degree - 1 != pole_count)
-    {
-        throw std::invalid_argument("Knot multiplicities do not match the number of poles");
-    }
     if (use_unit_weights)
     {
         return Geom_BSplineCurve{poles, knots, multiplicities, degree};
