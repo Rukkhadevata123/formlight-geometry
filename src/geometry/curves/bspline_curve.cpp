@@ -1,11 +1,11 @@
 #include "occt_bspline.hpp"
 
+#include "geometry/bspline_weights.hpp"
 #include "geometry/occt_bspline_knots.hpp"
 
 #include <Geom_BSplineCurve.hxx>
 #include <NCollection_Array1.hxx>
 #include <Precision.hxx>
-#include <gp.hxx>
 #include <gp_Pnt.hxx>
 
 #include <algorithm>
@@ -32,26 +32,11 @@ int checked_pole_count(const std::size_t count, const int degree)
 
 NCollection_Array1<double> normalized_weights(const std::span<const double> weights, const int pole_count)
 {
-    if (weights.size() != static_cast<std::size_t>(pole_count))
-    {
-        throw std::invalid_argument("Each B-spline pole requires one weight");
-    }
-    if (!std::ranges::all_of(weights, [](const double weight) { return std::isfinite(weight) && weight > 0.0; }))
-    {
-        throw std::invalid_argument("Every B-spline weight must be finite and greater than zero");
-    }
-
-    // Common scaling preserves the curve and keeps large weights out of homogeneous products.
-    const double largest = std::ranges::max(weights);
+    const double scale = checked_weight_scale(weights, pole_count);
     NCollection_Array1<double> normalized{1, pole_count};
     for (std::size_t i = 0; i < weights.size(); ++i)
     {
-        const double ratio = weights[i] / largest;
-        if (ratio <= gp::Resolution())
-        {
-            throw std::invalid_argument("The weight ratio is too small for OCCT curve evaluation");
-        }
-        normalized(static_cast<int>(i) + 1) = ratio;
+        normalized(static_cast<int>(i) + 1) = weights[i] / scale;
     }
     return normalized;
 }

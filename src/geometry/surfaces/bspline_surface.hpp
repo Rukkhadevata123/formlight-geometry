@@ -22,7 +22,8 @@ struct BSplineSurfaceDefinition
 {
     BSplineSurfaceAxis u;
     BSplineSurfaceAxis v;
-    std::vector<Vec3> poles; // v rows, with u varying fastest.
+    std::vector<Vec3> poles;     // v rows, with u varying fastest.
+    std::vector<double> weights; // Same order as poles. An empty array assigns unit weights.
 };
 
 struct SurfaceDomain
@@ -39,7 +40,7 @@ struct SurfaceD1
     Vec3 dv;
 };
 
-// A non-periodic, clamped surface with unit weights.
+// A non-periodic, clamped B-spline or NURBS surface.
 class BSplineSurface
 {
   public:

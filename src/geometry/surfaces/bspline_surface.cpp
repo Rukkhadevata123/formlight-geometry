@@ -1,5 +1,6 @@
 #include "bspline_surface.hpp"
 
+#include "geometry/bspline_weights.hpp"
 #include "geometry/occt_bspline_knots.hpp"
 
 #include <algorithm>
@@ -56,8 +57,29 @@ Geom_BSplineSurface make_surface(const BSplineSurfaceDefinition &definition)
             poles.SetValue(column + 1, row + 1, gp_Pnt{p.x, p.y, p.z});
         }
     }
-    return Geom_BSplineSurface{
-        poles, u.values, v.values, u.multiplicities, v.multiplicities, definition.u.degree, definition.v.degree};
+    if (definition.weights.empty())
+    {
+        return Geom_BSplineSurface{
+            poles, u.values, v.values, u.multiplicities, v.multiplicities, definition.u.degree, definition.v.degree};
+    }
+
+    const double scale = checked_weight_scale(definition.weights, definition.poles.size());
+    NCollection_Array2<double> weights(1, columns, 1, rows);
+    for (int row = 0; row < rows; ++row)
+    {
+        for (int column = 0; column < columns; ++column)
+        {
+            weights.SetValue(column + 1, row + 1, definition.weights[row * columns + column] / scale);
+        }
+    }
+    return Geom_BSplineSurface{poles,
+                               weights,
+                               u.values,
+                               v.values,
+                               u.multiplicities,
+                               v.multiplicities,
+                               definition.u.degree,
+                               definition.v.degree};
 }
 
 int derivative_span(const double parameter, const NCollection_Array1<double> &knots,

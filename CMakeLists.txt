@@ -11,6 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(occt_lab_geometry STATIC
     src/geometry/bspline_knot.hpp
+    src/geometry/bspline_weights.hpp
     src/geometry/occt_bspline_knots.cpp
     src/geometry/occt_bspline_knots.hpp
     src/geometry/brep/box_model.cpp

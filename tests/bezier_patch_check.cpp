@@ -1,5 +1,6 @@
 #include "application/editable_patch.hpp"
 #include "geometry/surfaces/bezier_patch.hpp"
+#include "geometry/surfaces/bspline_surface.hpp"
 #include "geometry/surfaces/occt_bezier_patch.hpp"
 
 #include <array>
@@ -13,6 +14,7 @@
 #include <numbers>
 #include <print>
 #include <stdexcept>
+#include <vector>
 
 void check_patch_projects();
 
@@ -63,6 +65,17 @@ bool near(const Vec3 &actual, const Vec3 &expected)
 
 void check_samples(const CubicBezierPatch &patch, const OcctBezierPatch &reference)
 {
+    using namespace occt_lab::geometry;
+    const BSplineSurfaceAxis cubic_axis{.degree = 3, .pole_count = 4, .knots = {{0, 4}, {1, 4}}};
+    const auto &net = patch.control_net();
+    const BSplineSurfaceDefinition definition{
+        .u = cubic_axis,
+        .v = cubic_axis,
+        .poles = {net.begin(), net.end()},
+        .weights = std::vector<double>(net.size(), 1.0),
+    };
+    const BSplineSurface nurbs{definition};
+
     constexpr Vec3 up{.x = 0.0, .y = 0.0, .z = 1.0};
     // The z slopes relative to x and y at (0.25, 0.75) are +0.1125 and -0.1125.
     constexpr double slope = 0.1125;
@@ -98,6 +111,11 @@ void check_samples(const CubicBezierPatch &patch, const OcctBezierPatch &referen
         if (!near(sample->normal, normal))
         {
             throw std::runtime_error(std::format("Unexpected normal at ({}, {})", u, v));
+        }
+        const auto nurbs_point = nurbs.position(u, v);
+        if (!nurbs_point || !near(*nurbs_point, sample->position))
+        {
+            throw std::runtime_error(std::format("Unit-weight NURBS and Bernstein positions differ at ({}, {})", u, v));
         }
         const auto occt_sample = reference.evaluate(u, v);
         if (!occt_sample || !near(occt_sample->position, position) || !near(occt_sample->normal, normal))

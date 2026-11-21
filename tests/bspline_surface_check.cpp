@@ -106,6 +106,50 @@ void check_rejected(const BSplineSurfaceDefinition &definition, const std::strin
     throw std::runtime_error(std::format("Accepted invalid surface {}", field));
 }
 
+void check_rational_surface(BSplineSurfaceDefinition definition)
+{
+    definition.weights.assign(definition.poles.size(), 1.0);
+    check_evaluation(BSplineSurface{definition});
+
+    constexpr std::size_t weighted_pole = 6; // Column 3 in row 2 of the 4x3 net.
+    for (const double scale : {1.0, 1e250, 1e-250})
+    {
+        std::ranges::fill(definition.weights, scale);
+        definition.weights[weighted_pole] = 7.0 * scale;
+        const BSplineSurface surface{definition};
+
+        // At (3,-0.75) this pole's tensor basis is 1/6. The extra weight adds
+        // a = 6*N*M = 1 to the denominator, with a_u = 2 and a_v = 0.8.
+        // For unit-weight surface S and pole P, the new point is (S + a*P)/(1+a).
+        constexpr double u = 3.0;
+        constexpr double v = -0.75;
+        constexpr Vec3 expected{3.5, -0.125, 11.875};
+        const auto point = surface.position(u, v).value();
+        const auto sample = surface.evaluate_d1(u, v).value();
+        check_vector(point, expected, "rational position", u, v);
+        check_vector(sample.position, expected, "rational D1 position", u, v);
+        check_vector(sample.du, {1.0, 0.625, 7.75}, "rational U derivative", u, v);
+        check_vector(sample.dv, {0.2, 0.75, 3.55}, "rational V derivative", u, v);
+        check_vector(surface.position(5, 2).value(), definition.poles.back(), "clamped corner", 5, 2);
+    }
+}
+
+void check_invalid_weights(BSplineSurfaceDefinition definition)
+{
+    definition.weights.assign(definition.poles.size() - 1, 1.0);
+    check_rejected(definition, "weight count");
+    definition.weights.push_back(1.0);
+    for (const double invalid :
+         {0.0, -1.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()})
+    {
+        definition.weights.back() = invalid;
+        check_rejected(definition, "weight");
+    }
+    definition.weights.front() = 1e-250;
+    definition.weights.back() = 1e250;
+    check_rejected(definition, "weight ratio");
+}
+
 void check_invalid_definitions(BSplineSurfaceDefinition definition)
 {
     const auto valid = definition;
@@ -135,7 +179,10 @@ int main()
         const auto definition = example_surface();
         check_evaluation(BSplineSurface{definition});
         check_invalid_definitions(definition);
-        std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives and crease verified");
+        check_rational_surface(definition);
+        check_invalid_weights(definition);
+        std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
+                     "and rational weights verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
