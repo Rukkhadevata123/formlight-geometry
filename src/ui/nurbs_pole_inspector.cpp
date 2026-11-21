@@ -4,8 +4,33 @@
 
 #include <imgui.h>
 
+#include <algorithm>
 #include <limits>
 #include <utility>
+
+namespace
+{
+bool draw_creation_axis(const char *poles_label, const char *degree_label, int &poles, std::optional<int> &degree)
+{
+    using Params = occt_lab::PlanarSurfaceParameters;
+    constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
+    const bool poles_changed = ImGui::SliderInt(poles_label, &poles, Params::min_poles, Params::max_poles, "%d", flags);
+    const int limit = Params::degree_limit(poles);
+    if (degree && *degree > limit)
+    {
+        degree = limit;
+    }
+    int shown = degree.value_or(std::min(Params::preferred_degree, limit));
+    ImGui::BeginDisabled(limit == 1);
+    const bool degree_changed = ImGui::SliderInt(degree_label, &shown, 1, limit, "%d", flags);
+    ImGui::EndDisabled();
+    if (degree_changed)
+    {
+        degree = shown;
+    }
+    return poles_changed || degree_changed;
+}
+} // namespace
 
 NurbsPoleInspector::NurbsPoleInspector(const EditableNurbsSurface &model)
 {
@@ -96,6 +121,7 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
         const auto &surface = model.current().definition;
         const auto selected_pole = selected_pole_;
         const auto columns = static_cast<std::size_t>(surface.u.pole_count);
+        ImGui::Text("Surface degree   U %d   V %d", surface.u.degree, surface.v.degree);
         ImGui::Text("Pole U %zu   V %zu", selected_pole % columns + 1, selected_pole / columns + 1);
         ImGui::BeginDisabled(tracking_pole_);
         auto &[x, y, z] = poles_.at(selected_pole);
@@ -181,17 +207,16 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     {
         return;
     }
-    using Params = occt_lab::PlanarSurfaceParameters;
     auto &p = creation_parameters_;
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
-    ImGui::SliderInt("U poles", &p.u_poles, Params::min_poles, Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SliderInt("V poles", &p.v_poles, Params::min_poles, Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
+    const bool u_changed = draw_creation_axis("U poles", "U degree", p.u_poles, p.u_degree);
+    const bool v_changed = draw_creation_axis("V poles", "V degree", p.v_poles, p.v_degree);
     ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
     const bool width_changed = ImGui::InputDouble("Width (X, mm)", &p.width_mm, 0, 0, "%.10g");
     const bool height_changed = ImGui::InputDouble("Height (Y, mm)", &p.height_mm, 0, 0, "%.10g");
     ImGui::PopItemFlag();
     ImGui::PopItemWidth();
-    if (width_changed || height_changed)
+    if (u_changed || v_changed || width_changed || height_changed)
     {
         creation_error_.clear();
     }

@@ -9,6 +9,55 @@
 
 namespace
 {
+void check_independent_degrees()
+{
+    using occt_lab::PlanarSurfaceParameters;
+    PlanarSurfaceParameters parameters{.u_poles = 7, .v_poles = 7, .u_degree = 2, .v_degree = 5};
+    const auto plane = occt_lab::make_planar_nurbs_surface(parameters).value();
+    if (plane.u.degree != 2 || plane.v.degree != 5 || plane.u.knots.size() != 6 || plane.v.knots.size() != 3 ||
+        plane.u.knots.front().multiplicity != 3 || plane.v.knots.back().multiplicity != 6)
+    {
+        throw std::runtime_error("The plane did not use the requested degree and knots for each axis");
+    }
+
+    parameters.v_degree.reset();
+    const auto cubic_v = occt_lab::make_planar_nurbs_surface(parameters).value();
+    if (cubic_v.u != plane.u || cubic_v.v.degree != 3 || cubic_v.poles != plane.poles)
+    {
+        throw std::runtime_error("Defaulting V changed the U axis or the control grid");
+    }
+    EditableNurbsSurface model{plane};
+    model.replace(cubic_v).value();
+    if (model.current().definition != cubic_v || !model.can_undo())
+    {
+        throw std::runtime_error("A change in V degree alone should replace the surface");
+    }
+    model.undo();
+    if (model.current().definition != plane)
+    {
+        throw std::runtime_error("Undo should restore both surface degrees and knot vectors");
+    }
+
+    const int occt_limit = Geom_BSplineSurface::MaxDegree();
+    parameters = {.u_poles = PlanarSurfaceParameters::max_poles, .v_poles = 2, .u_degree = occt_limit, .v_degree = 1};
+    const auto highest = occt_lab::make_planar_nurbs_surface(parameters).value();
+    const occt_lab::geometry::BSplineSurface reference{highest};
+    if (highest.u.degree != occt_limit || !reference.position(0.25, 0.75))
+    {
+        throw std::runtime_error("The supported OCCT degree limit should produce an evaluable plane");
+    }
+    for (const auto invalid :
+         {PlanarSurfaceParameters{.u_degree = 0}, PlanarSurfaceParameters{.v_degree = -1},
+          PlanarSurfaceParameters{.u_poles = 4, .u_degree = 4}, PlanarSurfaceParameters{.v_poles = 2, .v_degree = 2},
+          PlanarSurfaceParameters{.v_poles = PlanarSurfaceParameters::max_poles, .v_degree = occt_limit + 1}})
+    {
+        if (occt_lab::make_planar_nurbs_surface(invalid))
+        {
+            throw std::runtime_error("New surface accepted an invalid degree");
+        }
+    }
+}
+
 void check_planar_creation()
 {
     using occt_lab::PlanarSurfaceParameters;
@@ -61,6 +110,7 @@ void check_planar_creation()
 void check_nurbs_presets()
 {
     check_planar_creation();
+    check_independent_degrees();
     const auto saddle = occt_lab::make_saddle_surface();
     const occt_lab::geometry::BSplineSurface surface{saddle};
     for (const double u : {0.0, 0.25, 0.5, 0.75, 1.0})

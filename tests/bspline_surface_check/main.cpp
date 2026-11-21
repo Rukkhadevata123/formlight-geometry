@@ -189,7 +189,7 @@ int main()
         check_nurbs_presets();
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
-                     "saddle preset and custom plane creation verified");
+                     "saddle preset and custom plane creation verified; independent U/V degrees verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

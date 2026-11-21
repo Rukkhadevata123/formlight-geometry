@@ -6,15 +6,38 @@
 #include <array>
 #include <cmath>
 #include <format>
+#include <utility>
 
 namespace occt_lab
 {
 using geometry::BSplineSurfaceDefinition;
 
+int PlanarSurfaceParameters::degree_limit(const int pole_count)
+{
+    return pole_count > 1 ? std::min(pole_count - 1, Geom_BSplineSurface::MaxDegree()) : 0;
+}
+
+namespace
+{
+auto make_planar_axis(const char *direction, const int poles, const std::optional<int> requested_degree)
+    -> std::expected<geometry::BSplineSurfaceAxis, std::string>
+{
+    const int limit = PlanarSurfaceParameters::degree_limit(poles);
+    const int degree = requested_degree.value_or(std::min(PlanarSurfaceParameters::preferred_degree, limit));
+    if (degree < 1 || degree > limit)
+    {
+        return std::unexpected(std::format("With {} {} poles, the {} degree must be between 1 and {}.", poles,
+                                           direction, direction, limit));
+    }
+    return geometry::BSplineSurfaceAxis{
+        .degree = degree, .pole_count = poles, .knots = geometry::make_uniform_clamped_knots(poles, degree)};
+}
+} // namespace
+
 auto make_planar_nurbs_surface(const PlanarSurfaceParameters &parameters)
     -> std::expected<BSplineSurfaceDefinition, std::string>
 {
-    const auto [columns, rows, width, height] = parameters;
+    const auto &[columns, rows, width, height, u_degree, v_degree] = parameters;
     const auto valid_count = [](int count)
     { return count >= PlanarSurfaceParameters::min_poles && count <= PlanarSurfaceParameters::max_poles; };
     if (!valid_count(columns) || !valid_count(rows))
@@ -30,13 +53,17 @@ auto make_planar_nurbs_surface(const PlanarSurfaceParameters &parameters)
                                            Precision::Confusion(), 0.5 * Precision::Infinite()));
     }
 
-    const auto axis = [](int count)
+    auto u = make_planar_axis("U", columns, u_degree);
+    if (!u)
     {
-        const int degree = std::min(3, count - 1);
-        return geometry::BSplineSurfaceAxis{
-            .degree = degree, .pole_count = count, .knots = geometry::make_uniform_clamped_knots(count, degree)};
-    };
-    BSplineSurfaceDefinition definition{.u = axis(columns), .v = axis(rows)};
+        return std::unexpected(u.error());
+    }
+    auto v = make_planar_axis("V", rows, v_degree);
+    if (!v)
+    {
+        return std::unexpected(v.error());
+    }
+    BSplineSurfaceDefinition definition{.u = std::move(*u), .v = std::move(*v)};
     const auto count = static_cast<std::size_t>(rows) * columns;
     definition.poles.reserve(count);
     definition.weights.assign(count, 1.0);
