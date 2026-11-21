@@ -10,8 +10,10 @@
 #include "render/viewport/orbit_camera.hpp"
 #include "ui/bezier_patch_inspector.hpp"
 #include "ui/box_editor.hpp"
-#include "ui/curve_editor.hpp"
+#include "ui/curve/curve_editor.hpp"
 #include "ui/developer_diagnostics.hpp"
+#include "ui/imgui_session.hpp"
+#include "ui/renderer_status_panel.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -356,188 +358,6 @@ struct Swapchain
     uint32_t min_image_count;
 };
 
-void configure_imgui_fonts(ImGuiIO &io)
-{
-    ImFontConfig font_config;
-#ifdef _WIN32
-    if (const auto *windows_dir = SDL_getenv("SystemRoot"); windows_dir && *windows_dir)
-    {
-        const auto path = std::format("{}/Fonts/segoeui.ttf", windows_dir);
-        font_config.Flags |= ImFontFlags_NoLoadError;
-        io.FontDefault = io.Fonts->AddFontFromFileTTF(path.c_str(), 0.0F, &font_config);
-    }
-#endif
-    if (!io.FontDefault)
-    {
-        io.FontDefault = io.Fonts->AddFontDefaultVector(&font_config);
-    }
-    ImGui::GetStyle().FontSizeBase = 17.0F;
-}
-
-class ImGuiSession
-{
-public:
-    explicit ImGuiSession(SDL_Window *window) : window_(window)
-    {
-        IMGUI_CHECKVERSION();
-        context_.reset(ImGui::CreateContext());
-        ImGui::SetCurrentContext(context_.get());
-        auto &io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.IniFilename = nullptr;
-        ImGui::StyleColorsDark();
-        configure_imgui_fonts(io);
-        if (!ImGui_ImplSDL3_InitForVulkan(window_))
-        {
-            throw_sdl_error("ImGui_ImplSDL3_InitForVulkan");
-        }
-    }
-
-    ~ImGuiSession()
-    {
-        ImGui::SetCurrentContext(context_.get());
-        shutdown_renderer();
-        ImGui_ImplSDL3_Shutdown();
-    }
-
-    ImGuiSession(const ImGuiSession &) = delete;
-    ImGuiSession &operator=(const ImGuiSession &) = delete;
-
-    void initialize_renderer(ImGui_ImplVulkan_InitInfo &info) const
-    {
-        ImGui::SetCurrentContext(context_.get());
-        shutdown_renderer();
-        if (!ImGui_ImplVulkan_Init(&info))
-        {
-            throw std::runtime_error("ImGui Vulkan backend initialization failed");
-        }
-    }
-
-    void begin_frame() const
-    {
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-
-        const float display_scale = SDL_GetWindowDisplayScale(window_);
-        const float pixel_density = SDL_GetWindowPixelDensity(window_);
-        // ImGui already uses the framebuffer scale when baking glyphs.
-        const float font_scale = display_scale > 0.0F && pixel_density > 0.0F ? display_scale / pixel_density : 1.0F;
-        ImGui::GetStyle().FontScaleDpi = font_scale;
-        ImGui::NewFrame();
-    }
-
-private:
-    static void shutdown_renderer()
-    {
-        // The backend can register itself before creating all of its device objects.
-        if (ImGui::GetIO().BackendRendererUserData)
-        {
-            ImGui_ImplVulkan_Shutdown();
-        }
-    }
-
-    SDL_Window *window_;
-    std::unique_ptr<ImGuiContext, decltype(&ImGui::DestroyContext)> context_{nullptr, ImGui::DestroyContext};
-};
-
-enum class PreviewMode
-{
-    box,
-    cylinder,
-    bspline,
-    bezier_patch,
-    compute_pyramid,
-};
-
-struct PyramidControls
-{
-    int height_mm = 50;
-    std::string error;
-};
-
-void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
-                       ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole, PatchLayers &patch_layers,
-                       bool &show_diagnostics, PyramidControls &pyramid)
-{
-    ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar))
-    {
-        if (ImGui::BeginMenuBar())
-        {
-            if (ImGui::BeginMenu("Tools"))
-            {
-                ImGui::MenuItem("Developer diagnostics", nullptr, &show_diagnostics);
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenuBar();
-        }
-        const auto api_version = selected.properties.apiVersion;
-        ImGui::TextUnformatted(selected.properties.deviceName.data());
-        ImGui::Text("Device Vulkan %u.%u.%u", VK_API_VERSION_MAJOR(api_version), VK_API_VERSION_MINOR(api_version),
-                    VK_API_VERSION_PATCH(api_version));
-        ImGui::Text("Queue families   Graphics %u   Present %u", selected.families.graphics, selected.families.present);
-
-        ImGui::SeparatorText("Swapchain");
-        ImGui::Text("%u x %u px   %zu images", swapchain.extent.width, swapchain.extent.height,
-                    swapchain.images.size());
-        ImGui::Text("Frame rate   %.1f FPS", static_cast<double>(ImGui::GetIO().Framerate));
-
-        ImGui::SeparatorText("Preview");
-        ImGui::BeginDisabled(moving_pole);
-        const float combo_width = 9.0F * ImGui::GetFontSize();
-        ImGui::SetNextItemWidth(combo_width);
-        auto mode_index = static_cast<int>(mode);
-        constexpr const char *shapes[] = {"Box", "Cylinder", "B-spline", "Bezier patch", "Compute pyramid"};
-        const int shape_count = selected.compute_supported ? IM_ARRAYSIZE(shapes) : IM_ARRAYSIZE(shapes) - 1;
-        if (ImGui::Combo("Shape", &mode_index, shapes, shape_count))
-        {
-            mode = static_cast<PreviewMode>(mode_index);
-        }
-
-        ImGui::SetNextItemWidth(combo_width);
-        auto projection_index = static_cast<int>(projection);
-        if (ImGui::Combo("Projection", &projection_index, "Perspective\0Orthographic\0"))
-        {
-            projection = static_cast<ProjectionMode>(projection_index);
-        }
-
-        if (ImGui::Button("Reset view"))
-        {
-            camera = OrbitCamera{};
-        }
-        ImGui::EndDisabled();
-        ImGui::TextUnformatted("Middle-drag to orbit, Shift + middle-drag to pan");
-        ImGui::TextUnformatted("Mouse wheel to zoom");
-        if (mode == PreviewMode::bspline)
-        {
-            ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
-        }
-        else if (mode == PreviewMode::bezier_patch)
-        {
-            ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
-            ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
-            ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
-            if (patch_layers.control_net)
-            {
-                ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
-            }
-        }
-        else if (mode == PreviewMode::compute_pyramid)
-        {
-            ImGui::SliderInt("Height (mm)", &pyramid.height_mm, 10, 90, "%d", ImGuiSliderFlags_AlwaysClamp);
-            if (!pyramid.error.empty())
-            {
-                ImGui::TextWrapped("%s", pyramid.error.c_str());
-                if (ImGui::Button("Retry pyramid"))
-                {
-                    pyramid.error.clear();
-                }
-            }
-        }
-    }
-    ImGui::End();
-}
-
 class Renderer
 {
 public:
@@ -714,8 +534,18 @@ public:
         {
             update_camera_input(swapchain.extent);
         }
-        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, moving_pole,
-                          patch_layers_, show_diagnostics_, pyramid_controls_);
+        const RendererStatus status{
+            .device_name = selected_.properties.deviceName.data(),
+            .api_version = selected_.properties.apiVersion,
+            .graphics_family = selected_.families.graphics,
+            .present_family = selected_.families.present,
+            .compute_supported = selected_.compute_supported,
+            .width = swapchain.extent.width,
+            .height = swapchain.extent.height,
+            .image_count = swapchain.images.size(),
+        };
+        draw_status_panel(status, preview_mode_, projection_, camera_, moving_pole, patch_layers_, show_diagnostics_,
+                          pyramid_controls_);
         const bool run_compute =
             draw_developer_diagnostics(show_diagnostics_, selected_.compute_supported, compute_status_);
         if (run_compute && !compute_check_)

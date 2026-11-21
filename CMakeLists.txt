@@ -66,13 +66,17 @@ add_executable(occt_lab
     src/ui/bezier_patch_inspector.hpp
     src/ui/box_editor.cpp
     src/ui/box_editor.hpp
-    src/ui/curve_editor.cpp
-    src/ui/curve_editor.hpp
-    src/ui/curve_project_panel.cpp
+    src/ui/curve/curve_editor.cpp
+    src/ui/curve/curve_editor.hpp
+    src/ui/curve/curve_project_panel.cpp
+    src/ui/curve/fit_residuals.cpp
+    src/ui/curve/fit_residuals.hpp
     src/ui/developer_diagnostics.cpp
     src/ui/developer_diagnostics.hpp
-    src/ui/fit_residuals.cpp
-    src/ui/fit_residuals.hpp
+    src/ui/imgui_session.cpp
+    src/ui/imgui_session.hpp
+    src/ui/renderer_status_panel.cpp
+    src/ui/renderer_status_panel.hpp
 )
 target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
