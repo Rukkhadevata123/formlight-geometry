@@ -1,53 +1,18 @@
 #include "bezier_patch_preview.hpp"
 
+#include "application/editable_patch.hpp"
 #include "viewport_projection.hpp"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <stdexcept>
-#include <utility>
 
 namespace
 {
 using occt_lab::geometry::CubicBezierPatch;
-using occt_lab::geometry::PatchError;
-using occt_lab::geometry::PatchSampling;
 using occt_lab::geometry::Vec3;
 constexpr auto side = CubicBezierPatch::side_length;
 constexpr double half_width = 45.0;
-
-CubicBezierPatch::ControlNet make_control_net()
-{
-    constexpr std::array<std::array<double, side>, side> heights{{
-        {0, 0, 0, 0},
-        {0, 40, 28, 0},
-        {0, 14, 32, 0},
-        {0, 0, 0, 0},
-    }};
-    CubicBezierPatch::ControlNet net{};
-    for (std::size_t row = 0; row < heights.size(); ++row)
-    {
-        constexpr double half_height = 36.0;
-        const double y = half_height * (2.0 * static_cast<double>(row) / (side - 1) - 1.0);
-        for (std::size_t col = 0; col < side; ++col)
-        {
-            const double x = half_width * (2.0 * static_cast<double>(col) / (side - 1) - 1.0);
-            net[row * side + col] = {.x = x, .y = y, .z = heights[row][col]};
-        }
-    }
-    return net;
-}
-
-CubicBezierPatch make_patch()
-{
-    const auto patch = CubicBezierPatch::create(make_control_net());
-    if (!patch)
-    {
-        throw std::runtime_error("Invalid Bezier preview control net");
-    }
-    return *patch;
-}
 
 void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::ViewportProjection &project,
                          const occt_lab::geometry::SurfaceSample &sample)
@@ -83,28 +48,8 @@ void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::Viewport
 }
 } // namespace
 
-BezierPatchPreview::BezierPatchPreview() : patch_(make_patch())
-{
-    if (!resample(sampling_))
-    {
-        throw std::runtime_error("Could not sample the Bezier preview isolines");
-    }
-}
-
-auto BezierPatchPreview::resample(const PatchSampling sampling) -> std::expected<void, PatchError>
-{
-    auto lines = sample_patch_isolines(patch_, sampling);
-    if (!lines)
-    {
-        return std::unexpected(lines.error());
-    }
-    isolines_ = std::move(*lines);
-    sampling_ = sampling;
-    return {};
-}
-
-void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers &layers,
-                              const occt_lab::geometry::SurfaceSample *selected) const
+void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &transform, const PatchLayers &layers,
+                               const occt_lab::geometry::SurfaceSample *selected)
 {
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
@@ -112,7 +57,7 @@ void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers 
     constexpr ImU32 net_color = IM_COL32(111, 178, 216, 210);
     if (layers.control_net)
     {
-        const std::span net{patch_.control_net()};
+        const std::span net{model.current().control_net()};
         for (std::size_t i = 0; i < side; ++i)
         {
             project.draw_polyline(draw_list, net.subspan(i * side, side), net_color, 1.25F);
@@ -126,21 +71,21 @@ void BezierPatchPreview::draw(const ClipTransform &transform, const PatchLayers 
     }
     if (layers.constant_u)
     {
-        for (const auto &line : isolines_.constant_u)
+        for (const auto &line : model.isolines().constant_u)
         {
             project.draw_polyline(draw_list, line, IM_COL32(255, 185, 43, 255), 2.0F);
         }
     }
     if (layers.constant_v)
     {
-        for (const auto &line : isolines_.constant_v)
+        for (const auto &line : model.isolines().constant_v)
         {
             project.draw_polyline(draw_list, line, IM_COL32(104, 226, 153, 255), 2.0F);
         }
     }
     if (layers.control_net)
     {
-        for (const auto &pole : patch_.control_net())
+        for (const auto &pole : model.current().control_net())
         {
             if (const auto point = project.visible_point(pole))
             {

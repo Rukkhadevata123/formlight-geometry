@@ -35,6 +35,8 @@ add_executable(occt_lab
     src/main.cpp
     src/application/editable_curve.cpp
     src/application/editable_curve.hpp
+    src/application/editable_patch.cpp
+    src/application/editable_patch.hpp
     src/document/curve_project.cpp
     src/document/curve_project.hpp
     src/vulkan_window.cpp
@@ -132,6 +134,7 @@ if(BUILD_TESTING)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
+    target_sources(bezier_patch_check PRIVATE src/application/editable_patch.cpp)
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_sources(bspline_curve_check PRIVATE
         tests/curve_project_checks.cpp

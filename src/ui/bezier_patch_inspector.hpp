@@ -1,8 +1,10 @@
 #pragma once
 
-#include "geometry/occt_bezier_patch.hpp"
+#include "geometry/bezier_patch.hpp"
 
-class BezierPatchPreview;
+#include <string>
+
+class EditablePatch;
 
 struct PatchMeshControls
 {
@@ -15,7 +17,7 @@ struct PatchMeshControls
 class BezierPatchInspector
 {
   public:
-    explicit BezierPatchInspector(BezierPatchPreview &preview);
+    explicit BezierPatchInspector(EditablePatch &model);
     void draw(PatchMeshControls &mesh, bool compute_supported);
     [[nodiscard]] auto selected_sample() const -> const occt_lab::geometry::SurfaceSample *
     {
@@ -24,10 +26,11 @@ class BezierPatchInspector
 
   private:
     void update_samples();
+    void draw_patch_commands(PatchMeshControls &mesh);
     void draw_reference() const;
     void draw_sampling_controls();
-    BezierPatchPreview &preview_;
-    occt_lab::geometry::OcctBezierPatch reference_patch_;
+    EditablePatch &model_;
+    std::string edit_error_;
     bool sampling_failed_ = false;
     double u_ = 0.5;
     double v_ = 0.5;

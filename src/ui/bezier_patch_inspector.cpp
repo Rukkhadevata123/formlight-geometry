@@ -1,8 +1,10 @@
 #include "bezier_patch_inspector.hpp"
 
-#include "render/bezier_patch_preview.hpp"
+#include "application/editable_patch.hpp"
 
 #include <imgui.h>
+
+#include <exception>
 
 namespace
 {
@@ -39,16 +41,64 @@ void draw_surface_sample(const occt_lab::geometry::SurfaceSample &sample)
 }
 } // namespace
 
-BezierPatchInspector::BezierPatchInspector(BezierPatchPreview &preview)
-    : preview_(preview), reference_patch_(preview.patch())
+BezierPatchInspector::BezierPatchInspector(EditablePatch &model) : model_(model)
 {
     update_samples();
 }
 
 void BezierPatchInspector::update_samples()
 {
-    sample_ = preview_.patch().evaluate(u_, v_);
-    reference_sample_ = reference_patch_.evaluate(u_, v_);
+    sample_ = model_.current().evaluate(u_, v_);
+    reference_sample_ = model_.reference().evaluate(u_, v_);
+}
+
+void BezierPatchInspector::draw_patch_commands(PatchMeshControls &mesh)
+{
+    const bool create = ImGui::Button("New planar patch");
+    ImGui::SetItemTooltip("Replace the current patch with a 90 x 72 mm plane in XY.");
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!model_.can_undo());
+    const bool undo = ImGui::Button("Undo");
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!model_.can_redo());
+    const bool redo = ImGui::Button("Redo");
+    ImGui::EndDisabled();
+
+    if (create || undo || redo)
+    {
+        try
+        {
+            bool changed = true;
+            if (create)
+            {
+                changed = model_.create_plane();
+            }
+            else if (undo)
+            {
+                model_.undo();
+            }
+            else
+            {
+                model_.redo();
+            }
+            if (changed)
+            {
+                update_samples();
+                mesh.report.clear();
+                sampling_failed_ = false;
+            }
+            edit_error_.clear();
+        }
+        catch (const std::exception &error)
+        {
+            edit_error_ = error.what();
+        }
+    }
+    if (!edit_error_.empty())
+    {
+        ImGui::TextUnformatted(edit_error_.c_str());
+    }
 }
 
 void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supported)
@@ -59,6 +109,7 @@ void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supp
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
     if (ImGui::Begin("Bezier surface sample", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        draw_patch_commands(mesh);
         constexpr double min_parameter = 0.0;
         constexpr double max_parameter = 1.0;
         ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
@@ -119,7 +170,7 @@ void BezierPatchInspector::draw_reference() const
 void BezierPatchInspector::draw_sampling_controls()
 {
     using occt_lab::geometry::PatchSampling;
-    auto sampling = preview_.sampling();
+    auto sampling = model_.sampling();
     ImGui::SeparatorText("Isoline sampling");
     ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
     ImGui::SliderInt("Constant u lines", &sampling.constant_u_lines, PatchSampling::minimum_count,
@@ -129,9 +180,9 @@ void BezierPatchInspector::draw_sampling_controls()
     ImGui::SliderInt("Points per line", &sampling.samples_per_line, PatchSampling::minimum_count,
                      PatchSampling::max_samples, "%d", ImGuiSliderFlags_AlwaysClamp);
     ImGui::PopItemWidth();
-    if (sampling != preview_.sampling())
+    if (sampling != model_.sampling())
     {
-        sampling_failed_ = !preview_.resample(sampling);
+        sampling_failed_ = !model_.resample(sampling);
     }
     if (sampling_failed_)
     {

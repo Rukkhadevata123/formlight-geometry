@@ -1,5 +1,6 @@
 #include "vulkan_window.hpp"
 
+#include "application/editable_patch.hpp"
 #include "render/bezier_patch_preview.hpp"
 #include "render/brep_preview.hpp"
 #include "render/compute_bezier_patch.hpp"
@@ -658,7 +659,7 @@ public:
             patch_readback_pending_ = false;
             try
             {
-                patch_mesh_.report = gpu_patch_->compare_with_occt(patch_preview_.patch());
+                patch_mesh_.report = gpu_patch_->compare_with_occt(patch_.reference());
             }
             catch (const vk::DeviceLostError &)
             {
@@ -783,7 +784,7 @@ public:
                     patch_mesh_.report = error.what();
                 }
             }
-            patch_preview_.draw(transform, patch_layers_, patch_inspector_.selected_sample());
+            draw_bezier_patch_preview(patch_, transform, patch_layers_, patch_inspector_.selected_sample());
         }
         ImGui::Render();
 
@@ -917,7 +918,7 @@ private:
         const bool draw_patch = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible;
         if (draw_patch)
         {
-            gpu_patch_->prepare(command_buffer_, patch_preview_.patch(), patch_mesh_.grid, patch_mesh_.compare_requested);
+            gpu_patch_->prepare(command_buffer_, patch_.current(), patch_mesh_.grid, patch_mesh_.compare_requested);
         }
         if (draw_pyramid)
         {
@@ -1003,8 +1004,8 @@ private:
     BoxEditor box_editor_{preview_.box_dimensions()};
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
-    BezierPatchPreview patch_preview_;
-    BezierPatchInspector patch_inspector_{patch_preview_};
+    EditablePatch patch_;
+    BezierPatchInspector patch_inspector_{patch_};
     std::optional<ComputeBezierPatch> gpu_patch_;
     PatchMeshControls patch_mesh_;
     bool patch_readback_pending_ = false;

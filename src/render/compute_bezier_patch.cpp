@@ -115,7 +115,7 @@ void ComputeBezierPatch::draw(const vk::raii::CommandBuffer &commands, const BRe
                                    6 * grid_->u_segments * grid_->v_segments);
 }
 
-std::string ComputeBezierPatch::compare_with_occt(const CubicBezierPatch &patch) const
+std::string ComputeBezierPatch::compare_with_occt(const OcctBezierPatch &reference) const
 {
     const auto grid = grid_.value();
     std::vector<MeshVertex> vertices(vertex_count(grid));
@@ -128,7 +128,6 @@ std::string ComputeBezierPatch::compare_with_occt(const CubicBezierPatch &patch)
         }
         std::memcpy(vertices.data(), mapped.get(), vertices.size() * sizeof(MeshVertex));
     }
-    const OcctBezierPatch reference{patch};
     double max_distance = 0;
     double squared_distance = 0;
     double max_angle = 0;

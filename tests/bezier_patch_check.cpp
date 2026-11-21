@@ -1,3 +1,4 @@
+#include "application/editable_patch.hpp"
 #include "geometry/bezier_patch.hpp"
 #include "geometry/occt_bezier_patch.hpp"
 
@@ -127,6 +128,44 @@ void check_comparison_metrics()
     if (!(std::abs(degrees - expected_degrees) <= 1e-14))
     {
         throw std::runtime_error("A small resolvable normal angle rounded to an incorrect value");
+    }
+}
+
+void check_patch_creation()
+{
+    EditablePatch model;
+    const auto example = model.current().control_net();
+    if (model.can_undo() || model.can_redo() || !model.create_plane() || !model.can_undo() || model.can_redo())
+    {
+        throw std::runtime_error("Creating a planar patch should add one undo step");
+    }
+    constexpr Vec3 expected_point{.x = -22.5, .y = 18.0, .z = 0.0};
+    constexpr Vec3 up{.x = 0.0, .y = 0.0, .z = 1.0};
+    const auto sample = model.current().evaluate(0.25, 0.75);
+    const auto reference = model.reference().evaluate(0.25, 0.75);
+    if (!sample || !reference || !near(sample->position, expected_point) ||
+        !near(reference->position, expected_point) || !near(sample->normal, up) || !near(reference->normal, up))
+    {
+        throw std::runtime_error("The planar patch and its OCCT reference should agree in XY");
+    }
+    constexpr PatchSampling sampling{.constant_u_lines = 3, .constant_v_lines = 5, .samples_per_line = 3};
+    if (model.create_plane() || !model.resample(sampling))
+    {
+        throw std::runtime_error("Repeating planar creation should preserve the previous patch");
+    }
+    model.undo();
+    constexpr Vec3 raised_center{.x = 0.0, .y = 0.0, .z = 16.03125};
+    if (model.current().control_net() != example || model.can_undo() || !model.can_redo() ||
+        model.sampling() != sampling || !near(model.isolines().constant_u.at(1).at(1), raised_center) ||
+        !near(model.reference().evaluate(0.5, 0.5).value().position, raised_center))
+    {
+        throw std::runtime_error("Undo should restore the raised patch and use the current sampling density");
+    }
+    model.redo();
+    if (!model.can_undo() || model.can_redo() || !near(model.isolines().constant_v.at(2).at(1), {}) ||
+        !near(model.reference().evaluate(0.5, 0.5).value().normal, up))
+    {
+        throw std::runtime_error("Redo should restore the planar patch and its derived geometry");
     }
 }
 
@@ -264,13 +303,14 @@ int main()
 
         const OcctBezierPatch reference{*patch};
         check_samples(*patch, reference);
+        check_patch_creation();
         check_comparison_metrics();
         check_reference_failures(reference);
         check_isolines(*patch);
         check_invalid_inputs(*patch);
         check_large_normal();
         std::println(
-            "Bezier patch positions, normals, OCCT comparison, adjustable sampling and invalid inputs verified");
+            "Bezier patch positions, normals, OCCT comparison, planar creation and undo/redo, adjustable sampling and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
