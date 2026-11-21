@@ -195,14 +195,14 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         {
             comparison->report.clear();
         }
-        if (visible && ImGui::CollapsingHeader("GPU position comparison"))
+        if (visible && ImGui::CollapsingHeader("GPU grid comparison"))
         {
             if (draw_grid_subdivisions(comparison->grid))
             {
                 comparison->report.clear();
             }
             ImGui::BeginDisabled(tracking_pole_ || has_edits(model.current().definition));
-            comparison->requested = ImGui::Button("Compare positions with OCCT");
+            comparison->requested = ImGui::Button("Compare positions and normals with OCCT");
             ImGui::EndDisabled();
             if (!comparison->report.empty())
             {

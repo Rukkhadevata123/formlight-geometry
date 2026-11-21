@@ -70,10 +70,12 @@ add_executable(occt_lab
     src/render/compute/compute_buffer_check.hpp
     src/render/compute/compute_pyramid.cpp
     src/render/compute/compute_pyramid.hpp
-    src/render/compute/nurbs_position_comparison.cpp
-    src/render/compute/nurbs_position_comparison.hpp
-    src/render/compute/nurbs_position_input.cpp
-    src/render/compute/nurbs_position_input.hpp
+    src/render/compute/nurbs_grid_comparison.cpp
+    src/render/compute/nurbs_grid_comparison.hpp
+    src/render/compute/nurbs_grid_input.cpp
+    src/render/compute/nurbs_grid_input.hpp
+    src/render/compute/nurbs_grid_report.cpp
+    src/render/compute/nurbs_grid_report.hpp
     src/render/compute/storage_buffer_kernel.cpp
     src/render/compute/storage_buffer_kernel.hpp
     src/render/preview/brep_preview.cpp
@@ -157,7 +159,7 @@ add_custom_command(
     VERBATIM
 )
 
-foreach(name IN ITEMS buffer_check compute_pyramid bezier_patch nurbs_positions)
+foreach(name IN ITEMS buffer_check compute_pyramid bezier_patch nurbs_grid)
     set(source "${CMAKE_CURRENT_SOURCE_DIR}/shaders/${name}.slang")
     set(output "${shader_output_dir}/${name}.comp.spv")
     add_custom_command(
@@ -209,7 +211,8 @@ if(BUILD_TESTING)
         tests/support/project_test_directory.hpp
         src/application/editable_nurbs_surface.cpp
         src/application/nurbs_surface_creation.cpp
-        src/render/compute/nurbs_position_input.cpp
+        src/render/compute/nurbs_grid_input.cpp
+        src/render/compute/nurbs_grid_report.cpp
         src/document/nurbs_surface_project.cpp
         src/document/project_io.cpp
         src/document/surface_project_io.cpp

@@ -1,8 +1,9 @@
-#include "nurbs_position_input.hpp"
+#include "nurbs_grid_input.hpp"
 
 #include <BSplCLib.hxx>
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -36,38 +37,49 @@ void append_axis(std::vector<float> &words, const geometry::BSplineSurfaceAxis &
         words.insert(words.end(), multiplicity, knot);
         previous = knot;
     }
-    // Round the same actual-domain samples as the OCCT grid before converting them to float.
+    // Select the span in double: rounding a nearby parameter to a float knot must not cross a crease.
+    std::size_t knot_index = 0;
+    auto span = static_cast<std::uint32_t>(axis.degree);
     for (std::uint32_t i = 0; i <= segments; ++i)
     {
         const double x = std::lerp(low, high, static_cast<double>(i) / segments);
+        while (knot_index + 2 < axis.knots.size() && x >= axis.knots[knot_index + 1].value)
+        {
+            ++knot_index;
+            span += axis.knots[knot_index].multiplicity;
+        }
+        const auto &knot = axis.knots[knot_index];
+        const bool crease = knot_index != 0 && x == knot.value && knot.multiplicity == axis.degree;
         words.push_back(unit_parameter(x, low, high));
+        words.push_back(std::bit_cast<float>((span << 1) | static_cast<std::uint32_t>(crease)));
     }
 }
 } // namespace
 
-NurbsPositionInput pack_nurbs_positions(const geometry::BSplineSurfaceDefinition &definition,
-                                        const geometry::PatchGrid grid, const std::uint32_t max_buffer_bytes)
+NurbsGridInput pack_nurbs_grid(const geometry::BSplineSurfaceDefinition &definition, const geometry::PatchGrid grid,
+                               const std::uint32_t max_buffer_bytes)
 {
     if (!grid.valid())
     {
         throw std::invalid_argument("Invalid GPU grid subdivisions.");
     }
     const auto &[u, v, poles, weights] = definition;
-    const std::uint64_t axis_words =
-        std::uint64_t(u.pole_count) + v.pole_count + u.degree + v.degree + grid.u_segments + grid.v_segments + 4;
-    const auto word_count = 4ULL * (grid.vertex_count() + std::uint64_t(poles.size())) + axis_words;
+    const auto knot_words = std::uint64_t(u.pole_count) + v.pole_count + u.degree + v.degree + 2;
+    const auto parameter_words = 2ULL * (grid.u_segments + grid.v_segments + 2);
+    const auto output_words = grid.vertex_count() * (sizeof(NurbsGridVertex) / sizeof(float));
+    const auto word_count = output_words + 4ULL * poles.size() + knot_words + parameter_words;
     if (word_count > max_buffer_bytes / sizeof(float))
     {
         throw std::length_error("NURBS comparison exceeds the device storage buffer range.");
     }
-    NurbsPositionInput input{{grid.u_segments, grid.v_segments, static_cast<std::uint32_t>(u.pole_count),
-                              static_cast<std::uint32_t>(v.pole_count), static_cast<std::uint32_t>(u.degree),
-                              static_cast<std::uint32_t>(v.degree)},
-                             {},
-                             poles.front(),
-                             0.0};
+    NurbsGridInput input{{grid.u_segments, grid.v_segments, static_cast<std::uint32_t>(u.pole_count),
+                          static_cast<std::uint32_t>(v.pole_count), static_cast<std::uint32_t>(u.degree),
+                          static_cast<std::uint32_t>(v.degree)},
+                         {},
+                         poles.front(),
+                         0.0};
     input.words.reserve(static_cast<std::size_t>(word_count));
-    input.words.resize(4 * grid.vertex_count()); // A zero W also detects vertices the shader never wrote.
+    input.words.resize(output_words); // A zero position W detects vertices the shader never wrote.
     const double scale = weights.empty() ? 1.0 : std::ranges::max(weights);
     for (std::size_t i = 0; i < poles.size(); ++i)
     {

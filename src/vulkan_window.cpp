@@ -4,7 +4,7 @@
 #include "render/compute/compute_bezier_patch.hpp"
 #include "render/compute/compute_buffer_check.hpp"
 #include "render/compute/compute_pyramid.hpp"
-#include "render/compute/nurbs_position_comparison.hpp"
+#include "render/compute/nurbs_grid_comparison.hpp"
 #include "render/preview/brep_preview.hpp"
 #include "render/preview/curve_preview.hpp"
 #include "render/preview/surface/bezier_patch_preview.hpp"
@@ -671,7 +671,7 @@ public:
             {
                 try
                 {
-                    const auto input = occt_lab::render::pack_nurbs_positions(
+                    const auto input = occt_lab::render::pack_nurbs_grid(
                         snapshot.definition, nurbs_comparison_.grid, selected_.properties.limits.maxStorageBufferRange);
                     nurbs_job_.emplace(selected_.physical_device, device_, input, snapshot.surface);
                 }
@@ -915,7 +915,7 @@ private:
     PatchLayers patch_layers_;
     std::optional<NurbsSurfaceSession> nurbs_;
     NurbsComparisonControls nurbs_comparison_;
-    std::optional<NurbsPositionComparison> nurbs_job_;
+    std::optional<NurbsGridComparison> nurbs_job_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;
