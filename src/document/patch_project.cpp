@@ -1,6 +1,7 @@
 #include "patch_project.hpp"
 
 #include "project_io.hpp"
+#include "surface_project_io.hpp"
 
 namespace occt_lab::document
 {
@@ -9,9 +10,9 @@ auto save_patch_project(const std::filesystem::path &path, const EditablePatch &
 {
     const auto write = [&](std::ostream &out)
     {
-        const auto sampling = model.sampling();
-        out << "occt-lab-bezier-patch 1\nunits mm\nisolines " << sampling.constant_u_lines << ' '
-            << sampling.constant_v_lines << ' ' << sampling.samples_per_line << "\npoles 4 4\n";
+        out << "occt-lab-bezier-patch 1\nunits mm\n";
+        io::write_sampling(out, model.sampling());
+        out << "poles 4 4\n";
         for (const auto &[x, y, z] : model.current().control_net())
         {
             out << x << ' ' << y << ' ' << z << '\n';
@@ -27,26 +28,8 @@ auto open_patch_project(const std::filesystem::path &path) -> std::expected<Edit
     {
         auto in = io::open_input(path);
         io::expect_token(in, "occt-lab-bezier-patch");
-        if (io::read_number<int>(in, "format version") != 1)
-        {
-            return std::unexpected("Unsupported Bezier patch project version");
-        }
-        io::expect_token(in, "units");
-        io::expect_token(in, "mm");
-        io::expect_token(in, "isolines");
-        const EditablePatch::Sampling sampling{.constant_u_lines = io::read_number<int>(in, "constant u lines"),
-                                               .constant_v_lines = io::read_number<int>(in, "constant v lines"),
-                                               .samples_per_line = io::read_number<int>(in, "points per line")};
-        io::expect_token(in, "poles");
-        io::expect_token(in, "4");
-        io::expect_token(in, "4");
-        EditablePatch::Patch::ControlNet poles;
-        for (auto &pole : poles)
-        {
-            pole = io::read_position(in);
-        }
-        io::expect_end(in);
-        return EditablePatch{poles, sampling};
+        const auto patch = io::read_bezier_patch(in);
+        return EditablePatch{patch.poles, patch.sampling};
     }
     catch (const std::exception &error)
     {

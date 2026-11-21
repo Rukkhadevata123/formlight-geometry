@@ -58,6 +58,8 @@ add_executable(occt_lab
     src/document/patch_project.hpp
     src/document/project_io.cpp
     src/document/project_io.hpp
+    src/document/surface_project_io.cpp
+    src/document/surface_project_io.hpp
     src/vulkan_window.cpp
     src/vulkan_window.hpp
     src/render/compute/compute_bezier_patch.cpp
@@ -174,12 +176,14 @@ if(BUILD_TESTING)
         src/application/editable_patch.cpp
         src/document/patch_project.cpp
         src/document/project_io.cpp
+        src/document/surface_project_io.cpp
     )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp
         tests/bspline_surface_check/analytic_surface.hpp
+        tests/bspline_surface_check/bezier_import_checks.cpp
         tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
@@ -189,6 +193,7 @@ if(BUILD_TESTING)
         src/application/nurbs_surface_creation.cpp
         src/document/nurbs_surface_project.cpp
         src/document/project_io.cpp
+        src/document/surface_project_io.cpp
     )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp

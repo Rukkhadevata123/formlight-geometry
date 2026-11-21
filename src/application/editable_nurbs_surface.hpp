@@ -24,7 +24,11 @@ class EditableNurbsSurface
         Framing framing;
     };
 
-    explicit EditableNurbsSurface(Definition definition);
+    explicit EditableNurbsSurface(Definition definition, occt_lab::geometry::PatchSampling sampling = {});
+    [[nodiscard]] occt_lab::geometry::PatchSampling sampling() const
+    {
+        return sampling_;
+    }
     [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
     [[nodiscard]] const Snapshot &current() const
     {
@@ -54,6 +58,7 @@ class EditableNurbsSurface
 
   private:
     void commit(Snapshot next);
+    occt_lab::geometry::PatchSampling sampling_;
     SingleStepHistory<Snapshot> history_;
     std::optional<Snapshot> preview_;
 };

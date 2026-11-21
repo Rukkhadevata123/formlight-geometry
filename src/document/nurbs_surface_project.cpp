@@ -1,6 +1,7 @@
 #include "nurbs_surface_project.hpp"
 
 #include "project_io.hpp"
+#include "surface_project_io.hpp"
 
 #include <utility>
 
@@ -8,6 +9,15 @@ namespace occt_lab::document
 {
 namespace
 {
+EditableNurbsSurface convert_bezier_patch(const io::BezierPatchData &patch)
+{
+    const geometry::BSplineSurfaceAxis cubic{.degree = 3, .pole_count = 4, .knots = {{0, 4}, {1, 4}}};
+    // Both formats store V rows with U varying fastest. Empty weights are initialized to one by the editor.
+    EditableNurbsSurface::Definition definition{
+        .u = cubic, .v = cubic, .poles = {patch.poles.begin(), patch.poles.end()}};
+    return EditableNurbsSurface{std::move(definition), patch.sampling};
+}
+
 void write_axis(std::ostream &out, const char *name, const geometry::BSplineSurfaceAxis &axis)
 {
     out << name << " degree " << axis.degree << " poles " << axis.pole_count << " knots " << axis.knots.size() << '\n';
@@ -51,7 +61,8 @@ auto save_nurbs_surface_project(const std::filesystem::path &path, const Editabl
     const auto write = [&](std::ostream &out)
     {
         const auto &definition = model.current().definition;
-        out << "occt-lab-nurbs-surface 1\nunits mm\n";
+        out << "occt-lab-nurbs-surface 2\nunits mm\n";
+        io::write_sampling(out, model.sampling());
         write_axis(out, "U", definition.u);
         write_axis(out, "V", definition.v);
         out << "control_net\n";
@@ -70,13 +81,24 @@ auto open_nurbs_surface_project(const std::filesystem::path &path) -> std::expec
     try
     {
         auto in = io::open_input(path);
-        io::expect_token(in, "occt-lab-nurbs-surface");
-        if (io::read_number<int>(in, "format version") != 1)
+        std::string type;
+        in >> type;
+        if (type == "occt-lab-bezier-patch")
+        {
+            return convert_bezier_patch(io::read_bezier_patch(in));
+        }
+        if (type != "occt-lab-nurbs-surface")
+        {
+            return std::unexpected("Expected a NURBS surface or Bezier patch project");
+        }
+        const int version = io::read_number<int>(in, "format version");
+        if (version != 1 && version != 2)
         {
             return std::unexpected("Unsupported NURBS surface project version");
         }
         io::expect_token(in, "units");
         io::expect_token(in, "mm");
+        const auto sampling = version == 1 ? geometry::PatchSampling{} : io::read_sampling(in);
         EditableNurbsSurface::Definition definition{.u = read_axis(in, "U"), .v = read_axis(in, "V")};
         const auto count = definition.control_net_size();
         io::expect_token(in, "control_net");
@@ -86,7 +108,7 @@ auto open_nurbs_surface_project(const std::filesystem::path &path) -> std::expec
             definition.weights.push_back(io::read_number<double>(in, "pole weight"));
         }
         io::expect_end(in);
-        return EditableNurbsSurface{std::move(definition)};
+        return EditableNurbsSurface{std::move(definition), sampling};
     }
     catch (const std::exception &error)
     {

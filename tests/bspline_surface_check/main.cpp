@@ -15,6 +15,7 @@ void check_nurbs_pole_drag();
 void check_nurbs_presets();
 void check_custom_surface_knots();
 void check_nurbs_surface_projects();
+void check_bezier_project_import();
 
 namespace
 {
@@ -191,10 +192,11 @@ int main()
         check_nurbs_presets();
         check_custom_surface_knots();
         check_nurbs_surface_projects();
+        check_bezier_project_import();
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
                      "saddle preset and custom plane creation verified; independent U/V degrees verified; "
-                     "custom knots verified; NURBS project round trips verified");
+                     "custom knots verified; NURBS project round trips verified; Bezier import verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
