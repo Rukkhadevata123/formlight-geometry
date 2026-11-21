@@ -1,4 +1,5 @@
 #include "bezier_patch_inspector.hpp"
+#include "isoline_sampling.hpp"
 
 #include "application/editable_patch.hpp"
 #include "document/patch_project.hpp"
@@ -335,18 +336,8 @@ void BezierPatchInspector::draw_reference() const
 
 void BezierPatchInspector::draw_sampling_controls()
 {
-    using occt_lab::geometry::PatchSampling;
     auto sampling = model_.sampling();
-    ImGui::SeparatorText("Isoline sampling");
-    ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
-    ImGui::SliderInt("Constant u lines", &sampling.constant_u_lines, PatchSampling::minimum_count,
-                     PatchSampling::max_lines, "%d", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SliderInt("Constant v lines", &sampling.constant_v_lines, PatchSampling::minimum_count,
-                     PatchSampling::max_lines, "%d", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::SliderInt("Points per line", &sampling.samples_per_line, PatchSampling::minimum_count,
-                     PatchSampling::max_samples, "%d", ImGuiSliderFlags_AlwaysClamp);
-    ImGui::PopItemWidth();
-    if (sampling != model_.sampling())
+    if (draw_isoline_sampling_controls(sampling))
     {
         sampling_failed_ = !model_.resample(sampling);
     }

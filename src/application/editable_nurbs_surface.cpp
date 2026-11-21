@@ -23,6 +23,18 @@ EditableNurbsSurface::Framing frame_control_net(const std::vector<occt_lab::geom
             .span = std::max({high.X() - low.X(), high.Y() - low.Y(), high.Z() - low.Z()})};
 }
 
+occt_lab::geometry::PatchIsolines sample_isolines(const EditableNurbsSurface::Definition &definition,
+                                                  const occt_lab::geometry::PatchSampling sampling)
+{
+    const occt_lab::geometry::BSplineSurface surface{definition};
+    auto lines = surface.isolines(sampling);
+    if (!lines)
+    {
+        throw std::runtime_error(lines.error());
+    }
+    return std::move(*lines);
+}
+
 EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition definition,
                                               const occt_lab::geometry::PatchSampling sampling,
                                               std::optional<EditableNurbsSurface::Framing> framing = {})
@@ -31,17 +43,12 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
     {
         definition.weights.assign(definition.poles.size(), 1.0);
     }
-    const occt_lab::geometry::BSplineSurface surface{definition};
-    auto lines = surface.isolines(sampling);
-    if (!lines)
-    {
-        throw std::runtime_error(lines.error());
-    }
+    auto lines = sample_isolines(definition, sampling);
     if (!framing)
     {
         framing = frame_control_net(definition.poles);
     }
-    return {.definition = std::move(definition), .isolines = std::move(*lines), .framing = *framing};
+    return {.definition = std::move(definition), .isolines = std::move(lines), .framing = *framing};
 }
 } // namespace
 
@@ -63,6 +70,41 @@ auto EditableNurbsSurface::replace(Definition definition) -> std::expected<void,
         {
             discard_preview();
         }
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(error.what());
+    }
+}
+
+auto EditableNurbsSurface::resample(const occt_lab::geometry::PatchSampling sampling)
+    -> std::expected<void, std::string>
+{
+    if (sampling == sampling_)
+    {
+        return {};
+    }
+    try
+    {
+        auto [applied, alternate] = history_.stored_snapshots();
+        auto applied_lines = sample_isolines(applied.definition, sampling);
+        occt_lab::geometry::PatchIsolines alternate_lines;
+        if (alternate)
+        {
+            alternate_lines = sample_isolines(alternate->definition, sampling);
+        }
+        // Publish the caches only after every geometry has sampled successfully.
+        if (preview_)
+        {
+            preview_->isolines = sample_isolines(preview_->definition, sampling);
+        }
+        if (alternate)
+        {
+            alternate->isolines = std::move(alternate_lines);
+        }
+        applied.isolines = std::move(applied_lines);
+        sampling_ = sampling;
         return {};
     }
     catch (const std::exception &error)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -22,6 +23,11 @@ template <class T> class SingleStepHistory
     [[nodiscard]] constexpr const std::optional<T> &alternate() const
     {
         return alternate_;
+    }
+    // Allow the owner to refresh derived data without changing which edit can be undone or redone.
+    [[nodiscard]] constexpr std::pair<T &, T *> stored_snapshots() noexcept
+    {
+        return {current_, alternate_ ? std::addressof(*alternate_) : nullptr};
     }
     [[nodiscard]] constexpr bool can_undo() const
     {

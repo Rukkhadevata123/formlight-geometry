@@ -30,6 +30,7 @@ class EditableNurbsSurface
         return sampling_;
     }
     [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
+    [[nodiscard]] auto resample(occt_lab::geometry::PatchSampling sampling) -> std::expected<void, std::string>;
     [[nodiscard]] const Snapshot &current() const
     {
         return history_.current();

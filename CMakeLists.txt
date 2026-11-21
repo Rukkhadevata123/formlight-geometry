@@ -100,6 +100,8 @@ add_executable(occt_lab
     src/ui/developer_diagnostics.hpp
     src/ui/imgui_session.cpp
     src/ui/imgui_session.hpp
+    src/ui/isoline_sampling.cpp
+    src/ui/isoline_sampling.hpp
     src/ui/nurbs_pole_inspector.cpp
     src/ui/nurbs_pole_inspector.hpp
     src/ui/nurbs_surface_creation_dialog.cpp
@@ -188,6 +190,7 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
         tests/bspline_surface_check/project_checks.cpp
+        tests/bspline_surface_check/sampling_checks.cpp
         tests/support/project_test_directory.hpp
         src/application/editable_nurbs_surface.cpp
         src/application/nurbs_surface_creation.cpp

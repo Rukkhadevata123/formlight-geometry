@@ -37,6 +37,7 @@ class NurbsPoleInspector
     std::vector<occt_lab::geometry::Vec3> poles_;
     std::vector<double> weights_;
     std::string error_;
+    std::string sampling_error_;
     occt_lab::PlanarSurfaceParameters creation_parameters_;
     std::string creation_error_;
     ProjectFileControls project_file_{.path = "surface.occtlab"};

@@ -1,4 +1,5 @@
 #include "nurbs_pole_inspector.hpp"
+#include "isoline_sampling.hpp"
 #include "pole_drag.hpp"
 #include "render/viewport/viewport_projection.hpp"
 
@@ -24,6 +25,7 @@ void NurbsPoleInspector::reset_draft(const EditableNurbsSurface &model)
     poles_ = definition.poles;
     weights_ = definition.weights;
     error_.clear();
+    sampling_error_.clear();
 }
 
 bool NurbsPoleInspector::has_edits(const EditableNurbsSurface::Definition &surface) const
@@ -170,6 +172,18 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
         if (!error_.empty())
         {
             ImGui::TextWrapped("%s", error_.c_str());
+        }
+        ImGui::BeginDisabled(tracking_pole_);
+        auto sampling = model.sampling();
+        if (draw_isoline_sampling_controls(sampling))
+        {
+            const auto result = model.resample(sampling);
+            sampling_error_ = result ? std::string{} : result.error();
+        }
+        ImGui::EndDisabled();
+        if (!sampling_error_.empty())
+        {
+            ImGui::TextWrapped("%s", sampling_error_.c_str());
         }
     }
     ImGui::End();
