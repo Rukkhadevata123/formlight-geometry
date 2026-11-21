@@ -10,6 +10,7 @@
 #include "ui/bezier_patch_inspector.hpp"
 #include "ui/box_editor.hpp"
 #include "ui/curve_editor.hpp"
+#include "ui/developer_diagnostics.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -453,14 +454,22 @@ struct PyramidControls
     std::string error;
 };
 
-bool draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
+void draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
                        ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole, PatchLayers &patch_layers,
-                       const std::string &compute_status, PyramidControls &pyramid)
+                       bool &show_diagnostics, PyramidControls &pyramid)
 {
-    bool run_check = false;
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar))
     {
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("Tools"))
+            {
+                ImGui::MenuItem("Developer diagnostics", nullptr, &show_diagnostics);
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
         const auto api_version = selected.properties.apiVersion;
         ImGui::TextUnformatted(selected.properties.deviceName.data());
         ImGui::Text("Device Vulkan %u.%u.%u", VK_API_VERSION_MAJOR(api_version), VK_API_VERSION_MINOR(api_version),
@@ -520,27 +529,8 @@ bool draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
                 }
             }
         }
-        if (ImGui::CollapsingHeader("Vulkan compute"))
-        {
-            if (selected.compute_supported)
-            {
-                ImGui::TextUnformatted("out[i] = 3*i + 7, 2 groups x 64 lanes");
-                run_check = ImGui::Button("Run buffer check");
-                if (!compute_status.empty())
-                {
-                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 20.0F * ImGui::GetFontSize());
-                    ImGui::TextUnformatted(compute_status.c_str());
-                    ImGui::PopTextWrapPos();
-                }
-            }
-            else
-            {
-                ImGui::TextUnformatted("Graphics queue has no compute support.");
-            }
-        }
     }
     ImGui::End();
-    return run_check;
 }
 
 class Renderer
@@ -717,9 +707,10 @@ public:
         {
             update_camera_input(swapchain.extent);
         }
-        const bool run_compute = draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_,
-                                                   curve_editor_.tracking_pole(), patch_layers_, compute_status_,
-                                                   pyramid_controls_);
+        draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_, curve_editor_.tracking_pole(),
+                          patch_layers_, show_diagnostics_, pyramid_controls_);
+        const bool run_compute =
+            draw_developer_diagnostics(show_diagnostics_, selected_.compute_supported, compute_status_);
         if (run_compute && !compute_check_)
         {
             try
@@ -1004,6 +995,7 @@ private:
     vk::raii::Fence frame_finished_;
     BRepPreview preview_;
     std::optional<ComputeBufferCheck> compute_check_;
+    bool show_diagnostics_ = false;
     std::string compute_status_;
     bool compute_readback_pending_ = false;
     std::optional<ComputePyramid> pyramid_;

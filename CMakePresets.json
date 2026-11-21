@@ -37,7 +37,8 @@
       "displayName": "Debug (clang-cl x64)",
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_MANIFEST_FEATURES": "validation-layers"
       }
     }
   ],

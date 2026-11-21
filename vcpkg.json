@@ -17,5 +17,11 @@
       "name": "shader-slang",
       "host": true
     }
-  ]
+  ],
+  "features": {
+    "validation-layers": {
+      "description": "Provide the Vulkan validation layer for local debugging",
+      "dependencies": ["vulkan-validationlayers"]
+    }
+  }
 }

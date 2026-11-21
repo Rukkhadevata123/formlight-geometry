@@ -67,6 +67,8 @@ add_executable(occt_lab
     src/ui/curve_editor.cpp
     src/ui/curve_editor.hpp
     src/ui/curve_project_panel.cpp
+    src/ui/developer_diagnostics.cpp
+    src/ui/developer_diagnostics.hpp
     src/ui/fit_residuals.cpp
     src/ui/fit_residuals.hpp
 )
