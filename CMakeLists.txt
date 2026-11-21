@@ -22,26 +22,52 @@ target_link_libraries(occt_lab_dependencies INTERFACE
 add_executable(occt_lab
     src/main.cpp
     src/application/editable_curve.cpp
+    src/application/editable_curve.hpp
     src/document/curve_project.cpp
+    src/document/curve_project.hpp
     src/vulkan_window.cpp
+    src/vulkan_window.hpp
     src/geometry/bezier_patch.cpp
+    src/geometry/bezier_patch.hpp
     src/geometry/box_model.cpp
+    src/geometry/box_model.hpp
     src/geometry/brep_mesh.cpp
+    src/geometry/brep_mesh.hpp
     src/geometry/bspline_curve.cpp
+    src/geometry/bspline_curve.hpp
     src/geometry/curve_fitting.cpp
     src/geometry/occt_bezier_patch.cpp
+    src/geometry/occt_bezier_patch.hpp
+    src/geometry/occt_bspline.hpp
+    src/geometry/vec3.hpp
     src/render/bezier_patch_preview.cpp
+    src/render/bezier_patch_preview.hpp
     src/render/brep_preview.cpp
+    src/render/brep_preview.hpp
     src/render/compute_buffer_check.cpp
+    src/render/compute_buffer_check.hpp
+    src/render/compute_pyramid.cpp
+    src/render/compute_pyramid.hpp
+    src/render/curve_colors.hpp
     src/render/curve_preview.cpp
+    src/render/curve_preview.hpp
     src/render/orbit_camera.cpp
+    src/render/orbit_camera.hpp
+    src/render/storage_buffer_kernel.cpp
+    src/render/storage_buffer_kernel.hpp
     src/render/viewport_projection.cpp
+    src/render/viewport_projection.hpp
     src/render/vulkan_resources.cpp
+    src/render/vulkan_resources.hpp
     src/ui/bezier_patch_inspector.cpp
+    src/ui/bezier_patch_inspector.hpp
     src/ui/box_editor.cpp
+    src/ui/box_editor.hpp
     src/ui/curve_editor.cpp
+    src/ui/curve_editor.hpp
     src/ui/curve_project_panel.cpp
     src/ui/fit_residuals.cpp
+    src/ui/fit_residuals.hpp
 )
 target_include_directories(occt_lab PRIVATE src)
 target_link_libraries(occt_lab PRIVATE occt_lab_dependencies)
@@ -77,20 +103,23 @@ add_custom_command(
     VERBATIM
 )
 
-set(check_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/buffer_check.slang")
-set(check_spv "${shader_output_dir}/buffer_check.comp.spv")
-add_custom_command(
-    OUTPUT "${check_spv}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${shader_output_dir}"
-    COMMAND "${SLANG_EXECUTABLE}" "${check_shader}"
-        -entry computeMain -stage compute -target spirv -fvk-use-entrypoint-name -o "${check_spv}"
-    DEPENDS "${check_shader}"
-    COMMENT "Compiling storage buffer check to SPIR-V"
-    VERBATIM
-)
+foreach(name IN ITEMS buffer_check compute_pyramid)
+    set(source "${CMAKE_CURRENT_SOURCE_DIR}/shaders/${name}.slang")
+    set(output "${shader_output_dir}/${name}.comp.spv")
+    add_custom_command(
+        OUTPUT "${output}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${shader_output_dir}"
+        COMMAND "${SLANG_EXECUTABLE}" "${source}"
+            -entry computeMain -stage compute -target spirv -fvk-use-entrypoint-name -o "${output}"
+        DEPENDS "${source}" "${SLANG_EXECUTABLE}"
+        COMMENT "Compiling ${name}.slang to SPIR-V"
+        VERBATIM
+    )
+    list(APPEND compute_shaders "${output}")
+endforeach()
 
 add_custom_target(occt_lab_shaders DEPENDS
-    "${triangle_spv}" "${preview_vertex_spv}" "${preview_fragment_spv}" "${check_spv}"
+    "${triangle_spv}" "${preview_vertex_spv}" "${preview_fragment_spv}" ${compute_shaders}
 )
 add_dependencies(occt_lab occt_lab_shaders)
 

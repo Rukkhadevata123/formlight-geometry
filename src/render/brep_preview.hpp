@@ -49,8 +49,13 @@ class BRepPreview
     void create_pipeline(vk::Format color_format);
     void record(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, PreviewShape shape,
                 const ClipTransform &transform) const;
+    void draw_triangles(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
+                        vk::Buffer vertices, uint32_t vertex_count) const;
 
   private:
+    void bind_mesh_pipeline(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
+                            vk::Buffer vertices) const;
+
     struct MeshBuffer
     {
         vk::raii::DeviceMemory memory;

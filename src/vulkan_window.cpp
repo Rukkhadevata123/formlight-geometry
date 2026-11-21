@@ -3,6 +3,7 @@
 #include "render/bezier_patch_preview.hpp"
 #include "render/brep_preview.hpp"
 #include "render/compute_buffer_check.hpp"
+#include "render/compute_pyramid.hpp"
 #include "render/curve_preview.hpp"
 #include "render/orbit_camera.hpp"
 #include "ui/bezier_patch_inspector.hpp"
@@ -442,11 +443,18 @@ enum class PreviewMode
     cylinder,
     bspline,
     bezier_patch,
+    compute_pyramid,
+};
+
+struct PyramidControls
+{
+    int height_mm = 50;
+    std::string error;
 };
 
 bool draw_status_panel(const PresentationDevice &selected, const Swapchain &swapchain, PreviewMode &mode,
                        ProjectionMode &projection, OrbitCamera &camera, const bool moving_pole, PatchLayers &patch_layers,
-                       const std::string &compute_status)
+                       const std::string &compute_status, PyramidControls &pyramid)
 {
     bool run_check = false;
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
@@ -468,7 +476,9 @@ bool draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
         const float combo_width = 9.0F * ImGui::GetFontSize();
         ImGui::SetNextItemWidth(combo_width);
         auto mode_index = static_cast<int>(mode);
-        if (ImGui::Combo("Shape", &mode_index, "Box\0Cylinder\0B-spline\0Bezier patch\0"))
+        constexpr const char *shapes[] = {"Box", "Cylinder", "B-spline", "Bezier patch", "Compute pyramid"};
+        const int shape_count = selected.compute_supported ? IM_ARRAYSIZE(shapes) : IM_ARRAYSIZE(shapes) - 1;
+        if (ImGui::Combo("Shape", &mode_index, shapes, shape_count))
         {
             mode = static_cast<PreviewMode>(mode_index);
         }
@@ -496,6 +506,18 @@ bool draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
             ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
+        }
+        else if (mode == PreviewMode::compute_pyramid)
+        {
+            ImGui::SliderInt("Height (mm)", &pyramid.height_mm, 10, 90, "%d", ImGuiSliderFlags_AlwaysClamp);
+            if (!pyramid.error.empty())
+            {
+                ImGui::TextWrapped("%s", pyramid.error.c_str());
+                if (ImGui::Button("Retry pyramid"))
+                {
+                    pyramid.error.clear();
+                }
+            }
         }
         if (ImGui::CollapsingHeader("Vulkan compute"))
         {
@@ -679,7 +701,8 @@ public:
             update_camera_input(swapchain.extent);
         }
         const bool run_compute = draw_status_panel(selected_, swapchain, preview_mode_, projection_, camera_,
-                                                   curve_editor_.tracking_pole(), patch_layers_, compute_status_);
+                                                   curve_editor_.tracking_pole(), patch_layers_, compute_status_,
+                                                   pyramid_controls_);
         if (run_compute && !compute_check_)
         {
             try
@@ -701,6 +724,23 @@ public:
             break;
         case PreviewMode::cylinder:
             solid = PreviewShape::cylinder;
+            break;
+        case PreviewMode::compute_pyramid:
+            if (!pyramid_ && pyramid_controls_.error.empty())
+            {
+                try
+                {
+                    pyramid_.emplace(selected_.physical_device, device_);
+                }
+                catch (const vk::DeviceLostError &)
+                {
+                    throw;
+                }
+                catch (const std::exception &error)
+                {
+                    pyramid_controls_.error = error.what();
+                }
+            }
             break;
         case PreviewMode::bspline:
         case PreviewMode::bezier_patch:
@@ -839,13 +879,18 @@ private:
     }
 
     void record_frame(const SwapchainImage &image, const Swapchain &swapchain, const std::optional<PreviewShape> solid,
-                      const ClipTransform &transform, ImDrawData *draw_data, const bool dispatch_compute) const
+                      const ClipTransform &transform, ImDrawData *draw_data, const bool dispatch_compute)
     {
         command_buffer_.reset();
         command_buffer_.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
         if (dispatch_compute)
         {
             compute_check_->record(command_buffer_);
+        }
+        const bool draw_pyramid = preview_mode_ == PreviewMode::compute_pyramid && pyramid_.has_value();
+        if (draw_pyramid)
+        {
+            pyramid_->generate_if_changed(command_buffer_, static_cast<uint32_t>(pyramid_controls_.height_mm));
         }
 
         // Match the acquire semaphore's wait stage before discarding the previous image contents.
@@ -882,6 +927,11 @@ private:
         {
             preview_.record(command_buffer_, swapchain.extent, *solid, transform);
         }
+        else if (draw_pyramid)
+        {
+            preview_.draw_triangles(command_buffer_, swapchain.extent, transform, pyramid_->vertices(),
+                                    ComputePyramid::vertex_count);
+        }
         ImGui_ImplVulkan_RenderDrawData(draw_data, *command_buffer_);
         command_buffer_.endRendering();
 
@@ -912,6 +962,8 @@ private:
     std::optional<ComputeBufferCheck> compute_check_;
     std::string compute_status_;
     bool compute_readback_pending_ = false;
+    std::optional<ComputePyramid> pyramid_;
+    PyramidControls pyramid_controls_;
     BoxEditor box_editor_{preview_.box_dimensions()};
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};

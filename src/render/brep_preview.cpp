@@ -308,18 +308,32 @@ void BRepPreview::create_pipeline(const vk::Format color_format)
     pipeline_ = vk::raii::Pipeline{device_, nullptr, info};
 }
 
-void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent, const PreviewShape shape,
-                         const ClipTransform &transform) const
+void BRepPreview::bind_mesh_pipeline(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent,
+                                     const ClipTransform &transform, const vk::Buffer vertices) const
 {
     const auto width = static_cast<float>(extent.width);
     const auto height = static_cast<float>(extent.height);
-    const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
 
     commands.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline_);
     commands.setViewport(0, vk::Viewport{0.0F, 0.0F, width, height, 0.0F, 1.0F});
     commands.setScissor(0, vk::Rect2D{{0, 0}, extent});
     commands.pushConstants<ClipTransform>(*layout_, vk::ShaderStageFlagBits::eVertex, 0, transform);
-    commands.bindVertexBuffers(0, *mesh.buffer, vk::DeviceSize{0});
+    commands.bindVertexBuffers(0, vertices, vk::DeviceSize{0});
+}
+
+void BRepPreview::draw_triangles(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent,
+                                 const ClipTransform &transform, const vk::Buffer vertices,
+                                 const uint32_t vertex_count) const
+{
+    bind_mesh_pipeline(commands, extent, transform, vertices);
+    commands.draw(vertex_count, 1, 0, 0);
+}
+
+void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent, const PreviewShape shape,
+                         const ClipTransform &transform) const
+{
+    const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
+    bind_mesh_pipeline(commands, extent, transform, *mesh.buffer);
     commands.bindIndexBuffer(*mesh.buffer, mesh.index_offset, vk::IndexType::eUint32);
     commands.drawIndexed(mesh.index_count, 1, 0, 0, 0);
 }
