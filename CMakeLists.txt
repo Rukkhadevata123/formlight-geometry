@@ -92,6 +92,8 @@ add_executable(occt_lab
     src/ui/developer_diagnostics.hpp
     src/ui/imgui_session.cpp
     src/ui/imgui_session.hpp
+    src/ui/nurbs_pole_inspector.cpp
+    src/ui/nurbs_pole_inspector.hpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp

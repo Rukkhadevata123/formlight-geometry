@@ -15,6 +15,7 @@
 #include "ui/curve/curve_editor.hpp"
 #include "ui/developer_diagnostics.hpp"
 #include "ui/imgui_session.hpp"
+#include "ui/nurbs_pole_inspector.hpp"
 #include "ui/renderer_status_panel.hpp"
 
 #include <SDL3/SDL.h>
@@ -643,7 +644,13 @@ public:
             {
                 nurbs_preview_.emplace();
             }
-            nurbs_preview_->draw(transform, patch_layers_);
+            if (pole_click && patch_layers_.control_net)
+            {
+                const auto hit = nurbs_preview_->pick_pole(transform, ImGui::GetMousePos());
+                selected_nurbs_pole_ = hit.value_or(selected_nurbs_pole_);
+            }
+            draw_nurbs_pole_inspector(nurbs_preview_->definition(), selected_nurbs_pole_);
+            nurbs_preview_->draw(transform, patch_layers_, selected_nurbs_pole_);
         }
         ImGui::Render();
 
@@ -870,6 +877,7 @@ private:
     bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
     std::optional<NurbsSurfacePreview> nurbs_preview_;
+    std::size_t selected_nurbs_pole_ = 0;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;

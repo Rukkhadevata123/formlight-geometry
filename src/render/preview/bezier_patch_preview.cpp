@@ -69,14 +69,7 @@ void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
     const occt_lab::render::ViewportProjection project{transform, *viewport, half_width};
     const auto &net = model.displayed().control_net();
-    draw_surface_wireframe(draw_list, project, net, side, model.isolines(), layers);
-    if (layers.control_net)
-    {
-        if (const auto point = project.visible_point(net[selected_pole]))
-        {
-            draw_list.AddCircle(*point, 7.0F, IM_COL32_WHITE, 0, 1.5F);
-        }
-    }
+    draw_surface_wireframe(draw_list, project, net, side, model.isolines(), layers, selected_pole);
     if (selected)
     {
         draw_surface_normal(draw_list, project, *selected);

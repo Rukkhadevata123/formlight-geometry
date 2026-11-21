@@ -5,7 +5,8 @@ using occt_lab::geometry::Vec3;
 using occt_lab::render::ViewportProjection;
 
 void draw_surface_wireframe(ImDrawList &draw_list, const ViewportProjection &project, const std::span<const Vec3> net,
-                            const std::size_t u_count, const PatchIsolines &isolines, const PatchLayers &layers)
+                            const std::size_t u_count, const PatchIsolines &isolines, const PatchLayers &layers,
+                            const std::size_t selected_pole)
 {
     constexpr ImU32 net_color = IM_COL32(111, 178, 216, 210);
     if (layers.control_net)
@@ -42,6 +43,11 @@ void draw_surface_wireframe(ImDrawList &draw_list, const ViewportProjection &pro
             {
                 draw_list.AddCircleFilled(*point, 4.0F, net_color);
             }
+        }
+        IM_ASSERT(selected_pole < net.size());
+        if (const auto point = project.visible_point(net[selected_pole]))
+        {
+            draw_list.AddCircle(*point, 7.0F, IM_COL32_WHITE, 0, 1.5F);
         }
     }
 }

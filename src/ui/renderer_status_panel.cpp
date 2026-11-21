@@ -68,9 +68,11 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
             ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
-            if (mode == PreviewMode::bezier_patch && patch_layers.control_net)
+            if (patch_layers.control_net)
             {
-                ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
+                ImGui::TextUnformatted(mode == PreviewMode::nurbs_surface
+                                           ? "Left-click a blue pole to inspect it"
+                                           : "Left-drag a blue pole to move it, Esc to cancel");
             }
         }
         else if (mode == PreviewMode::compute_pyramid)

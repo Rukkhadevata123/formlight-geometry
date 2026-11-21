@@ -33,10 +33,19 @@ NurbsSurfacePreview::NurbsSurfacePreview() : definition_(occt_lab::make_nurbs_su
     scale_ = span > 0.0 ? span / 90.0 : 1.0;
 }
 
-void NurbsSurfacePreview::draw(const ClipTransform &transform, const PatchLayers &layers) const
+occt_lab::render::ViewportProjection NurbsSurfacePreview::projection(const ClipTransform &transform) const
 {
-    auto *viewport = ImGui::GetMainViewport();
-    const occt_lab::render::ViewportProjection project{transform, *viewport, center_, scale_};
-    draw_surface_wireframe(*ImGui::GetBackgroundDrawList(viewport), project, definition_.poles,
-                           definition_.u.pole_count, isolines_, layers);
+    return {transform, *ImGui::GetMainViewport(), center_, scale_};
+}
+
+std::optional<std::size_t> NurbsSurfacePreview::pick_pole(const ClipTransform &transform, const ImVec2 cursor) const
+{
+    return projection(transform).pick_pole(definition_.poles, cursor);
+}
+
+void NurbsSurfacePreview::draw(const ClipTransform &transform, const PatchLayers &layers,
+                               const std::size_t selected_pole) const
+{
+    draw_surface_wireframe(*ImGui::GetBackgroundDrawList(ImGui::GetMainViewport()), projection(transform),
+                           definition_.poles, definition_.u.pole_count, isolines_, layers, selected_pole);
 }
