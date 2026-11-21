@@ -98,6 +98,7 @@ add_executable(occt_lab
     src/ui/imgui_session.hpp
     src/ui/nurbs_pole_inspector.cpp
     src/ui/nurbs_pole_inspector.hpp
+    src/ui/nurbs_surface_creation_dialog.cpp
     src/ui/pole_drag.hpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
@@ -176,6 +177,7 @@ if(BUILD_TESTING)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp
         tests/bspline_surface_check/analytic_surface.hpp
+        tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
         src/application/editable_nurbs_surface.cpp

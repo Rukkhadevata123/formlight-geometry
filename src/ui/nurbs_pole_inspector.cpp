@@ -4,33 +4,7 @@
 
 #include <imgui.h>
 
-#include <algorithm>
 #include <limits>
-#include <utility>
-
-namespace
-{
-bool draw_creation_axis(const char *poles_label, const char *degree_label, int &poles, std::optional<int> &degree)
-{
-    using Params = occt_lab::PlanarSurfaceParameters;
-    constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
-    const bool poles_changed = ImGui::SliderInt(poles_label, &poles, Params::min_poles, Params::max_poles, "%d", flags);
-    const int limit = Params::degree_limit(poles);
-    if (degree && *degree > limit)
-    {
-        degree = limit;
-    }
-    int shown = degree.value_or(std::min(Params::preferred_degree, limit));
-    ImGui::BeginDisabled(limit == 1);
-    const bool degree_changed = ImGui::SliderInt(degree_label, &shown, 1, limit, "%d", flags);
-    ImGui::EndDisabled();
-    if (degree_changed)
-    {
-        degree = shown;
-    }
-    return poles_changed || degree_changed;
-}
-} // namespace
 
 NurbsPoleInspector::NurbsPoleInspector(const EditableNurbsSurface &model)
 {
@@ -122,6 +96,8 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
         const auto selected_pole = selected_pole_;
         const auto columns = static_cast<std::size_t>(surface.u.pole_count);
         ImGui::Text("Surface degree   U %d   V %d", surface.u.degree, surface.v.degree);
+        ImGui::Text("U [%.8g, %.8g]   V [%.8g, %.8g]", surface.u.knots.front().value, surface.u.knots.back().value,
+                    surface.v.knots.front().value, surface.v.knots.back().value);
         ImGui::Text("Pole U %zu   V %zu", selected_pole % columns + 1, selected_pole / columns + 1);
         ImGui::BeginDisabled(tracking_pole_);
         auto &[x, y, z] = poles_.at(selected_pole);
@@ -192,57 +168,4 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
         }
     }
     ImGui::End();
-}
-
-void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
-{
-    constexpr char title[] = "New planar surface";
-    if (ImGui::Button("New surface..."))
-    {
-        creation_parameters_ = {};
-        creation_error_.clear();
-        ImGui::OpenPopup(title);
-    }
-    if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        return;
-    }
-    auto &p = creation_parameters_;
-    ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
-    const bool u_changed = draw_creation_axis("U poles", "U degree", p.u_poles, p.u_degree);
-    const bool v_changed = draw_creation_axis("V poles", "V degree", p.v_poles, p.v_degree);
-    ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
-    const bool width_changed = ImGui::InputDouble("Width (X, mm)", &p.width_mm, 0, 0, "%.10g");
-    const bool height_changed = ImGui::InputDouble("Height (Y, mm)", &p.height_mm, 0, 0, "%.10g");
-    ImGui::PopItemFlag();
-    ImGui::PopItemWidth();
-    if (u_changed || v_changed || width_changed || height_changed)
-    {
-        creation_error_.clear();
-    }
-    if (ImGui::Button("Create"))
-    {
-        auto result = occt_lab::make_planar_nurbs_surface(p).and_then([&](EditableNurbsSurface::Definition &&definition)
-                                                                      { return model.replace(std::move(definition)); });
-        if (result)
-        {
-            selected_pole_ = 0;
-            reset_draft(model);
-            ImGui::CloseCurrentPopup();
-        }
-        else
-        {
-            creation_error_ = result.error();
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
-    {
-        ImGui::CloseCurrentPopup();
-    }
-    if (!creation_error_.empty())
-    {
-        ImGui::TextUnformatted(creation_error_.c_str());
-    }
-    ImGui::EndPopup();
 }

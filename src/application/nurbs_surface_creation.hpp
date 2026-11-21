@@ -19,6 +19,9 @@ struct PlanarSurfaceParameters
     // An unset degree follows the default for that direction's pole count.
     std::optional<int> u_degree{};
     std::optional<int> v_degree{};
+    // Each axis defaults to uniform clamped knots until a custom vector is supplied.
+    std::optional<std::vector<geometry::BSplineKnot>> u_knots{};
+    std::optional<std::vector<geometry::BSplineKnot>> v_knots{};
 };
 
 [[nodiscard]] geometry::BSplineSurfaceDefinition make_saddle_surface();

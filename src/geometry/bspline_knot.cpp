@@ -1,5 +1,8 @@
 #include "bspline_knot.hpp"
 
+#include <cmath>
+#include <cstdint>
+#include <format>
 #include <stdexcept>
 
 namespace occt_lab::geometry
@@ -19,5 +22,40 @@ std::vector<BSplineKnot> make_uniform_clamped_knots(const int pole_count, const 
         knots.push_back({.value = static_cast<double>(i) / spans, .multiplicity = endpoint ? degree + 1 : 1});
     }
     return knots;
+}
+
+auto validate_clamped_knots(const std::span<const BSplineKnot> knots, const int degree, const int pole_count)
+    -> std::expected<void, std::string>
+{
+    if (degree < 1 || pole_count <= degree || knots.size() < 2 || knots.size() > static_cast<std::size_t>(pole_count))
+    {
+        return std::unexpected("Invalid degree, pole count or number of distinct knots for a clamped B-spline");
+    }
+    std::int64_t total = 0;
+    for (std::size_t i = 0; i < knots.size(); ++i)
+    {
+        const auto [value, multiplicity] = knots[i];
+        if (!std::isfinite(value) || (i > 0 && value <= knots[i - 1].value))
+        {
+            return std::unexpected(std::format("Knot {}: values must be finite and strictly increasing", i + 1));
+        }
+        const bool endpoint = i == 0 || i + 1 == knots.size();
+        if (endpoint && multiplicity != degree + 1)
+        {
+            return std::unexpected(std::format("Knot {}: endpoint multiplicity must be {}", i + 1, degree + 1));
+        }
+        if (!endpoint && (multiplicity < 1 || multiplicity > degree))
+        {
+            return std::unexpected(
+                std::format("Knot {}: interior multiplicity must be between 1 and {}", i + 1, degree));
+        }
+        total += multiplicity;
+    }
+    const auto required = static_cast<std::int64_t>(pole_count) + degree + 1;
+    if (total != required)
+    {
+        return std::unexpected(std::format("Multiplicity total is {}; expected {}", total, required));
+    }
+    return {};
 }
 } // namespace occt_lab::geometry

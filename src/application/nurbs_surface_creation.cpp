@@ -19,7 +19,8 @@ int PlanarSurfaceParameters::degree_limit(const int pole_count)
 
 namespace
 {
-auto make_planar_axis(const char *direction, const int poles, const std::optional<int> requested_degree)
+auto make_planar_axis(const char *direction, const int poles, const std::optional<int> requested_degree,
+                      const std::optional<std::vector<geometry::BSplineKnot>> &custom_knots)
     -> std::expected<geometry::BSplineSurfaceAxis, std::string>
 {
     const int limit = PlanarSurfaceParameters::degree_limit(poles);
@@ -29,15 +30,24 @@ auto make_planar_axis(const char *direction, const int poles, const std::optiona
         return std::unexpected(std::format("With {} {} poles, the {} degree must be between 1 and {}.", poles,
                                            direction, direction, limit));
     }
-    return geometry::BSplineSurfaceAxis{
-        .degree = degree, .pole_count = poles, .knots = geometry::make_uniform_clamped_knots(poles, degree)};
+    if (custom_knots)
+    {
+        if (const auto valid = geometry::validate_clamped_knots(*custom_knots, degree, poles); !valid)
+        {
+            return std::unexpected(std::format("{} knots: {}", direction, valid.error()));
+        }
+    }
+    return geometry::BSplineSurfaceAxis{.degree = degree,
+                                        .pole_count = poles,
+                                        .knots = custom_knots ? *custom_knots
+                                                              : geometry::make_uniform_clamped_knots(poles, degree)};
 }
 } // namespace
 
 auto make_planar_nurbs_surface(const PlanarSurfaceParameters &parameters)
     -> std::expected<BSplineSurfaceDefinition, std::string>
 {
-    const auto &[columns, rows, width, height, u_degree, v_degree] = parameters;
+    const auto &[columns, rows, width, height, u_degree, v_degree, u_knots, v_knots] = parameters;
     const auto valid_count = [](int count)
     { return count >= PlanarSurfaceParameters::min_poles && count <= PlanarSurfaceParameters::max_poles; };
     if (!valid_count(columns) || !valid_count(rows))
@@ -53,12 +63,12 @@ auto make_planar_nurbs_surface(const PlanarSurfaceParameters &parameters)
                                            Precision::Confusion(), 0.5 * Precision::Infinite()));
     }
 
-    auto u = make_planar_axis("U", columns, u_degree);
+    auto u = make_planar_axis("U", columns, u_degree, u_knots);
     if (!u)
     {
         return std::unexpected(u.error());
     }
-    auto v = make_planar_axis("V", rows, v_degree);
+    auto v = make_planar_axis("V", rows, v_degree, v_knots);
     if (!v)
     {
         return std::unexpected(v.error());
