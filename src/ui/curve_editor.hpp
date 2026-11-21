@@ -12,7 +12,7 @@ class CurveEditor
     {
     }
     void draw(EditableCurve &curve);
-    void handle_viewport_input(EditableCurve &curve, const ClipTransform &transform);
+    void handle_viewport_input(EditableCurve &curve, const ClipTransform &transform, bool pole_click);
     void cancel_drag(EditableCurve &curve);
     [[nodiscard]] bool tracking_pole() const
     {

@@ -11,34 +11,8 @@ auto pick_curve_pole(const occt_lab::geometry::SampledCurve &curve, const ClipTr
     -> std::optional<std::size_t>
 {
     const auto &viewport = *ImGui::GetMainViewport();
-    if (cursor.x < viewport.Pos.x || cursor.x >= viewport.Pos.x + viewport.Size.x || cursor.y < viewport.Pos.y ||
-        cursor.y >= viewport.Pos.y + viewport.Size.y)
-    {
-        return std::nullopt;
-    }
-
     const ViewportProjection project{transform, viewport, curve.framing_extent};
-    constexpr float hit_radius = 9.0F;
-    float best_distance_squared = hit_radius * hit_radius;
-    std::optional<std::size_t> hit;
-    const auto &poles = curve.definition.poles;
-    for (std::size_t index = 0; index < poles.size(); ++index)
-    {
-        const auto point = project.visible_point(poles[index]);
-        if (!point)
-        {
-            continue;
-        }
-        const float dx = cursor.x - point->x;
-        const float dy = cursor.y - point->y;
-        // At equal distance the last marker drawn is on top.
-        if (const float distance_squared = dx * dx + dy * dy; distance_squared <= best_distance_squared)
-        {
-            best_distance_squared = distance_squared;
-            hit = index;
-        }
-    }
-    return hit;
+    return project.pick_pole(curve.definition.poles, cursor);
 }
 
 auto dragged_pole_position(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,

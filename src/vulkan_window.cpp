@@ -517,6 +517,10 @@ void draw_status_panel(const PresentationDevice &selected, const Swapchain &swap
             ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
+            if (patch_layers.control_net)
+            {
+                ImGui::TextUnformatted("Left-click a blue pole to select it");
+            }
         }
         else if (mode == PreviewMode::compute_pyramid)
         {
@@ -759,14 +763,24 @@ public:
         const double view_scale = solid ? preview_.view_scale(*solid) : 1.0;
         const auto transform =
             camera_.clip_transform(swapchain.extent.width, swapchain.extent.height, projection_, view_scale);
+        const auto &io = ImGui::GetIO();
+        const bool pole_click = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !io.WantCaptureMouse &&
+                                io.KeyMods == ImGuiMod_None && !ImGui::IsMouseDown(ImGuiMouseButton_Middle);
         if (preview_mode_ == PreviewMode::bspline)
         {
-            curve_editor_.handle_viewport_input(curve_, transform);
+            curve_editor_.handle_viewport_input(curve_, transform, pole_click);
             curve_editor_.draw(curve_);
             draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
         }
         else if (preview_mode_ == PreviewMode::bezier_patch)
         {
+            if (pole_click && patch_layers_.control_net)
+            {
+                if (const auto hit = pick_patch_pole(patch_, transform, ImGui::GetMousePos()))
+                {
+                    patch_inspector_.select_pole(*hit);
+                }
+            }
             patch_inspector_.draw(patch_mesh_, selected_.compute_supported);
             if (patch_mesh_.visible && !gpu_patch_)
             {

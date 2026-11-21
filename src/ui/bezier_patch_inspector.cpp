@@ -52,8 +52,22 @@ std::size_t BezierPatchInspector::selected_pole() const
            static_cast<std::size_t>(pole_u_ - 1);
 }
 
+void BezierPatchInspector::select_pole(const std::size_t index)
+{
+    constexpr auto side = EditablePatch::Patch::side_length;
+    IM_ASSERT(index < draft_.size());
+    pole_u_ = static_cast<int>(index % side) + 1;
+    pole_v_ = static_cast<int>(index / side) + 1;
+    reveal_selected_pole_ = true;
+}
+
 bool BezierPatchInspector::draw_pole_editor()
 {
+    if (reveal_selected_pole_)
+    {
+        ImGui::SetNextItemOpen(true);
+        reveal_selected_pole_ = false;
+    }
     if (!ImGui::CollapsingHeader("Control points"))
     {
         return false;

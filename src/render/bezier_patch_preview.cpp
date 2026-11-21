@@ -48,6 +48,13 @@ void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::Viewport
 }
 } // namespace
 
+std::optional<std::size_t> pick_patch_pole(const EditablePatch &model, const ClipTransform &transform,
+                                           const ImVec2 cursor)
+{
+    const occt_lab::render::ViewportProjection project{transform, *ImGui::GetMainViewport(), half_width};
+    return project.pick_pole(model.current().control_net(), cursor);
+}
+
 void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &transform, const PatchLayers &layers,
                                const std::size_t selected_pole, const occt_lab::geometry::SurfaceSample *selected)
 {

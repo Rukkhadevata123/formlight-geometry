@@ -85,6 +85,36 @@ std::optional<ImVec2> ViewportProjection::visible_point(const Vec3 &world) const
     return std::nullopt;
 }
 
+std::optional<std::size_t> ViewportProjection::pick_pole(const std::span<const Vec3> poles, const ImVec2 cursor) const
+{
+    if (cursor.x < viewport_.Pos.x || cursor.x >= viewport_.Pos.x + viewport_.Size.x || cursor.y < viewport_.Pos.y ||
+        cursor.y >= viewport_.Pos.y + viewport_.Size.y)
+    {
+        return std::nullopt;
+    }
+
+    constexpr float hit_radius = 9.0F;
+    float best_distance_squared = hit_radius * hit_radius;
+    std::optional<std::size_t> hit;
+    for (std::size_t index = 0; index < poles.size(); ++index)
+    {
+        const auto point = visible_point(poles[index]);
+        if (!point)
+        {
+            continue;
+        }
+        const float dx = cursor.x - point->x;
+        const float dy = cursor.y - point->y;
+        // At equal distance the last marker drawn is on top.
+        if (const float distance_squared = dx * dx + dy * dy; distance_squared <= best_distance_squared)
+        {
+            best_distance_squared = distance_squared;
+            hit = index;
+        }
+    }
+    return hit;
+}
+
 void ViewportProjection::draw_polyline(ImDrawList &draw_list, const std::span<const Vec3> points, const ImU32 color,
                                        const float width) const
 {

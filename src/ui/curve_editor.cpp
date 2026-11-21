@@ -14,13 +14,12 @@ void CurveEditor::cancel_drag(EditableCurve &curve)
     }
 }
 
-void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransform &transform)
+void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransform &transform, const bool pole_click)
 {
     constexpr auto button = ImGuiMouseButton_Left;
     if (!tracking_pole_)
     {
-        if (const auto &io = ImGui::GetIO(); !ImGui::IsMouseClicked(button) || io.WantCaptureMouse ||
-                                             io.KeyMods != ImGuiMod_None || ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+        if (!pole_click)
         {
             return;
         }
