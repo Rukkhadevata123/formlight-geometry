@@ -1,6 +1,7 @@
 #include "curve_editor.hpp"
 #include "fit_residuals.hpp"
 #include "render/preview/curve_preview.hpp"
+#include "ui/pole_drag.hpp"
 
 #include <imgui.h>
 
@@ -16,7 +17,6 @@ void CurveEditor::cancel_drag(EditableCurve &curve)
 
 void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransform &transform, const bool pole_click)
 {
-    constexpr auto button = ImGuiMouseButton_Left;
     if (!tracking_pole_)
     {
         if (!pole_click)
@@ -31,17 +31,15 @@ void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransfor
         return;
     }
 
-    const bool released = ImGui::IsMouseReleased(button);
-    if (ImGui::IsKeyPressed(ImGuiKey_Escape) || !ImGui::IsMousePosValid() || (!ImGui::IsMouseDown(button) && !released))
+    const auto motion = read_pole_drag();
+    if (!motion)
     {
         cancel_drag(curve);
         return;
     }
 
-    // ImGui keeps the press-to-cursor delta on the release frame and filters ordinary click jitter.
-    const auto delta = ImGui::GetMouseDragDelta(button);
     const auto index = selected_index();
-    const auto position = dragged_pole_position(curve.current(), transform, index, delta);
+    const auto position = dragged_pole_position(curve.current(), transform, index, motion->delta);
     if (const auto result = curve.preview_pole_move(index, position); !result)
     {
         error_ = result.error();
@@ -53,7 +51,7 @@ void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransfor
         draft_.poles[index] = position;
         error_.clear();
     }
-    if (released)
+    if (motion->released)
     {
         curve.accept_pole_move();
         tracking_pole_ = false;

@@ -70,9 +70,7 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
             if (patch_layers.control_net)
             {
-                ImGui::TextUnformatted(mode == PreviewMode::nurbs_surface
-                                           ? "Left-click a blue pole to inspect it"
-                                           : "Left-drag a blue pole to move it, Esc to cancel");
+                ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
             }
         }
         else if (mode == PreviewMode::compute_pyramid)

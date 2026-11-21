@@ -367,17 +367,20 @@ struct NurbsSurfaceSession
     EditableNurbsSurface model{occt_lab::make_nurbs_surface_example()};
     NurbsSurfacePreview preview{model.current().definition.poles};
     NurbsPoleInspector inspector{model};
-    std::size_t selected_pole = 0;
 
     void draw(const ClipTransform &transform, const PatchLayers &layers, const bool pole_click)
     {
-        if (pole_click && layers.control_net)
+        const auto project = preview.projection(transform);
+        if (layers.control_net)
         {
-            const auto hit = preview.pick_pole(model.current().definition.poles, transform, ImGui::GetMousePos());
-            selected_pole = hit.value_or(selected_pole);
+            inspector.handle_viewport_input(model, project, pole_click);
         }
-        inspector.draw(model, selected_pole);
-        preview.draw(model.current(), transform, layers, selected_pole);
+        else
+        {
+            inspector.cancel_drag(model);
+        }
+        inspector.draw(model);
+        NurbsSurfacePreview::draw(model.displayed(), project, layers, inspector.selected_pole());
     }
 };
 
@@ -413,6 +416,10 @@ public:
     {
         curve_editor_.cancel_drag(curve_);
         patch_inspector_.cancel_drag();
+        if (nurbs_)
+        {
+            nurbs_->inspector.cancel_drag(nurbs_->model);
+        }
         camera_drag_ = CameraDrag::none;
     }
 
@@ -552,7 +559,8 @@ public:
         }
 
         imgui_.begin_frame();
-        const bool moving_pole = curve_editor_.tracking_pole() || patch_inspector_.tracking_pole();
+        const bool moving_pole = curve_editor_.tracking_pole() || patch_inspector_.tracking_pole() ||
+                                 (nurbs_ && nurbs_->inspector.tracking_pole());
         if (!moving_pole)
         {
             update_camera_input(swapchain.extent);

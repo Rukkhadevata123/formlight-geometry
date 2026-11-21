@@ -48,6 +48,7 @@ add_executable(occt_lab
     src/application/editable_patch.hpp
     src/application/nurbs_surface_example.cpp
     src/application/nurbs_surface_example.hpp
+    src/application/single_step_history.hpp
     src/document/curve_project.cpp
     src/document/curve_project.hpp
     src/document/patch_project.cpp
@@ -96,6 +97,7 @@ add_executable(occt_lab
     src/ui/imgui_session.hpp
     src/ui/nurbs_pole_inspector.cpp
     src/ui/nurbs_pole_inspector.hpp
+    src/ui/pole_drag.hpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp

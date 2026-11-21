@@ -3,6 +3,7 @@
 #include "application/editable_patch.hpp"
 #include "document/patch_project.hpp"
 #include "render/preview/bezier_patch_preview.hpp"
+#include "pole_drag.hpp"
 
 #include <imgui.h>
 
@@ -124,7 +125,6 @@ void BezierPatchInspector::cancel_drag()
 void BezierPatchInspector::handle_viewport_input(const ClipTransform &transform, const bool pole_click,
                                                  PatchMeshControls &mesh)
 {
-    constexpr auto button = ImGuiMouseButton_Left;
     if (!tracking_pole_)
     {
         if (pole_click)
@@ -138,15 +138,15 @@ void BezierPatchInspector::handle_viewport_input(const ClipTransform &transform,
         return;
     }
 
-    const bool released = ImGui::IsMouseReleased(button);
-    if (ImGui::IsKeyPressed(ImGuiKey_Escape) || !ImGui::IsMousePosValid() || (!ImGui::IsMouseDown(button) && !released))
+    const auto motion = read_pole_drag();
+    if (!motion)
     {
         cancel_drag();
         return;
     }
 
     const auto index = selected_pole();
-    const auto position = dragged_patch_pole_position(model_, transform, index, ImGui::GetMouseDragDelta(button));
+    const auto position = dragged_patch_pole_position(model_, transform, index, motion->delta);
     if (const auto changed = model_.preview_pole_move(index, position); !changed)
     {
         cancel_drag();
@@ -158,7 +158,7 @@ void BezierPatchInspector::handle_viewport_input(const ClipTransform &transform,
         draft_[index] = position;
         update_samples();
     }
-    if (released)
+    if (motion->released)
     {
         tracking_pole_ = false;
         if (model_.commit_preview())

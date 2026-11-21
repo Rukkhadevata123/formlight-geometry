@@ -1,4 +1,6 @@
 #include "nurbs_pole_inspector.hpp"
+#include "pole_drag.hpp"
+#include "render/viewport/viewport_projection.hpp"
 
 #include <imgui.h>
 
@@ -16,7 +18,61 @@ void NurbsPoleInspector::reset_draft(const EditableNurbsSurface &model)
     error_.clear();
 }
 
-void NurbsPoleInspector::draw(EditableNurbsSurface &model, const std::size_t selected_pole)
+bool NurbsPoleInspector::has_edits(const EditableNurbsSurface::Definition &surface) const
+{
+    return poles_ != surface.poles || weights_ != surface.weights;
+}
+
+void NurbsPoleInspector::cancel_drag(EditableNurbsSurface &model)
+{
+    if (tracking_pole_)
+    {
+        model.discard_preview();
+        tracking_pole_ = false;
+        reset_draft(model);
+    }
+}
+
+void NurbsPoleInspector::handle_viewport_input(EditableNurbsSurface &model,
+                                               const occt_lab::render::ViewportProjection &project,
+                                               const bool pole_click)
+{
+    const auto &surface = model.current().definition;
+    if (!tracking_pole_)
+    {
+        if (pole_click)
+        {
+            if (const auto hit = project.pick_pole(surface.poles, ImGui::GetMousePos()))
+            {
+                selected_pole_ = *hit;
+                tracking_pole_ = !has_edits(surface);
+            }
+        }
+        return;
+    }
+    const auto motion = read_pole_drag();
+    if (!motion)
+    {
+        cancel_drag(model);
+        return;
+    }
+    const auto position = project.dragged_position(surface.poles.at(selected_pole_), motion->delta);
+    if (const auto result = model.preview_pole_move(selected_pole_, position); !result)
+    {
+        cancel_drag(model);
+        error_ = result.error();
+        return;
+    }
+    poles_[selected_pole_] = position;
+    if (motion->released)
+    {
+        model.commit_preview();
+        tracking_pole_ = false;
+        reset_draft(model);
+    }
+}
+
+void NurbsPoleInspector::draw(EditableNurbsSurface &model)
 {
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
@@ -31,8 +87,10 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model, const std::size_t sel
     if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         const auto &surface = model.current().definition;
+        const auto selected_pole = selected_pole_;
         const auto columns = static_cast<std::size_t>(surface.u.pole_count);
         ImGui::Text("Pole U %zu   V %zu", selected_pole % columns + 1, selected_pole / columns + 1);
+        ImGui::BeginDisabled(tracking_pole_);
         auto &[x, y, z] = poles_.at(selected_pole);
         ImGui::PushID(static_cast<int>(selected_pole));
         ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
@@ -50,7 +108,7 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model, const std::size_t sel
             error_.clear();
         }
 
-        bool dirty = poles_ != surface.poles || weights_ != surface.weights;
+        bool dirty = has_edits(surface);
         ImGui::BeginDisabled(!dirty);
         if (ImGui::Button("Apply"))
         {
@@ -87,6 +145,7 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model, const std::size_t sel
             model.redo();
             reset_draft(model);
         }
+        ImGui::EndDisabled();
         ImGui::EndDisabled();
         const auto &point = surface.poles.at(selected_pole);
         ImGui::Text("Applied (mm)   (%.8g, %.8g, %.8g)", point.x, point.y, point.z);

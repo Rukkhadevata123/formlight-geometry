@@ -27,16 +27,10 @@ occt_lab::render::ViewportProjection NurbsSurfacePreview::projection(const ClipT
     return {transform, *ImGui::GetMainViewport(), center_, scale_};
 }
 
-std::optional<std::size_t> NurbsSurfacePreview::pick_pole(const std::span<const occt_lab::geometry::Vec3> poles,
-                                                          const ClipTransform &transform, const ImVec2 cursor) const
+void NurbsSurfacePreview::draw(const EditableNurbsSurface::Snapshot &surface,
+                               const occt_lab::render::ViewportProjection &project, const PatchLayers &layers,
+                               const std::size_t selected_pole)
 {
-    return projection(transform).pick_pole(poles, cursor);
-}
-
-void NurbsSurfacePreview::draw(const EditableNurbsSurface::Snapshot &surface, const ClipTransform &transform,
-                               const PatchLayers &layers, const std::size_t selected_pole) const
-{
-    draw_surface_wireframe(*ImGui::GetBackgroundDrawList(ImGui::GetMainViewport()), projection(transform),
-                           surface.definition.poles, surface.definition.u.pole_count, surface.isolines, layers,
-                           selected_pole);
+    draw_surface_wireframe(*ImGui::GetBackgroundDrawList(ImGui::GetMainViewport()), project, surface.definition.poles,
+                           surface.definition.u.pole_count, surface.isolines, layers, selected_pole);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry/curves/bspline_curve.hpp"
+#include "single_step_history.hpp"
 
 #include <expected>
 #include <optional>
@@ -32,15 +33,16 @@ class EditableCurve
 
     [[nodiscard]] bool history_changes_knots() const
     {
-        return history_ && history_->definition.knots != current_.definition.knots;
+        const auto &other = history_.alternate();
+        return other && other->definition.knots != current().definition.knots;
     }
     [[nodiscard]] bool can_undo() const
     {
-        return history_.has_value() && !undone_;
+        return history_.can_undo();
     }
     [[nodiscard]] bool can_redo() const
     {
-        return history_.has_value() && undone_;
+        return history_.can_redo();
     }
     void undo();
     void redo();
@@ -48,8 +50,6 @@ class EditableCurve
   private:
     void commit(Curve candidate);
     void commit_refinement(const Definition &definition);
-    Curve current_;
+    SingleStepHistory<Curve> history_;
     std::optional<Curve> pole_preview_;
-    std::optional<Curve> history_;
-    bool undone_ = false;
 };

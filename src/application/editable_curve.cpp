@@ -35,22 +35,22 @@ double max_sample_deviation(const EditableCurve::Curve::Samples &before, const E
 }
 } // namespace
 
-EditableCurve::EditableCurve() : current_(sample_curve(occt_lab::geometry::make_uniform_cubic(initial_poles)))
+EditableCurve::EditableCurve() : history_(sample_curve(occt_lab::geometry::make_uniform_cubic(initial_poles)))
 {
 }
 
-EditableCurve::EditableCurve(Curve curve) : current_(std::move(curve))
+EditableCurve::EditableCurve(Curve curve) : history_(std::move(curve))
 {
 }
 
 auto EditableCurve::current() const -> const Curve &
 {
-    return current_;
+    return history_.current();
 }
 
 auto EditableCurve::displayed() const -> const Curve &
 {
-    return pole_preview_ ? *pole_preview_ : current_;
+    return pole_preview_ ? *pole_preview_ : current();
 }
 
 auto EditableCurve::preview_pole_move(const std::size_t index, const occt_lab::geometry::Vec3 &position)
@@ -58,18 +58,18 @@ auto EditableCurve::preview_pole_move(const std::size_t index, const occt_lab::g
 {
     try
     {
-        if (current_.definition.poles.at(index) == position)
+        if (current().definition.poles.at(index) == position)
         {
             cancel_pole_move();
             return {};
         }
         if (displayed().definition.poles[index] != position)
         {
-            auto definition = current_.definition;
+            auto definition = current().definition;
             definition.poles[index] = position;
             auto candidate = sample_curve(definition);
             // Keep the grabbed point under the cursor even when it becomes the new outermost pole.
-            candidate.framing_extent = current_.framing_extent;
+            candidate.framing_extent = current().framing_extent;
             pole_preview_ = std::move(candidate);
         }
         return {};
@@ -97,26 +97,26 @@ void EditableCurve::cancel_pole_move()
 void EditableCurve::commit(Curve candidate)
 {
     cancel_pole_move();
-    history_ = std::exchange(current_, std::move(candidate));
-    undone_ = false;
+    history_.commit(std::move(candidate));
 }
 
 void EditableCurve::commit_refinement(const Definition &definition)
 {
-    auto candidate = sample_curve(definition, current_.data_points);
+    const auto &before = current();
+    auto candidate = sample_curve(definition, before.data_points);
     candidate.refinement = occt_lab::geometry::RefinementComparison{
-        .previous_degree = current_.definition.degree,
-        .previous_pole_count = current_.definition.poles.size(),
-        .max_sample_deviation = max_sample_deviation(current_.samples, candidate.samples),
+        .previous_degree = before.definition.degree,
+        .previous_pole_count = before.definition.poles.size(),
+        .max_sample_deviation = max_sample_deviation(before.samples, candidate.samples),
     };
-    candidate.framing_extent = current_.framing_extent;
-    candidate.approximation = current_.approximation;
+    candidate.framing_extent = before.framing_extent;
+    candidate.approximation = before.approximation;
     commit(std::move(candidate));
 }
 
 std::expected<void, std::string> EditableCurve::apply(const Definition &definition)
 {
-    if (definition == current_.definition)
+    if (definition == current().definition)
     {
         return {};
     }
@@ -135,7 +135,7 @@ std::expected<void, std::string> EditableCurve::insert_knot(const double paramet
 {
     try
     {
-        commit_refinement(insert_curve_knot(current_.definition, parameter));
+        commit_refinement(insert_curve_knot(current().definition, parameter));
         return {};
     }
     catch (const std::exception &error)
@@ -148,7 +148,7 @@ std::expected<void, std::string> EditableCurve::elevate_degree(const int target_
 {
     try
     {
-        commit_refinement(elevate_curve_degree(current_.definition, target_degree));
+        commit_refinement(elevate_curve_degree(current().definition, target_degree));
         return {};
     }
     catch (const std::exception &error)
@@ -161,7 +161,7 @@ std::expected<void, std::string> EditableCurve::interpolate_through_poles()
 {
     try
     {
-        commit(occt_lab::geometry::interpolate_curve(current_.definition.poles));
+        commit(occt_lab::geometry::interpolate_curve(current().definition.poles));
         return {};
     }
     catch (const std::exception &error)
@@ -172,18 +172,19 @@ std::expected<void, std::string> EditableCurve::interpolate_through_poles()
 
 std::expected<void, std::string> EditableCurve::approximate_data_points(const double tolerance)
 {
-    if (current_.approximation && !current_.refinement && current_.approximation->requested_tolerance == tolerance)
+    const auto &curve = current();
+    if (curve.approximation && !curve.refinement && curve.approximation->requested_tolerance == tolerance)
     {
         return {};
     }
     try
     {
         std::vector<occt_lab::geometry::Vec3> saved_positions;
-        for (const auto &input : current_.data_points)
+        for (const auto &input : curve.data_points)
         {
             saved_positions.push_back(input.position);
         }
-        const auto &positions = saved_positions.empty() ? current_.definition.poles : saved_positions;
+        const auto &positions = saved_positions.empty() ? curve.definition.poles : saved_positions;
         commit(occt_lab::geometry::approximate_curve(positions, tolerance));
         return {};
     }
@@ -196,19 +197,11 @@ std::expected<void, std::string> EditableCurve::approximate_data_points(const do
 void EditableCurve::undo()
 {
     cancel_pole_move();
-    if (can_undo())
-    {
-        std::swap(current_, *history_);
-        undone_ = true;
-    }
+    history_.undo();
 }
 
 void EditableCurve::redo()
 {
     cancel_pole_move();
-    if (can_redo())
-    {
-        std::swap(current_, *history_);
-        undone_ = false;
-    }
+    history_.redo();
 }

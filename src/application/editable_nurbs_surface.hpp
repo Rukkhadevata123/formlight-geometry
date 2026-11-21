@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry/surfaces/bspline_surface.hpp"
+#include "single_step_history.hpp"
 
 #include <optional>
 
@@ -18,24 +19,32 @@ class EditableNurbsSurface
     explicit EditableNurbsSurface(Definition definition);
     [[nodiscard]] const Snapshot &current() const
     {
-        return current_;
+        return history_.current();
+    }
+    [[nodiscard]] const Snapshot &displayed() const
+    {
+        return preview_ ? *preview_ : current();
     }
     [[nodiscard]] bool can_undo() const
     {
-        return history_.has_value() && !undone_;
+        return history_.can_undo();
     }
     [[nodiscard]] bool can_redo() const
     {
-        return history_.has_value() && undone_;
+        return history_.can_redo();
     }
 
     [[nodiscard]] auto apply(const std::vector<occt_lab::geometry::Vec3> &poles, const std::vector<double> &weights)
         -> std::expected<void, std::string>;
+    [[nodiscard]] auto preview_pole_move(std::size_t index, occt_lab::geometry::Vec3 position)
+        -> std::expected<void, std::string>;
+    void commit_preview();
+    void discard_preview();
     void undo();
     void redo();
 
   private:
-    Snapshot current_;
-    std::optional<Snapshot> history_;
-    bool undone_ = false;
+    void commit(Snapshot next);
+    SingleStepHistory<Snapshot> history_;
+    std::optional<Snapshot> preview_;
 };
