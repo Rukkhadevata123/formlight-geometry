@@ -4,7 +4,7 @@
 #include "application/editable_patch.hpp"
 #include "document/patch_project.hpp"
 #include "render/preview/bezier_patch_preview.hpp"
-#include "pole_drag.hpp"
+#include "ui/pole_drag.hpp"
 
 #include <imgui.h>
 

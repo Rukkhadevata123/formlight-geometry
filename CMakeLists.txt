@@ -89,8 +89,6 @@ add_executable(occt_lab
     src/render/viewport/viewport_projection.hpp
     src/render/vulkan_resources.cpp
     src/render/vulkan_resources.hpp
-    src/ui/bezier_patch_inspector.cpp
-    src/ui/bezier_patch_inspector.hpp
     src/ui/box_editor.cpp
     src/ui/box_editor.hpp
     src/ui/curve/curve_editor.cpp
@@ -102,18 +100,20 @@ add_executable(occt_lab
     src/ui/developer_diagnostics.hpp
     src/ui/imgui_session.cpp
     src/ui/imgui_session.hpp
-    src/ui/isoline_sampling.cpp
-    src/ui/isoline_sampling.hpp
-    src/ui/nurbs_pole_inspector.cpp
-    src/ui/nurbs_pole_inspector.hpp
-    src/ui/nurbs_surface_creation_dialog.cpp
-    src/ui/nurbs_surface_probe.cpp
-    src/ui/nurbs_surface_project_panel.cpp
     src/ui/pole_drag.hpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp
     src/ui/renderer_status_panel.hpp
+    src/ui/surface/bezier_patch_inspector.cpp
+    src/ui/surface/bezier_patch_inspector.hpp
+    src/ui/surface/isoline_sampling.cpp
+    src/ui/surface/isoline_sampling.hpp
+    src/ui/surface/nurbs_pole_inspector.cpp
+    src/ui/surface/nurbs_pole_inspector.hpp
+    src/ui/surface/nurbs_surface_creation_dialog.cpp
+    src/ui/surface/nurbs_surface_probe.cpp
+    src/ui/surface/nurbs_surface_project_panel.cpp
 )
 target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)

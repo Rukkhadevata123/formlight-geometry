@@ -1,7 +1,7 @@
 #include "nurbs_pole_inspector.hpp"
 #include "isoline_sampling.hpp"
-#include "pole_drag.hpp"
 #include "render/viewport/viewport_projection.hpp"
+#include "ui/pole_drag.hpp"
 
 #include <imgui.h>
 

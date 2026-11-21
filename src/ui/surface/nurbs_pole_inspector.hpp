@@ -2,7 +2,7 @@
 
 #include "application/editable_nurbs_surface.hpp"
 #include "application/nurbs_surface_creation.hpp"
-#include "project_file_controls.hpp"
+#include "ui/project_file_controls.hpp"
 
 namespace occt_lab::render
 {

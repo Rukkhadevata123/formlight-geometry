@@ -11,13 +11,13 @@
 #include "render/preview/nurbs_surface_preview.hpp"
 #include "render/preview/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
-#include "ui/bezier_patch_inspector.hpp"
 #include "ui/box_editor.hpp"
 #include "ui/curve/curve_editor.hpp"
 #include "ui/developer_diagnostics.hpp"
 #include "ui/imgui_session.hpp"
-#include "ui/nurbs_pole_inspector.hpp"
 #include "ui/renderer_status_panel.hpp"
+#include "ui/surface/bezier_patch_inspector.hpp"
+#include "ui/surface/nurbs_pole_inspector.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
