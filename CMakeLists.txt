@@ -44,6 +44,8 @@ add_executable(occt_lab
     src/render/bezier_patch_preview.hpp
     src/render/brep_preview.cpp
     src/render/brep_preview.hpp
+    src/render/compute_bezier_patch.cpp
+    src/render/compute_bezier_patch.hpp
     src/render/compute_buffer_check.cpp
     src/render/compute_buffer_check.hpp
     src/render/compute_pyramid.cpp
@@ -103,7 +105,7 @@ add_custom_command(
     VERBATIM
 )
 
-foreach(name IN ITEMS buffer_check compute_pyramid)
+foreach(name IN ITEMS buffer_check compute_pyramid bezier_patch)
     set(source "${CMAKE_CURRENT_SOURCE_DIR}/shaders/${name}.slang")
     set(output "${shader_output_dir}/${name}.comp.spv")
     add_custom_command(

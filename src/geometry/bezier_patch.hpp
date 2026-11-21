@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <span>
 #include <vector>
@@ -57,6 +58,14 @@ struct PatchSampling
     int constant_v_lines = 9;
     int samples_per_line = 33;
     bool operator==(const PatchSampling &) const = default;
+};
+
+struct PatchGrid
+{
+    static constexpr uint32_t max_segments = 32;
+    uint32_t u_segments = 24;
+    uint32_t v_segments = 16;
+    bool operator==(const PatchGrid &) const = default;
 };
 
 struct PatchIsolines

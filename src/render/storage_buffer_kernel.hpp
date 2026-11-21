@@ -4,15 +4,16 @@
 
 #include <string_view>
 
-// Both compute shaders write one storage buffer and take one uint32 push constant.
+// The kernels share a single storage buffer binding and a small push-constant block.
 class StorageBufferKernel
 {
   public:
     StorageBufferKernel(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device,
                         std::string_view shader_file, vk::DeviceSize size, vk::BufferUsageFlags additional_usage,
-                        vk::MemoryPropertyFlags required_memory);
+                        vk::MemoryPropertyFlags required_memory, uint32_t parameter_bytes = sizeof(uint32_t));
 
-    void dispatch(const vk::raii::CommandBuffer &commands, uint32_t parameter, uint32_t groups_x) const;
+    void dispatch(const vk::raii::CommandBuffer &commands, const vk::ArrayProxy<const uint32_t> &parameters,
+                  uint32_t groups_x, uint32_t groups_y = 1) const;
     [[nodiscard]] vk::Buffer buffer() const
     {
         return *buffer_;

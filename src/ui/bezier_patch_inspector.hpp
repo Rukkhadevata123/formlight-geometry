@@ -4,11 +4,19 @@
 
 class BezierPatchPreview;
 
+struct PatchMeshControls
+{
+    occt_lab::geometry::PatchGrid grid;
+    bool visible = false;
+    bool compare_requested = false;
+    std::string report;
+};
+
 class BezierPatchInspector
 {
   public:
     explicit BezierPatchInspector(BezierPatchPreview &preview);
-    void draw();
+    void draw(PatchMeshControls &mesh, bool compute_supported);
     [[nodiscard]] auto selected_sample() const -> const occt_lab::geometry::SurfaceSample *
     {
         return sample_ ? &*sample_ : nullptr;

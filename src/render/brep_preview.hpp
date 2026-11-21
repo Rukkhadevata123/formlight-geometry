@@ -51,6 +51,8 @@ class BRepPreview
                 const ClipTransform &transform) const;
     void draw_triangles(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
                         vk::Buffer vertices, uint32_t vertex_count) const;
+    void draw_indexed_triangles(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
+                                vk::Buffer mesh, vk::DeviceSize index_offset, uint32_t index_count) const;
 
   private:
     void bind_mesh_pipeline(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,

@@ -2,6 +2,7 @@
 
 #include "render/bezier_patch_preview.hpp"
 #include "render/brep_preview.hpp"
+#include "render/compute_bezier_patch.hpp"
 #include "render/compute_buffer_check.hpp"
 #include "render/compute_pyramid.hpp"
 #include "render/curve_preview.hpp"
@@ -662,6 +663,22 @@ public:
         {
             throw vk::SystemError(vk::make_error_code(wait_result), "waiting for the previous frame");
         }
+        if (patch_readback_pending_)
+        {
+            patch_readback_pending_ = false;
+            try
+            {
+                patch_mesh_.report = gpu_patch_->compare_with_occt(patch_preview_.patch());
+            }
+            catch (const vk::DeviceLostError &)
+            {
+                throw;
+            }
+            catch (const std::exception &error)
+            {
+                patch_mesh_.report = error.what();
+            }
+        }
         if (compute_readback_pending_)
         {
             compute_readback_pending_ = false;
@@ -758,7 +775,23 @@ public:
         }
         else if (preview_mode_ == PreviewMode::bezier_patch)
         {
-            patch_inspector_.draw();
+            patch_inspector_.draw(patch_mesh_, selected_.compute_supported);
+            if (patch_mesh_.visible && !gpu_patch_)
+            {
+                try
+                {
+                    gpu_patch_.emplace(selected_.physical_device, device_);
+                }
+                catch (const vk::DeviceLostError &)
+                {
+                    throw;
+                }
+                catch (const std::exception &error)
+                {
+                    patch_mesh_.visible = false;
+                    patch_mesh_.report = error.what();
+                }
+            }
             patch_preview_.draw(transform, patch_layers_, patch_inspector_.selected_sample());
         }
         ImGui::Render();
@@ -777,6 +810,8 @@ public:
         device_.resetFences(*frame_finished_);
         graphics_queue_.submit2(submit, *frame_finished_);
         compute_readback_pending_ = dispatch_compute;
+        patch_readback_pending_ = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible &&
+                                  patch_mesh_.compare_requested;
 
         vk::PresentInfoKHR present;
         present.setWaitSemaphores(*image.ready_to_present)
@@ -888,6 +923,11 @@ private:
             compute_check_->record(command_buffer_);
         }
         const bool draw_pyramid = preview_mode_ == PreviewMode::compute_pyramid && pyramid_.has_value();
+        const bool draw_patch = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible;
+        if (draw_patch)
+        {
+            gpu_patch_->prepare(command_buffer_, patch_preview_.patch(), patch_mesh_.grid, patch_mesh_.compare_requested);
+        }
         if (draw_pyramid)
         {
             pyramid_->generate_if_changed(command_buffer_, static_cast<uint32_t>(pyramid_controls_.height_mm));
@@ -932,6 +972,10 @@ private:
             preview_.draw_triangles(command_buffer_, swapchain.extent, transform, pyramid_->vertices(),
                                     ComputePyramid::vertex_count);
         }
+        else if (draw_patch)
+        {
+            gpu_patch_->draw(command_buffer_, preview_, swapchain.extent, transform);
+        }
         ImGui_ImplVulkan_RenderDrawData(draw_data, *command_buffer_);
         command_buffer_.endRendering();
 
@@ -969,6 +1013,9 @@ private:
     CurveEditor curve_editor_{curve_};
     BezierPatchPreview patch_preview_;
     BezierPatchInspector patch_inspector_{patch_preview_};
+    std::optional<ComputeBezierPatch> gpu_patch_;
+    PatchMeshControls patch_mesh_;
+    bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;

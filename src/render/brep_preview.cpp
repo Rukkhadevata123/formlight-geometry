@@ -333,7 +333,14 @@ void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Exte
                          const ClipTransform &transform) const
 {
     const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
-    bind_mesh_pipeline(commands, extent, transform, *mesh.buffer);
-    commands.bindIndexBuffer(*mesh.buffer, mesh.index_offset, vk::IndexType::eUint32);
-    commands.drawIndexed(mesh.index_count, 1, 0, 0, 0);
+    draw_indexed_triangles(commands, extent, transform, *mesh.buffer, mesh.index_offset, mesh.index_count);
+}
+
+void BRepPreview::draw_indexed_triangles(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent,
+                                         const ClipTransform &transform, const vk::Buffer mesh,
+                                         const vk::DeviceSize index_offset, const uint32_t index_count) const
+{
+    bind_mesh_pipeline(commands, extent, transform, mesh);
+    commands.bindIndexBuffer(mesh, index_offset, vk::IndexType::eUint32);
+    commands.drawIndexed(index_count, 1, 0, 0, 0);
 }

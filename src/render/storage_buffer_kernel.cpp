@@ -12,7 +12,7 @@ constexpr auto compute_stage = vk::ShaderStageFlagBits::eCompute;
 StorageBufferKernel::StorageBufferKernel(const vk::raii::PhysicalDevice &physical_device,
                                          const vk::raii::Device &device, const std::string_view shader_file,
                                          const vk::DeviceSize size, const vk::BufferUsageFlags additional_usage,
-                                         const vk::MemoryPropertyFlags required_memory)
+                                         const vk::MemoryPropertyFlags required_memory, const uint32_t parameter_bytes)
 {
     vk::BufferCreateInfo buffer_info;
     buffer_info.size = size;
@@ -43,7 +43,7 @@ StorageBufferKernel::StorageBufferKernel(const vk::raii::PhysicalDevice &physica
     vk::WriteDescriptorSet write{*set_, 0, 0, 1, vk::DescriptorType::eStorageBuffer};
     device.updateDescriptorSets(write.setBufferInfo(range), {});
 
-    constexpr vk::PushConstantRange parameter_range{compute_stage, 0, sizeof(uint32_t)};
+    const vk::PushConstantRange parameter_range{compute_stage, 0, parameter_bytes};
     vk::PipelineLayoutCreateInfo layout_info;
     layout_info.setSetLayouts(*set_layout_).setPushConstantRanges(parameter_range);
     layout_ = vk::raii::PipelineLayout{device, layout_info};
@@ -52,11 +52,12 @@ StorageBufferKernel::StorageBufferKernel(const vk::raii::PhysicalDevice &physica
     pipeline_ = vk::raii::Pipeline{device, nullptr, vk::ComputePipelineCreateInfo{{}, stage, *layout_}};
 }
 
-void StorageBufferKernel::dispatch(const vk::raii::CommandBuffer &commands, const uint32_t parameter,
-                                   const uint32_t groups_x) const
+void StorageBufferKernel::dispatch(const vk::raii::CommandBuffer &commands,
+                                   const vk::ArrayProxy<const uint32_t> &parameters, const uint32_t groups_x,
+                                   const uint32_t groups_y) const
 {
     commands.bindPipeline(vk::PipelineBindPoint::eCompute, *pipeline_);
     commands.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *layout_, 0, *set_, {});
-    commands.pushConstants<uint32_t>(*layout_, compute_stage, 0, parameter);
-    commands.dispatch(groups_x, 1, 1);
+    commands.pushConstants<uint32_t>(*layout_, compute_stage, 0, parameters);
+    commands.dispatch(groups_x, groups_y, 1);
 }

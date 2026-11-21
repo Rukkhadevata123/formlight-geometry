@@ -6,6 +6,31 @@
 
 namespace
 {
+void draw_mesh_controls(PatchMeshControls &mesh)
+{
+    ImGui::SeparatorText("Vulkan surface mesh");
+    ImGui::Checkbox("Show GPU mesh", &mesh.visible);
+    if (mesh.visible)
+    {
+        constexpr uint32_t minimum = 1;
+        constexpr uint32_t maximum = occt_lab::geometry::PatchGrid::max_segments;
+        const auto previous = mesh.grid;
+        ImGui::SliderScalar("U subdivisions", ImGuiDataType_U32, &mesh.grid.u_segments, &minimum, &maximum, "%u",
+                            ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SliderScalar("V subdivisions", ImGuiDataType_U32, &mesh.grid.v_segments, &minimum, &maximum, "%u",
+                            ImGuiSliderFlags_AlwaysClamp);
+        if (previous != mesh.grid)
+        {
+            mesh.report.clear();
+        }
+        mesh.compare_requested = ImGui::Button("Compare grid with OCCT");
+    }
+    if (!mesh.report.empty())
+    {
+        ImGui::TextUnformatted(mesh.report.c_str());
+    }
+}
+
 void draw_surface_sample(const occt_lab::geometry::SurfaceSample &sample)
 {
     const auto &[position, normal] = sample;
@@ -26,8 +51,9 @@ void BezierPatchInspector::update_samples()
     reference_sample_ = reference_patch_.evaluate(u_, v_);
 }
 
-void BezierPatchInspector::draw()
+void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supported)
 {
+    mesh.compare_requested = false;
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
@@ -65,6 +91,10 @@ void BezierPatchInspector::draw()
         }
         draw_reference();
         draw_sampling_controls();
+        if (compute_supported)
+        {
+            draw_mesh_controls(mesh);
+        }
     }
     ImGui::End();
 }
