@@ -1,32 +1,13 @@
-#include "nurbs_surface_example.hpp"
+#include "analytic_surface.hpp"
 
 #include <algorithm>
 #include <array>
 
-namespace occt_lab
+namespace occt_lab::test
 {
-using geometry::BSplineSurfaceDefinition;
-
-BSplineSurfaceDefinition make_saddle_surface()
+geometry::BSplineSurfaceDefinition make_analytic_surface()
 {
-    const geometry::BSplineSurfaceAxis axis{.degree = 2, .pole_count = 3, .knots = {{0, 3}, {1, 3}}};
-    BSplineSurfaceDefinition definition{.u = axis, .v = axis};
-    // In the quadratic Bernstein basis, (2t-1)^2 has coefficients 1, -1, 1.
-    constexpr std::array square{1.0, -1.0, 1.0};
-    for (int v = 0; v < axis.pole_count; ++v)
-    {
-        for (int u = 0; u < axis.pole_count; ++u)
-        {
-            definition.poles.push_back({.x = 45.0 * (u - 1), .y = 36.0 * (v - 1), .z = 12.0 * (square[u] - square[v])});
-            definition.weights.push_back(u == 1 && v == 1 ? 2.0 : 1.0);
-        }
-    }
-    return definition;
-}
-
-BSplineSurfaceDefinition make_nurbs_surface_example()
-{
-    BSplineSurfaceDefinition definition{
+    geometry::BSplineSurfaceDefinition definition{
         .u = {.degree = 2, .pole_count = 4, .knots = {{2, 3}, {3, 1}, {5, 3}}},
         .v = {.degree = 1, .pole_count = 3, .knots = {{-2, 2}, {0.5, 1}, {2, 2}}},
         .poles = {},
@@ -47,4 +28,4 @@ BSplineSurfaceDefinition make_nurbs_surface_example()
     definition.weights[6] = 7.0; // Third pole in the second row.
     return definition;
 }
-} // namespace occt_lab
+} // namespace occt_lab::test

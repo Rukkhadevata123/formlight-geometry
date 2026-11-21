@@ -10,6 +10,7 @@ find_package(slang CONFIG REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(occt_lab_geometry STATIC
+    src/geometry/bspline_knot.cpp
     src/geometry/bspline_knot.hpp
     src/geometry/bspline_weights.hpp
     src/geometry/occt_bspline_knots.cpp
@@ -46,8 +47,8 @@ add_executable(occt_lab
     src/application/editable_nurbs_surface.hpp
     src/application/editable_patch.cpp
     src/application/editable_patch.hpp
-    src/application/nurbs_surface_example.cpp
-    src/application/nurbs_surface_example.hpp
+    src/application/nurbs_surface_creation.cpp
+    src/application/nurbs_surface_creation.hpp
     src/application/single_step_history.hpp
     src/document/curve_project.cpp
     src/document/curve_project.hpp
@@ -173,10 +174,12 @@ if(BUILD_TESTING)
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
+        tests/bspline_surface_check/analytic_surface.cpp
+        tests/bspline_surface_check/analytic_surface.hpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
         src/application/editable_nurbs_surface.cpp
-        src/application/nurbs_surface_example.cpp
+        src/application/nurbs_surface_creation.cpp
     )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp

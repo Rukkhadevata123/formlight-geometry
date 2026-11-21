@@ -1,6 +1,7 @@
 #pragma once
 
 #include "application/editable_nurbs_surface.hpp"
+#include "application/nurbs_surface_creation.hpp"
 
 namespace occt_lab::render
 {
@@ -25,7 +26,7 @@ class NurbsPoleInspector
     void draw(EditableNurbsSurface &model);
 
   private:
-    void draw_preset_buttons(EditableNurbsSurface &model);
+    void draw_creation_dialog(EditableNurbsSurface &model);
     void reset_draft(const EditableNurbsSurface &model);
     [[nodiscard]] bool has_edits(const EditableNurbsSurface::Definition &surface) const;
     std::size_t selected_pole_ = 0;
@@ -34,4 +35,6 @@ class NurbsPoleInspector
     std::vector<occt_lab::geometry::Vec3> poles_;
     std::vector<double> weights_;
     std::string error_;
+    occt_lab::PlanarSurfaceParameters creation_parameters_;
+    std::string creation_error_;
 };

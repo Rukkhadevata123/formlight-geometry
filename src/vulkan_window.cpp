@@ -1,7 +1,7 @@
 #include "vulkan_window.hpp"
 
 #include "application/editable_patch.hpp"
-#include "application/nurbs_surface_example.hpp"
+#include "application/nurbs_surface_creation.hpp"
 #include "render/preview/bezier_patch_preview.hpp"
 #include "render/preview/brep_preview.hpp"
 #include "render/compute/compute_bezier_patch.hpp"

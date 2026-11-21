@@ -1,12 +1,66 @@
 #include "application/editable_nurbs_surface.hpp"
-#include "application/nurbs_surface_example.hpp"
+#include "application/nurbs_surface_creation.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
+namespace
+{
+void check_planar_creation()
+{
+    using occt_lab::PlanarSurfaceParameters;
+    for (const auto [u_count, v_count] :
+         {std::pair{2, 2}, std::pair{6, 3}, std::pair{3, PlanarSurfaceParameters::max_poles}})
+    {
+        const auto plane = occt_lab::make_planar_nurbs_surface({u_count, v_count, 120, 40}).value();
+        if (plane.u.pole_count != u_count || plane.v.pole_count != v_count ||
+            plane.u.degree != std::min(3, u_count - 1) || plane.v.degree != std::min(3, v_count - 1))
+        {
+            throw std::runtime_error("Planar surface axes do not match the requested grid");
+        }
+        for (int v = 0; v < v_count; ++v)
+        {
+            for (int u = 0; u < u_count; ++u)
+            {
+                const auto index = static_cast<std::size_t>(v * u_count + u);
+                const auto &[x, y, z] = plane.poles.at(index);
+                if (std::abs(x - (-60 + 120.0 * u / (u_count - 1))) > 1e-10 ||
+                    std::abs(y - (-20 + 40.0 * v / (v_count - 1))) > 1e-10 || z != 0 || plane.weights.at(index) != 1)
+                {
+                    throw std::runtime_error("Planar control net lost its spacing, row order or unit weights");
+                }
+            }
+        }
+        const occt_lab::geometry::BSplineSurface surface{plane};
+        const auto near = [](const auto &a, const occt_lab::geometry::Vec3 &b)
+        { return std::hypot(a.x - b.x, a.y - b.y, a.z - b.z) <= 1e-10; };
+        if (!near(surface.position(0.5, 0.5).value(), {}) ||
+            !near(surface.position(0, 0).value(), plane.poles.front()) ||
+            !near(surface.position(1, 1).value(), plane.poles.back()))
+        {
+            throw std::runtime_error("Created plane does not interpolate its corners or span the origin");
+        }
+    }
+
+    for (const auto invalid : {PlanarSurfaceParameters{1, 4, 120, 40}, PlanarSurfaceParameters{4, 65, 120, 40},
+                               PlanarSurfaceParameters{4, 4, 0, 40}, PlanarSurfaceParameters{4, 4, 120, -1},
+                               PlanarSurfaceParameters{4, 4, std::numeric_limits<double>::quiet_NaN(), 40},
+                               PlanarSurfaceParameters{4, 4, 120, std::numeric_limits<double>::infinity()}})
+    {
+        if (occt_lab::make_planar_nurbs_surface(invalid))
+        {
+            throw std::runtime_error("New surface accepted invalid grid dimensions");
+        }
+    }
+}
+} // namespace
+
 void check_nurbs_presets()
 {
+    check_planar_creation();
     const auto saddle = occt_lab::make_saddle_surface();
     const occt_lab::geometry::BSplineSurface surface{saddle};
     for (const double u : {0.0, 0.25, 0.5, 0.75, 1.0})
@@ -35,29 +89,29 @@ void check_nurbs_presets()
         throw std::runtime_error("Editing an outer saddle pole changed the framing");
     }
     const auto edited = model.current();
-    const auto analytic = occt_lab::make_nurbs_surface_example();
-    model.replace(analytic).value();
-    const auto analytic_frame = model.current().framing;
-    if (model.current().definition != analytic || analytic_frame == saddle_frame)
+    const auto plane = occt_lab::make_planar_nurbs_surface({6, 3, 120, 40}).value();
+    model.replace(plane).value();
+    const auto plane_frame = model.current().framing;
+    if (model.current().definition != plane || plane_frame == saddle_frame)
     {
-        throw std::runtime_error("Creating the analytic preset did not replace the geometry and framing");
+        throw std::runtime_error("Creating a plane did not replace the geometry and framing");
     }
-    model.replace(analytic).value();
+    model.replace(plane).value();
     model.undo();
     if (model.current().definition != edited.definition || model.current().framing != saddle_frame ||
         model.current().isolines.constant_v != edited.isolines.constant_v)
     {
         throw std::runtime_error("Undo should restore the edited saddle, its isolines and its original framing");
     }
-    auto invalid = analytic;
+    auto invalid = plane;
     invalid.poles.pop_back();
     if (model.replace(std::move(invalid)) || !model.can_redo() || model.current().definition != edited.definition)
     {
         throw std::runtime_error("An invalid replacement disturbed the edited saddle or its redo step");
     }
     model.redo();
-    if (model.current().definition != analytic || model.current().framing != analytic_frame)
+    if (model.current().definition != plane || model.current().framing != plane_frame)
     {
-        throw std::runtime_error("Redo should restore the analytic preset and its framing");
+        throw std::runtime_error("Redo should restore the created plane and its framing");
     }
 }

@@ -107,7 +107,7 @@ CurveDefinition read_bspline_definition(const Geom_BSplineCurve &curve, const do
 CurveDefinition make_uniform_cubic(const std::span<const Vec3> poles, const std::span<const double> weights)
 {
     constexpr int degree = 3;
-    const int knot_count = checked_pole_count(poles.size(), degree) - degree + 1;
+    const int pole_count = checked_pole_count(poles.size(), degree);
     CurveDefinition definition{.degree = degree};
     definition.poles.assign(poles.begin(), poles.end());
     if (weights.empty())
@@ -118,12 +118,7 @@ CurveDefinition make_uniform_cubic(const std::span<const Vec3> poles, const std:
     {
         definition.weights.assign(weights.begin(), weights.end());
     }
-    for (int i = 0; i < knot_count; ++i)
-    {
-        const bool endpoint = i == 0 || i + 1 == knot_count;
-        definition.knots.push_back(
-            {.value = static_cast<double>(i) / (knot_count - 1), .multiplicity = endpoint ? degree + 1 : 1});
-    }
+    definition.knots = make_uniform_clamped_knots(pole_count, degree);
     return definition;
 }
 

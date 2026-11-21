@@ -1,5 +1,5 @@
 #include "application/editable_nurbs_surface.hpp"
-#include "application/nurbs_surface_example.hpp"
+#include "analytic_surface.hpp"
 
 #include <cmath>
 #include <limits>
@@ -7,7 +7,7 @@
 
 void check_nurbs_pole_drag()
 {
-    EditableNurbsSurface model{occt_lab::make_nurbs_surface_example()};
+    EditableNurbsSurface model{occt_lab::test::make_analytic_surface()};
     const auto original = model.current();
     constexpr std::size_t pole = 6;
     auto position = original.definition.poles.at(pole);
@@ -80,7 +80,7 @@ void check_nurbs_pole_drag()
 
 void check_nurbs_pole_edits()
 {
-    EditableNurbsSurface model{occt_lab::make_nurbs_surface_example()};
+    EditableNurbsSurface model{occt_lab::test::make_analytic_surface()};
     const auto original = model.current();
     auto poles = original.definition.poles;
     auto weights = original.definition.weights;

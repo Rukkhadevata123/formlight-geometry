@@ -1,4 +1,4 @@
-#include "application/nurbs_surface_example.hpp"
+#include "analytic_surface.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -177,7 +177,7 @@ int main()
 {
     try
     {
-        auto definition = occt_lab::make_nurbs_surface_example();
+        auto definition = occt_lab::test::make_analytic_surface();
         check_preview_isolines(BSplineSurface{definition});
         definition.weights.clear();
         check_evaluation(BSplineSurface{definition});
@@ -189,7 +189,7 @@ int main()
         check_nurbs_presets();
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
-                     "saddle preset verified");
+                     "saddle preset and custom plane creation verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

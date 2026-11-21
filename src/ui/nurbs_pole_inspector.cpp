@@ -1,5 +1,4 @@
 #include "nurbs_pole_inspector.hpp"
-#include "application/nurbs_surface_example.hpp"
 #include "pole_drag.hpp"
 #include "render/viewport/viewport_projection.hpp"
 
@@ -155,7 +154,7 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
         }
         ImGui::EndDisabled();
         ImGui::BeginDisabled(dirty);
-        draw_preset_buttons(model);
+        draw_creation_dialog(model);
         ImGui::EndDisabled();
         ImGui::EndDisabled();
         const auto &point = surface.poles.at(selected_pole_);
@@ -169,19 +168,56 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
     ImGui::End();
 }
 
-void NurbsPoleInspector::draw_preset_buttons(EditableNurbsSurface &model)
+void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
 {
-    const bool saddle = ImGui::Button("New saddle");
-    ImGui::SameLine();
-    const bool analytic = ImGui::Button("New analytic example");
-    if (saddle || analytic)
+    constexpr char title[] = "New planar surface";
+    if (ImGui::Button("New surface..."))
     {
-        auto definition = saddle ? occt_lab::make_saddle_surface() : occt_lab::make_nurbs_surface_example();
-        if (const auto result = model.replace(std::move(definition)); !result)
-        {
-            error_ = result.error();
-            return;
-        }
-        reset_draft(model);
+        creation_parameters_ = {};
+        creation_error_.clear();
+        ImGui::OpenPopup(title);
     }
+    if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        return;
+    }
+    using Params = occt_lab::PlanarSurfaceParameters;
+    auto &p = creation_parameters_;
+    ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
+    ImGui::SliderInt("U poles", &p.u_poles, Params::min_poles, Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("V poles", &p.v_poles, Params::min_poles, Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
+    const bool width_changed = ImGui::InputDouble("Width (X, mm)", &p.width_mm, 0, 0, "%.10g");
+    const bool height_changed = ImGui::InputDouble("Height (Y, mm)", &p.height_mm, 0, 0, "%.10g");
+    ImGui::PopItemFlag();
+    ImGui::PopItemWidth();
+    if (width_changed || height_changed)
+    {
+        creation_error_.clear();
+    }
+    if (ImGui::Button("Create"))
+    {
+        auto result = occt_lab::make_planar_nurbs_surface(p).and_then([&](EditableNurbsSurface::Definition &&definition)
+                                                                      { return model.replace(std::move(definition)); });
+        if (result)
+        {
+            selected_pole_ = 0;
+            reset_draft(model);
+            ImGui::CloseCurrentPopup();
+        }
+        else
+        {
+            creation_error_ = result.error();
+        }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
+    {
+        ImGui::CloseCurrentPopup();
+    }
+    if (!creation_error_.empty())
+    {
+        ImGui::TextUnformatted(creation_error_.c_str());
+    }
+    ImGui::EndPopup();
 }
