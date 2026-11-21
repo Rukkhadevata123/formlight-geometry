@@ -97,11 +97,6 @@ int derivative_span(const double parameter, const NCollection_Array1<double> &kn
 }
 } // namespace
 
-bool SurfaceDomain::contains(const double u, const double v) const
-{
-    return u >= u_min && u <= u_max && v >= v_min && v <= v_max;
-}
-
 BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : surface_(make_surface(definition))
 {
 }
@@ -133,6 +128,12 @@ auto BSplineSurface::position(const double u, const double v) const -> std::expe
     {
         return std::unexpected(error.what());
     }
+}
+
+auto BSplineSurface::isolines(const PatchSampling sampling) const -> std::expected<PatchIsolines, std::string>
+{
+    return sample_surface_isolines(domain(), sampling, std::string{"Invalid NURBS isoline sampling counts"},
+                                   [this](double u, double v) { return position(u, v); });
 }
 
 auto BSplineSurface::evaluate_d1(const double u, const double v) const -> std::expected<SurfaceD1, std::string>

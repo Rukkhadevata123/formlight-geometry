@@ -7,13 +7,7 @@
 struct ClipTransform;
 struct ImVec2;
 class EditablePatch;
-
-struct PatchLayers
-{
-    bool control_net = true;
-    bool constant_u = true;
-    bool constant_v = true;
-};
+struct PatchLayers;
 
 [[nodiscard]] std::optional<std::size_t> pick_patch_pole(const EditablePatch &model, const ClipTransform &transform,
                                                          ImVec2 cursor);

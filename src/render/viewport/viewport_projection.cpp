@@ -55,13 +55,20 @@ constexpr bool clip_to_depth_range(ClipPoint &a, ClipPoint &b)
 
 ViewportProjection::ViewportProjection(const ClipTransform &transform, const ImGuiViewport &viewport,
                                        const double framing_extent)
-    : transform_(transform), viewport_(viewport), scale_(std::max(1.0, framing_extent / 45.0))
+    : ViewportProjection(transform, viewport, {}, std::max(1.0, framing_extent / 45.0))
+{
+}
+
+ViewportProjection::ViewportProjection(const ClipTransform &transform, const ImGuiViewport &viewport, const Vec3 center,
+                                       const double world_units_per_view_unit)
+    : transform_(transform), viewport_(viewport), center_(center), scale_(world_units_per_view_unit)
 {
 }
 
 ClipPoint ViewportProjection::clip_point(const Vec3 &world) const
 {
-    const Vec3 point{.x = world.x / scale_, .y = world.y / scale_, .z = world.z / scale_};
+    const Vec3 point{
+        .x = (world.x - center_.x) / scale_, .y = (world.y - center_.y) / scale_, .z = (world.z - center_.z) / scale_};
     return {.x = clip_component(transform_.x, point),
             .y = clip_component(transform_.y, point),
             .z = clip_component(transform_.z, point),
@@ -116,9 +123,9 @@ std::optional<std::size_t> ViewportProjection::pick_pole(const std::span<const V
 }
 
 void ViewportProjection::draw_polyline(ImDrawList &draw_list, const std::span<const Vec3> points, const ImU32 color,
-                                       const float width) const
+                                       const float width, const std::size_t stride) const
 {
-    if (points.empty())
+    if (points.empty() || stride == 0)
     {
         return;
     }
@@ -127,9 +134,9 @@ void ViewportProjection::draw_polyline(ImDrawList &draw_list, const std::span<co
     {
         draw_list.PathLineTo(screen(previous));
     }
-    for (const auto &point : points.subspan(1))
+    for (std::size_t index = stride; index < points.size(); index += stride)
     {
-        const auto next = clip_point(point);
+        const auto next = clip_point(points[index]);
         if (auto a = previous, b = next; clip_to_depth_range(a, b))
         {
             if (!previous.in_depth_range())

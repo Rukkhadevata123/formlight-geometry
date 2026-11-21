@@ -1,7 +1,7 @@
 #include "bezier_patch_preview.hpp"
 
 #include "application/editable_patch.hpp"
-#include "render/viewport/viewport_projection.hpp"
+#include "surface_wireframe.hpp"
 
 #include <algorithm>
 #include <array>
@@ -68,44 +68,10 @@ void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
     const occt_lab::render::ViewportProjection project{transform, *viewport, half_width};
-    constexpr ImU32 net_color = IM_COL32(111, 178, 216, 210);
-    const std::span net{model.displayed().control_net()};
+    const auto &net = model.displayed().control_net();
+    draw_surface_wireframe(draw_list, project, net, side, model.isolines(), layers);
     if (layers.control_net)
     {
-        for (std::size_t i = 0; i < side; ++i)
-        {
-            project.draw_polyline(draw_list, net.subspan(i * side, side), net_color, 1.25F);
-            std::array<Vec3, side> column{};
-            for (std::size_t row = 0; row < side; ++row)
-            {
-                column[row] = net[row * side + i];
-            }
-            project.draw_polyline(draw_list, column, net_color, 1.25F);
-        }
-    }
-    if (layers.constant_u)
-    {
-        for (const auto &line : model.isolines().constant_u)
-        {
-            project.draw_polyline(draw_list, line, IM_COL32(255, 185, 43, 255), 2.0F);
-        }
-    }
-    if (layers.constant_v)
-    {
-        for (const auto &line : model.isolines().constant_v)
-        {
-            project.draw_polyline(draw_list, line, IM_COL32(104, 226, 153, 255), 2.0F);
-        }
-    }
-    if (layers.control_net)
-    {
-        for (const auto &pole : net)
-        {
-            if (const auto point = project.visible_point(pole))
-            {
-                draw_list.AddCircleFilled(*point, 4.0F, net_color);
-            }
-        }
         if (const auto point = project.visible_point(net[selected_pole]))
         {
             draw_list.AddCircle(*point, 7.0F, IM_COL32_WHITE, 0, 1.5F);

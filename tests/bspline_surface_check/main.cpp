@@ -1,7 +1,6 @@
-#include "geometry/surfaces/bspline_surface.hpp"
+#include "application/nurbs_surface_example.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -14,28 +13,6 @@
 namespace
 {
 using namespace occt_lab::geometry;
-
-BSplineSurfaceDefinition example_surface()
-{
-    BSplineSurfaceDefinition definition{
-        .u = {.degree = 2, .pole_count = 4, .knots = {{2, 3}, {3, 1}, {5, 3}}},
-        .v = {.degree = 1, .pole_count = 3, .knots = {{-2, 2}, {0.5, 1}, {2, 2}}},
-        .poles = {},
-    };
-    // For quadratic B-splines, consecutive interior entries a,b of the expanded knot vector
-    // give the pole coefficients (a+b)/2 for u and a*b for u^2.
-    constexpr std::array linear_u{2.0, 2.5, 4.0, 5.0};
-    constexpr std::array quadratic_u{4.0, 6.0, 15.0, 25.0};
-    for (const double v : {-2.0, 0.5, 2.0})
-    {
-        for (std::size_t i = 0; i < linear_u.size(); ++i)
-        {
-            definition.poles.push_back(
-                {.x = linear_u[i], .y = v, .z = quadratic_u[i] + linear_u[i] * v + std::max(0.0, v - 0.5)});
-        }
-    }
-    return definition;
-}
 
 void check_vector(const Vec3 &actual, const Vec3 &expected, const std::string_view quantity, const double u,
                   const double v)
@@ -134,6 +111,26 @@ void check_rational_surface(BSplineSurfaceDefinition definition)
     }
 }
 
+void check_preview_isolines(const BSplineSurface &surface)
+{
+    const auto lines = surface.isolines({.constant_u_lines = 7, .constant_v_lines = 17, .samples_per_line = 49}).value();
+    if (lines.constant_u.size() != 7 || lines.constant_v.size() != 17 ||
+        lines.constant_u.at(2).size() != 49 || lines.constant_v.at(5).size() != 49)
+    {
+        throw std::runtime_error("Unexpected NURBS isoline sampling dimensions");
+    }
+    constexpr Vec3 weighted_point{3.5, -0.125, 11.875};
+    check_vector(lines.constant_u.at(2).at(15), weighted_point, "constant U at weighted sample", 3, -0.75);
+    check_vector(lines.constant_v.at(5).at(16), weighted_point, "constant V at weighted sample", 3, -0.75);
+    check_vector(lines.constant_v.front().front(), {2, -2, 0}, "first corner", 2, -2);
+    check_vector(lines.constant_u.back().back(), {5, 2, 36.5}, "last corner", 5, 2);
+    check_vector(lines.constant_v.at(10).at(16), {11.0 / 3.0, 0.5, 89.0 / 6.0}, "V crease", 3, 0.5);
+    if (surface.isolines({.samples_per_line = 1}))
+    {
+        throw std::runtime_error("NURBS isolines accepted a single point per line");
+    }
+}
+
 void check_invalid_weights(BSplineSurfaceDefinition definition)
 {
     definition.weights.assign(definition.poles.size() - 1, 1.0);
@@ -176,13 +173,15 @@ int main()
 {
     try
     {
-        const auto definition = example_surface();
+        auto definition = occt_lab::make_nurbs_surface_example();
+        check_preview_isolines(BSplineSurface{definition});
+        definition.weights.clear();
         check_evaluation(BSplineSurface{definition});
         check_invalid_definitions(definition);
         check_rational_surface(definition);
         check_invalid_weights(definition);
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
-                     "and rational weights verified");
+                     "and rational weights verified; preview isolines verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

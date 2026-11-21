@@ -7,6 +7,8 @@
 #include "render/compute/compute_buffer_check.hpp"
 #include "render/compute/compute_pyramid.hpp"
 #include "render/preview/curve_preview.hpp"
+#include "render/preview/nurbs_surface_preview.hpp"
+#include "render/preview/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "ui/bezier_patch_inspector.hpp"
 #include "ui/box_editor.hpp"
@@ -589,6 +591,7 @@ public:
             break;
         case PreviewMode::bspline:
         case PreviewMode::bezier_patch:
+        case PreviewMode::nurbs_surface:
             break;
         }
 
@@ -633,6 +636,14 @@ public:
             }
             draw_bezier_patch_preview(patch_, transform, patch_layers_, patch_inspector_.selected_pole(),
                                       patch_inspector_.selected_sample());
+        }
+        else if (preview_mode_ == PreviewMode::nurbs_surface)
+        {
+            if (!nurbs_preview_)
+            {
+                nurbs_preview_.emplace();
+            }
+            nurbs_preview_->draw(transform, patch_layers_);
         }
         ImGui::Render();
 
@@ -858,6 +869,7 @@ private:
     PatchMeshControls patch_mesh_;
     bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
+    std::optional<NurbsSurfacePreview> nurbs_preview_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;

@@ -1,6 +1,6 @@
 #include "renderer_status_panel.hpp"
 
-#include "render/preview/bezier_patch_preview.hpp"
+#include "render/preview/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
 
 #include <imgui.h>
@@ -37,7 +37,8 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         const float combo_width = 9.0F * ImGui::GetFontSize();
         ImGui::SetNextItemWidth(combo_width);
         auto mode_index = static_cast<int>(mode);
-        constexpr const char *shapes[] = {"Box", "Cylinder", "B-spline", "Bezier patch", "Compute pyramid"};
+        constexpr const char *shapes[] = {"Box",          "Cylinder",      "B-spline",
+                                          "Bezier patch", "NURBS surface", "Compute pyramid"};
         const int shape_count = status.compute_supported ? IM_ARRAYSIZE(shapes) : IM_ARRAYSIZE(shapes) - 1;
         if (ImGui::Combo("Shape", &mode_index, shapes, shape_count))
         {
@@ -62,12 +63,12 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         {
             ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
         }
-        else if (mode == PreviewMode::bezier_patch)
+        else if (mode == PreviewMode::bezier_patch || mode == PreviewMode::nurbs_surface)
         {
             ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
-            if (patch_layers.control_net)
+            if (mode == PreviewMode::bezier_patch && patch_layers.control_net)
             {
                 ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
             }

@@ -1,13 +1,12 @@
 #pragma once
 
-#include "geometry/vec3.hpp"
+#include "surface_isolines.hpp"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <span>
-#include <vector>
 
 namespace occt_lab::geometry
 {
@@ -48,32 +47,12 @@ class CubicBezierPatch
     ControlNet control_points_;
 };
 
-struct PatchSampling
-{
-    static constexpr int minimum_count = 2;
-    static constexpr int max_lines = 33;
-    static constexpr int max_samples = 129;
-
-    int constant_u_lines = 9;
-    int constant_v_lines = 9;
-    int samples_per_line = 33;
-    bool operator==(const PatchSampling &) const = default;
-};
-
 struct PatchGrid
 {
     static constexpr uint32_t max_segments = 32;
     uint32_t u_segments = 24;
     uint32_t v_segments = 16;
     bool operator==(const PatchGrid &) const = default;
-};
-
-struct PatchIsolines
-{
-    using Line = std::vector<Vec3>;
-    using Family = std::vector<Line>;
-    Family constant_u;
-    Family constant_v;
 };
 
 [[nodiscard]] auto sample_patch_isolines(const CubicBezierPatch &patch, PatchSampling sampling = {})

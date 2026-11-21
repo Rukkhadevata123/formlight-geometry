@@ -14,6 +14,7 @@ enum class PreviewMode
     cylinder,
     bspline,
     bezier_patch,
+    nurbs_surface,
     compute_pyramid,
 };
 

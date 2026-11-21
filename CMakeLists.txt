@@ -28,6 +28,7 @@ add_library(occt_lab_geometry STATIC
     src/geometry/surfaces/bspline_surface.hpp
     src/geometry/surfaces/occt_bezier_patch.cpp
     src/geometry/surfaces/occt_bezier_patch.hpp
+    src/geometry/surfaces/surface_isolines.hpp
     src/geometry/vec3.hpp
 )
 target_compile_features(occt_lab_geometry PUBLIC cxx_std_23)
@@ -43,6 +44,8 @@ add_executable(occt_lab
     src/application/editable_curve.hpp
     src/application/editable_patch.cpp
     src/application/editable_patch.hpp
+    src/application/nurbs_surface_example.cpp
+    src/application/nurbs_surface_example.hpp
     src/document/curve_project.cpp
     src/document/curve_project.hpp
     src/document/patch_project.cpp
@@ -66,6 +69,10 @@ add_executable(occt_lab
     src/render/preview/curve_colors.hpp
     src/render/preview/curve_preview.cpp
     src/render/preview/curve_preview.hpp
+    src/render/preview/nurbs_surface_preview.cpp
+    src/render/preview/nurbs_surface_preview.hpp
+    src/render/preview/surface_wireframe.cpp
+    src/render/preview/surface_wireframe.hpp
     src/render/viewport/orbit_camera.cpp
     src/render/viewport/orbit_camera.hpp
     src/render/viewport/viewport_projection.cpp
@@ -158,6 +165,7 @@ if(BUILD_TESTING)
         src/document/project_io.cpp
     )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
+    target_sources(bspline_surface_check PRIVATE src/application/nurbs_surface_example.cpp)
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
         tests/support/project_test_directory.hpp

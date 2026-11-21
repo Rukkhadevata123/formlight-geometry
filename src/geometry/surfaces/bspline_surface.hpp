@@ -1,7 +1,7 @@
 #pragma once
 
 #include "geometry/bspline_knot.hpp"
-#include "geometry/vec3.hpp"
+#include "surface_isolines.hpp"
 
 #include <Geom_BSplineSurface.hxx>
 
@@ -26,13 +26,6 @@ struct BSplineSurfaceDefinition
     std::vector<double> weights; // Same order as poles. An empty array assigns unit weights.
 };
 
-struct SurfaceDomain
-{
-    double u_min, u_max;
-    double v_min, v_max;
-    [[nodiscard]] bool contains(double u, double v) const;
-};
-
 struct SurfaceD1
 {
     Vec3 position;
@@ -47,6 +40,7 @@ class BSplineSurface
     explicit BSplineSurface(const BSplineSurfaceDefinition &definition);
     [[nodiscard]] SurfaceDomain domain() const;
     [[nodiscard]] auto position(double u, double v) const -> std::expected<Vec3, std::string>;
+    [[nodiscard]] auto isolines(PatchSampling sampling = {}) const -> std::expected<PatchIsolines, std::string>;
     // Endpoints use the interior derivative. An interior knot with only C0 continuity is rejected.
     [[nodiscard]] auto evaluate_d1(double u, double v) const -> std::expected<SurfaceD1, std::string>;
 

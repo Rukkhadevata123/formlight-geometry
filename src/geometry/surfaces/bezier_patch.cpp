@@ -127,47 +127,8 @@ CubicBezierPatch::CubicBezierPatch(const ControlNet &control_points) : control_p
 auto sample_patch_isolines(const CubicBezierPatch &patch, const PatchSampling sampling)
     -> std::expected<PatchIsolines, PatchError>
 {
-    const auto valid_count = [](const int count, const int maximum)
-    { return count >= PatchSampling::minimum_count && count <= maximum; };
-    if (!valid_count(sampling.constant_u_lines, PatchSampling::max_lines) ||
-        !valid_count(sampling.constant_v_lines, PatchSampling::max_lines) ||
-        !valid_count(sampling.samples_per_line, PatchSampling::max_samples))
-    {
-        return std::unexpected(PatchError::InvalidSampling);
-    }
-
-    const auto sample_family = [&](PatchIsolines::Family &lines, const int count,
-                                   const bool constant_u) -> std::expected<void, PatchError>
-    {
-        lines.reserve(count);
-        for (int i = 0; i < count; ++i)
-        {
-            const double fixed = static_cast<double>(i) / (count - 1);
-            auto &line = lines.emplace_back();
-            line.reserve(sampling.samples_per_line);
-            for (int j = 0; j < sampling.samples_per_line; ++j)
-            {
-                const double t = static_cast<double>(j) / (sampling.samples_per_line - 1);
-                const auto sample = constant_u ? patch.evaluate(fixed, t) : patch.evaluate(t, fixed);
-                if (!sample)
-                {
-                    return std::unexpected(sample.error());
-                }
-                line.push_back(sample->position);
-            }
-        }
-        return {};
-    };
-
-    PatchIsolines lines;
-    if (auto result = sample_family(lines.constant_u, sampling.constant_u_lines, true); !result)
-    {
-        return std::unexpected(result.error());
-    }
-    if (auto result = sample_family(lines.constant_v, sampling.constant_v_lines, false); !result)
-    {
-        return std::unexpected(result.error());
-    }
-    return lines;
+    const auto position = [&](double u, double v)
+    { return patch.evaluate(u, v).transform([](const SurfaceSample &sample) { return sample.position; }); };
+    return sample_surface_isolines({0, 1, 0, 1}, sampling, PatchError::InvalidSampling, position);
 }
 } // namespace occt_lab::geometry
