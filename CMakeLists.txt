@@ -1,32 +1,15 @@
 cmake_minimum_required(VERSION 3.21)
 project(occt_lab LANGUAGES C CXX)
 
-find_package(OpenCASCADE CONFIG REQUIRED)
+find_package(OpenCASCADE CONFIG REQUIRED COMPONENTS FoundationClasses ModelingData ModelingAlgorithms)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(slang CONFIG REQUIRED)
 
-add_library(occt_lab_dependencies INTERFACE)
-target_compile_features(occt_lab_dependencies INTERFACE cxx_std_23)
-target_include_directories(occt_lab_dependencies SYSTEM INTERFACE
-    "${OpenCASCADE_INCLUDE_DIR}"
-)
-target_link_libraries(occt_lab_dependencies INTERFACE
-    ${OpenCASCADE_LIBRARIES}
-    SDL3::SDL3
-    imgui::imgui
-    Vulkan::Vulkan
-)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(occt_lab
-    src/main.cpp
-    src/application/editable_curve.cpp
-    src/application/editable_curve.hpp
-    src/document/curve_project.cpp
-    src/document/curve_project.hpp
-    src/vulkan_window.cpp
-    src/vulkan_window.hpp
+add_library(occt_lab_geometry STATIC
     src/geometry/bezier_patch.cpp
     src/geometry/bezier_patch.hpp
     src/geometry/box_model.cpp
@@ -40,6 +23,22 @@ add_executable(occt_lab
     src/geometry/occt_bezier_patch.hpp
     src/geometry/occt_bspline.hpp
     src/geometry/vec3.hpp
+)
+target_compile_features(occt_lab_geometry PUBLIC cxx_std_23)
+target_include_directories(occt_lab_geometry PUBLIC src)
+target_link_libraries(occt_lab_geometry
+    PUBLIC TKBRep TKG3d
+    PRIVATE TKMesh TKPrim TKTopAlgo TKGeomAlgo TKMath TKernel
+)
+
+add_executable(occt_lab
+    src/main.cpp
+    src/application/editable_curve.cpp
+    src/application/editable_curve.hpp
+    src/document/curve_project.cpp
+    src/document/curve_project.hpp
+    src/vulkan_window.cpp
+    src/vulkan_window.hpp
     src/render/bezier_patch_preview.cpp
     src/render/bezier_patch_preview.hpp
     src/render/brep_preview.cpp
@@ -71,10 +70,8 @@ add_executable(occt_lab
     src/ui/fit_residuals.cpp
     src/ui/fit_residuals.hpp
 )
-target_include_directories(occt_lab PRIVATE src)
-target_link_libraries(occt_lab PRIVATE occt_lab_dependencies)
+target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
-set_target_properties(occt_lab PROPERTIES CXX_EXTENSIONS OFF)
 
 set(triangle_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.slang")
 set(shader_output_dir "${CMAKE_CURRENT_BINARY_DIR}/shaders")
@@ -127,28 +124,16 @@ add_dependencies(occt_lab occt_lab_shaders)
 
 include(CTest)
 if(BUILD_TESTING)
-    foreach(check IN ITEMS occt_box_check occt_cylinder_check)
-        add_executable(${check} tests/${check}.cpp src/geometry/brep_mesh.cpp)
-        target_include_directories(${check} SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
-        target_link_libraries(${check} PRIVATE TKMesh TKPrim TKTopAlgo TKBRep TKernel)
-    endforeach()
-    target_sources(occt_box_check PRIVATE src/geometry/box_model.cpp)
-
-    add_executable(bezier_patch_check tests/bezier_patch_check.cpp src/geometry/bezier_patch.cpp
-        src/geometry/occt_bezier_patch.cpp)
-    target_include_directories(bezier_patch_check SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
-    target_link_libraries(bezier_patch_check PRIVATE TKG3d TKMath TKernel)
-
-    add_executable(bspline_curve_check tests/bspline_curve_check.cpp src/geometry/bspline_curve.cpp
-        src/geometry/curve_fitting.cpp src/application/editable_curve.cpp src/document/curve_project.cpp
-        tests/curve_project_checks.cpp)
-    target_include_directories(bspline_curve_check SYSTEM PRIVATE "${OpenCASCADE_INCLUDE_DIR}")
-    target_link_libraries(bspline_curve_check PRIVATE TKGeomAlgo TKG3d TKernel)
-
     foreach(check IN ITEMS occt_box_check occt_cylinder_check bezier_patch_check bspline_curve_check)
-        target_compile_features(${check} PRIVATE cxx_std_23)
-        target_include_directories(${check} PRIVATE src)
-        set_target_properties(${check} PROPERTIES CXX_EXTENSIONS OFF)
+        add_executable(${check} tests/${check}.cpp)
+        target_link_libraries(${check} PRIVATE occt_lab_geometry)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
+    target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
+    target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
+    target_sources(bspline_curve_check PRIVATE
+        tests/curve_project_checks.cpp
+        src/application/editable_curve.cpp
+        src/document/curve_project.cpp
+    )
 endif()
