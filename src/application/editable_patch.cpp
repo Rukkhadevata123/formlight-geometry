@@ -26,7 +26,7 @@ Patch::ControlNet planar_control_net()
     return net;
 }
 
-Patch raised_example()
+Patch::ControlNet raised_example()
 {
     auto net = planar_control_net();
     constexpr auto side = Patch::side_length;
@@ -34,13 +34,18 @@ Patch raised_example()
     net[side + 2].z = 28;
     net[2 * side + 1].z = 14;
     net[2 * side + 2].z = 32;
-    return Patch::create(net).value();
+    return net;
 }
+
 EditablePatch::Isolines checked_isolines(const Patch &patch, const EditablePatch::Sampling sampling)
 {
     auto lines = sample_patch_isolines(patch, sampling);
     if (!lines)
     {
+        if (lines.error() == occt_lab::geometry::PatchError::InvalidSampling)
+        {
+            throw std::runtime_error("Isoline counts or points per line are outside the supported range.");
+        }
         if (lines.error() == occt_lab::geometry::PatchError::DegenerateNormal)
         {
             throw std::runtime_error("The edited patch has an undefined normal at an isoline sample.");
@@ -51,9 +56,13 @@ EditablePatch::Isolines checked_isolines(const Patch &patch, const EditablePatch
 }
 } // namespace
 
-EditablePatch::EditablePatch() : current_(std::make_unique<Surface>(raised_example()))
+EditablePatch::EditablePatch() : EditablePatch(raised_example(), Sampling{})
 {
-    current_->isolines = checked_isolines(current(), sampling_);
+}
+
+EditablePatch::EditablePatch(const Patch::ControlNet &poles, const Sampling sampling)
+    : sampling_(sampling), current_(make_surface(poles, sampling))
+{
 }
 
 bool EditablePatch::create_plane()
@@ -64,6 +73,25 @@ bool EditablePatch::create_plane()
         throw std::runtime_error(result.error());
     }
     return *result;
+}
+
+auto EditablePatch::make_surface(const Patch::ControlNet &poles, const Sampling sampling) -> std::unique_ptr<Surface>
+{
+    const auto candidate = Patch::create(poles);
+    if (!candidate)
+    {
+        throw std::runtime_error("Control point coordinates must be finite.");
+    }
+    constexpr double gpu_limit = std::numeric_limits<float>::max();
+    if (std::ranges::any_of(
+            poles, [](const auto &p)
+            { return std::abs(p.x) > gpu_limit || std::abs(p.y) > gpu_limit || std::abs(p.z) > gpu_limit; }))
+    {
+        throw std::runtime_error("Control point coordinates exceed the GPU float range.");
+    }
+    auto surface = std::make_unique<Surface>(*candidate);
+    surface->isolines = checked_isolines(*candidate, sampling);
+    return surface;
 }
 
 auto EditablePatch::prepare_preview(const Patch::ControlNet &poles) -> std::expected<bool, std::string>
@@ -77,23 +105,9 @@ auto EditablePatch::prepare_preview(const Patch::ControlNet &poles) -> std::expe
         discard_preview();
         return true;
     }
-    const auto candidate = Patch::create(poles);
-    if (!candidate)
-    {
-        return std::unexpected("Control point coordinates must be finite.");
-    }
-    constexpr double gpu_limit = std::numeric_limits<float>::max();
-    if (std::ranges::any_of(
-            poles, [](const auto &p)
-            { return std::abs(p.x) > gpu_limit || std::abs(p.y) > gpu_limit || std::abs(p.z) > gpu_limit; }))
-    {
-        return std::unexpected("Control point coordinates exceed the GPU float range.");
-    }
     try
     {
-        auto next = std::make_unique<Surface>(*candidate);
-        next->isolines = checked_isolines(*candidate, sampling_);
-        preview_ = std::move(next);
+        preview_ = make_surface(poles, sampling_);
         return true;
     }
     catch (const std::exception &error)

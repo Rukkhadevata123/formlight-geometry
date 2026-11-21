@@ -2,6 +2,7 @@
 
 #include "application/editable_curve.hpp"
 #include "document/curve_project.hpp"
+#include "ui/project_file_controls.hpp"
 
 struct ClipTransform;
 
@@ -31,8 +32,7 @@ class CurveEditor
     void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
     occt_lab::document::CurveProjectSettings settings_;
-    std::string project_path_ = "curve.occtlab";
-    std::string project_status_;
+    ProjectFileControls project_file_{.path = "curve.occtlab"};
     bool tracking_pole_ = false;
     std::string error_;
 };

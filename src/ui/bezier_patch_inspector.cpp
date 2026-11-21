@@ -1,11 +1,13 @@
 #include "bezier_patch_inspector.hpp"
 
 #include "application/editable_patch.hpp"
+#include "document/patch_project.hpp"
 #include "render/preview/bezier_patch_preview.hpp"
 
 #include <imgui.h>
 
 #include <exception>
+#include <utility>
 
 namespace
 {
@@ -240,6 +242,28 @@ void BezierPatchInspector::refresh_after_edit(PatchMeshControls &mesh)
     edit_error_.clear();
 }
 
+void BezierPatchInspector::draw_project(PatchMeshControls &mesh)
+{
+    if (!ImGui::CollapsingHeader("Patch project"))
+    {
+        return;
+    }
+    const auto save = [&](const std::filesystem::path &path)
+    { return occt_lab::document::save_patch_project(path, model_); };
+    const auto open = [&](const std::filesystem::path &path) -> std::expected<void, std::string>
+    {
+        auto project = occt_lab::document::open_patch_project(path);
+        if (!project)
+        {
+            return std::unexpected(project.error());
+        }
+        model_ = std::move(*project);
+        refresh_after_edit(mesh);
+        return {};
+    };
+    project_file_.draw(!tracking_pole_ && draft_ != model_.current().control_net(), save, open);
+}
+
 void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supported)
 {
     mesh.compare_requested = false;
@@ -249,6 +273,7 @@ void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supp
     if (ImGui::Begin("Bezier surface sample", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::BeginDisabled(tracking_pole_);
+        draw_project(mesh);
         draw_patch_commands(mesh);
         constexpr double min_parameter = 0.0;
         constexpr double max_parameter = 1.0;

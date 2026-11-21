@@ -1,11 +1,11 @@
 #include "application/editable_curve.hpp"
 #include "document/curve_project.hpp"
+#include "project_test_directory.hpp"
 
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <iterator>
-#include <random>
 #include <stdexcept>
 #include <string_view>
 
@@ -13,23 +13,6 @@ namespace
 {
 namespace fs = std::filesystem;
 using namespace occt_lab::document;
-
-struct TestDirectory
-{
-    fs::path path = fs::temp_directory_path() / std::format("occt-lab-project-{:08x}", std::random_device{}());
-    TestDirectory()
-    {
-        if (!fs::create_directory(path))
-        {
-            throw std::runtime_error("Could not create a unique project test directory");
-        }
-    }
-    ~TestDirectory()
-    {
-        std::error_code ignored;
-        fs::remove_all(path, ignored);
-    }
-};
 
 void check_invalid_file(const fs::path &path, const std::string &original, const std::string_view part,
                         const std::string_view replacement)
@@ -49,7 +32,7 @@ void check_invalid_file(const fs::path &path, const std::string &original, const
 
 void check_curve_projects()
 {
-    const TestDirectory directory;
+    const ProjectTestDirectory directory;
     const auto path = directory.path / u8"曲线.occtlab";
     EditableCurve curve;
     auto definition = curve.current().definition;

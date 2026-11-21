@@ -39,6 +39,10 @@ add_executable(occt_lab
     src/application/editable_patch.hpp
     src/document/curve_project.cpp
     src/document/curve_project.hpp
+    src/document/patch_project.cpp
+    src/document/patch_project.hpp
+    src/document/project_io.cpp
+    src/document/project_io.hpp
     src/vulkan_window.cpp
     src/vulkan_window.hpp
     src/render/compute/compute_bezier_patch.cpp
@@ -75,6 +79,8 @@ add_executable(occt_lab
     src/ui/developer_diagnostics.hpp
     src/ui/imgui_session.cpp
     src/ui/imgui_session.hpp
+    src/ui/project_file_controls.cpp
+    src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp
     src/ui/renderer_status_panel.hpp
 )
@@ -138,11 +144,19 @@ if(BUILD_TESTING)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
-    target_sources(bezier_patch_check PRIVATE src/application/editable_patch.cpp)
+    target_sources(bezier_patch_check PRIVATE
+        tests/patch_project_checks.cpp
+        tests/project_test_directory.hpp
+        src/application/editable_patch.cpp
+        src/document/patch_project.cpp
+        src/document/project_io.cpp
+    )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_sources(bspline_curve_check PRIVATE
         tests/curve_project_checks.cpp
+        tests/project_test_directory.hpp
         src/application/editable_curve.cpp
         src/document/curve_project.cpp
+        src/document/project_io.cpp
     )
 endif()

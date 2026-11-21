@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry/surfaces/bezier_patch.hpp"
+#include "ui/project_file_controls.hpp"
 
 #include <string>
 
@@ -38,9 +39,11 @@ class BezierPatchInspector
     void refresh_after_edit(PatchMeshControls &mesh);
     [[nodiscard]] bool draw_pole_editor();
     void draw_patch_commands(PatchMeshControls &mesh);
+    void draw_project(PatchMeshControls &mesh);
     void draw_reference() const;
     void draw_sampling_controls();
     EditablePatch &model_;
+    ProjectFileControls project_file_{.path = "patch.occtlab"};
     occt_lab::geometry::CubicBezierPatch::ControlNet draft_;
     int pole_u_ = 1;
     int pole_v_ = 1;

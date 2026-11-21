@@ -1,15 +1,10 @@
 #include "curve_project.hpp"
 
-#include <charconv>
+#include "project_io.hpp"
+
 #include <cmath>
-#include <format>
-#include <fstream>
 #include <iomanip>
-#include <limits>
-#include <locale>
-#include <random>
 #include <stdexcept>
-#include <string_view>
 #include <utility>
 
 namespace occt_lab::document
@@ -19,33 +14,9 @@ namespace
 using namespace geometry;
 namespace fs = std::filesystem;
 
-void expect_token(std::istream &in, const std::string_view expected)
-{
-    std::string token;
-    if (!(in >> token) || token != expected)
-    {
-        throw std::runtime_error(std::format("Expected '{}' in the curve project", expected));
-    }
-}
-
-template <class T> T read_number(std::istream &in, const std::string_view field)
-{
-    std::string token;
-    in >> token;
-    const auto end = token.data() + token.size();
-    T value{};
-    const auto [next, error] = std::from_chars(token.data(), end, value);
-    if (error != std::errc{} || next != end || !std::isfinite(value))
-    {
-        throw std::runtime_error(std::format("Invalid or missing {}", field));
-    }
-    return value;
-}
-
-Vec3 read_position(std::istream &in)
-{
-    return {.x = read_number<double>(in, "X"), .y = read_number<double>(in, "Y"), .z = read_number<double>(in, "Z")};
-}
+using io::expect_token;
+using io::read_number;
+using io::read_position;
 
 void check_settings(const CurveProjectSettings &settings, const std::size_t pole_count)
 {
@@ -186,11 +157,7 @@ CurveProject read_project(std::istream &in)
     check_settings(settings, definition.poles.size());
     const auto refinement = read_refinement(in, definition);
     auto curve = read_fit(in, definition);
-    expect_token(in, "end");
-    if (!(in >> std::ws).eof() || in.bad())
-    {
-        throw std::runtime_error("Unexpected data after the curve project");
-    }
+    io::expect_end(in);
 
     curve.framing_extent = extent;
     curve.refinement = refinement;
@@ -200,7 +167,6 @@ CurveProject read_project(std::istream &in)
 void write_project(std::ostream &out, const SampledCurve &curve, const CurveProjectSettings &settings)
 {
     const auto &definition = curve.definition;
-    out << std::setprecision(std::numeric_limits<double>::max_digits10);
     out << "occt-lab-curve 1\nunits mm\nobject " << settings.object_id << ' ' << std::quoted(settings.name)
         << "\neditor " << settings.pole_number << ' ' << settings.knot_parameter << ' ' << settings.fit_tolerance
         << "\nextent " << curve.framing_extent << "\ndegree " << definition.degree << "\npoles "
@@ -250,12 +216,7 @@ auto open_curve_project(const fs::path &path) -> std::expected<CurveProject, std
 {
     try
     {
-        std::ifstream in(path, std::ios::binary);
-        if (!in)
-        {
-            return std::unexpected("Could not open the project file");
-        }
-        in.imbue(std::locale::classic());
+        auto in = io::open_input(path);
         return read_project(in);
     }
     catch (const std::exception &error)
@@ -267,34 +228,11 @@ auto open_curve_project(const fs::path &path) -> std::expected<CurveProject, std
 auto save_curve_project(const fs::path &path, const geometry::SampledCurve &curve, const CurveProjectSettings &settings)
     -> std::expected<void, std::string>
 {
-    fs::path temporary;
-    bool owns_temporary = false;
-    try
+    const auto write = [&](std::ostream &out)
     {
         check_settings(settings, curve.definition.poles.size());
-        temporary = path;
-        temporary += std::format(".{:08x}.tmp", std::random_device{}());
-        std::ofstream out(temporary, std::ios::binary | std::ios::noreplace);
-        if (!out)
-        {
-            return std::unexpected("Could not create a temporary file in the project directory");
-        }
-        owns_temporary = true;
-        out.exceptions(std::ios::badbit | std::ios::failbit);
-        out.imbue(std::locale::classic());
         write_project(out, curve, settings);
-        out.close();
-        fs::rename(temporary, path);
-        return {};
-    }
-    catch (const std::exception &error)
-    {
-        if (owns_temporary)
-        {
-            std::error_code ignored;
-            fs::remove(temporary, ignored);
-        }
-        return std::unexpected(error.what());
-    }
+    };
+    return io::write_atomically(path, write);
 }
 } // namespace occt_lab::document

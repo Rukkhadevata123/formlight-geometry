@@ -12,6 +12,7 @@ class EditablePatch
     using Isolines = occt_lab::geometry::PatchIsolines;
 
     EditablePatch();
+    EditablePatch(const Patch::ControlNet &poles, Sampling sampling);
     [[nodiscard]] const Patch &current() const
     {
         return current_->patch;
@@ -64,6 +65,8 @@ class EditablePatch
         return preview_ ? *preview_ : *current_;
     }
     [[nodiscard]] auto prepare_preview(const Patch::ControlNet &poles) -> std::expected<bool, std::string>;
+    [[nodiscard]] static auto make_surface(const Patch::ControlNet &poles, Sampling sampling)
+        -> std::unique_ptr<Surface>;
     void swap_history();
     Sampling sampling_;
     std::unique_ptr<Surface> current_;

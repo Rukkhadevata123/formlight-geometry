@@ -14,6 +14,8 @@
 #include <print>
 #include <stdexcept>
 
+void check_patch_projects();
+
 namespace
 {
 using occt_lab::geometry::CubicBezierPatch;
@@ -435,6 +437,7 @@ int main()
         check_patch_creation();
         check_control_net_edits();
         check_pole_drag();
+        check_patch_projects();
         check_comparison_metrics();
         check_reference_failures(reference);
         check_isolines(*patch);
@@ -442,7 +445,7 @@ int main()
         check_large_normal();
         std::println(
             "Bezier patch positions, normals, OCCT comparison, planar creation, control net edits, pole dragging, "
-            "undo/redo, adjustable sampling and invalid inputs verified");
+            "undo/redo, adjustable sampling, project round trips and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
