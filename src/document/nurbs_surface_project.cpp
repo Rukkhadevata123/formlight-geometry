@@ -1,5 +1,6 @@
 #include "nurbs_surface_project.hpp"
 
+#include "application/nurbs_surface_creation.hpp"
 #include "project_io.hpp"
 #include "surface_project_io.hpp"
 
@@ -9,15 +10,6 @@ namespace occt_lab::document
 {
 namespace
 {
-EditableNurbsSurface convert_bezier_patch(const io::BezierPatchData &patch)
-{
-    const geometry::BSplineSurfaceAxis cubic{.degree = 3, .pole_count = 4, .knots = {{0, 4}, {1, 4}}};
-    // Both formats store V rows with U varying fastest. Empty weights are initialized to one by the editor.
-    EditableNurbsSurface::Definition definition{
-        .u = cubic, .v = cubic, .poles = {patch.poles.begin(), patch.poles.end()}};
-    return EditableNurbsSurface{std::move(definition), patch.sampling};
-}
-
 void write_axis(std::ostream &out, const char *name, const geometry::BSplineSurfaceAxis &axis)
 {
     out << name << " degree " << axis.degree << " poles " << axis.pole_count << " knots " << axis.knots.size() << '\n';
@@ -85,7 +77,8 @@ auto open_nurbs_surface_project(const std::filesystem::path &path) -> std::expec
         in >> type;
         if (type == "occt-lab-bezier-patch")
         {
-            return convert_bezier_patch(io::read_bezier_patch(in));
+            const auto patch = io::read_bezier_patch(in);
+            return EditableNurbsSurface{make_bezier_nurbs_surface(patch.poles), patch.sampling};
         }
         if (type != "occt-lab-nurbs-surface")
         {

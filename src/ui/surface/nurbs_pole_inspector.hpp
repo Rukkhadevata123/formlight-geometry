@@ -45,6 +45,7 @@ class NurbsPoleInspector
     double probe_v_ = 0.0;
     std::expected<occt_lab::geometry::SurfaceProbe, std::string> probe_;
     occt_lab::PlanarSurfaceParameters creation_parameters_;
+    int creation_preset_ = 0;
     std::string creation_error_;
     ProjectFileControls project_file_{.path = "surface.occtlab"};
 };

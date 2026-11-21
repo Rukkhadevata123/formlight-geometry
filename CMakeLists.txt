@@ -41,6 +41,7 @@ target_link_libraries(occt_lab_geometry
 
 add_executable(occt_lab
     src/main.cpp
+    src/application/bezier_patch_presets.hpp
     src/application/editable_curve.cpp
     src/application/editable_curve.hpp
     src/application/editable_nurbs_surface.cpp

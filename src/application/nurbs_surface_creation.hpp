@@ -1,5 +1,6 @@
 #pragma once
 
+#include "geometry/surfaces/bezier_patch.hpp"
 #include "geometry/surfaces/bspline_surface.hpp"
 
 #include <optional>
@@ -25,6 +26,7 @@ struct PlanarSurfaceParameters
 };
 
 [[nodiscard]] geometry::BSplineSurfaceDefinition make_saddle_surface();
+[[nodiscard]] geometry::BSplineSurfaceDefinition make_bezier_nurbs_surface(const geometry::CubicBezierPatch::ControlNet &net);
 [[nodiscard]] auto make_planar_nurbs_surface(const PlanarSurfaceParameters &parameters)
     -> std::expected<geometry::BSplineSurfaceDefinition, std::string>;
 } // namespace occt_lab

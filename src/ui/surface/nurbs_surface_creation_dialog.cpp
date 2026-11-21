@@ -1,5 +1,7 @@
 #include "nurbs_pole_inspector.hpp"
 
+#include "application/bezier_patch_presets.hpp"
+
 #include <imgui.h>
 
 #include <algorithm>
@@ -126,23 +128,9 @@ bool draw_creation_axis(const char *poles_label, const char *degree_label, const
     ImGui::PopID();
     return poles_changed || degree_changed || mode_changed || table_changed;
 }
-} // namespace
 
-void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
+bool draw_plane_parameters(occt_lab::PlanarSurfaceParameters &p)
 {
-    constexpr char title[] = "New planar surface";
-    if (ImGui::Button("New surface..."))
-    {
-        creation_parameters_ = {};
-        creation_error_.clear();
-        ImGui::OpenPopup(title);
-    }
-    if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        return;
-    }
-    auto &p = creation_parameters_;
-    ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
     const bool u_changed =
         draw_creation_axis("U poles", "U degree", "Custom U knots", p.u_poles, p.u_degree, p.u_knots);
     const bool v_changed =
@@ -151,15 +139,61 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     const bool width_changed = ImGui::InputDouble("Width (X, mm)", &p.width_mm, 0, 0, "%.10g");
     const bool height_changed = ImGui::InputDouble("Height (Y, mm)", &p.height_mm, 0, 0, "%.10g");
     ImGui::PopItemFlag();
+    return u_changed || v_changed || width_changed || height_changed;
+}
+
+enum CreationPreset
+{
+    custom_plane,
+    bezier_plane,
+    raised_bezier
+};
+
+auto create_definition(const int preset, const occt_lab::PlanarSurfaceParameters &parameters)
+    -> std::expected<EditableNurbsSurface::Definition, std::string>
+{
+    switch (preset)
+    {
+    case custom_plane:
+        return occt_lab::make_planar_nurbs_surface(parameters);
+    case bezier_plane:
+        return occt_lab::make_bezier_nurbs_surface(occt_lab::planar_bezier_net());
+    case raised_bezier:
+        return occt_lab::make_bezier_nurbs_surface(occt_lab::raised_bezier_net());
+    default:
+        return std::unexpected("Unknown surface preset.");
+    }
+}
+} // namespace
+
+void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
+{
+    constexpr char title[] = "New surface";
+    if (ImGui::Button("New surface..."))
+    {
+        creation_parameters_ = {};
+        creation_preset_ = custom_plane;
+        creation_error_.clear();
+        ImGui::OpenPopup(title);
+    }
+    if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        return;
+    }
+    ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
+    const bool preset_changed =
+        ImGui::Combo("Preset", &creation_preset_, "Custom plane\0Bezier plane\0Raised Bezier patch\0");
+    const bool parameters_changed = creation_preset_ == custom_plane && draw_plane_parameters(creation_parameters_);
     ImGui::PopItemWidth();
-    if (u_changed || v_changed || width_changed || height_changed)
+    if (preset_changed || parameters_changed)
     {
         creation_error_.clear();
     }
     if (ImGui::Button("Create"))
     {
-        auto result = occt_lab::make_planar_nurbs_surface(p).and_then([&](EditableNurbsSurface::Definition &&definition)
-                                                                      { return model.replace(std::move(definition)); });
+        auto result = create_definition(creation_preset_, creation_parameters_)
+                          .and_then([&](EditableNurbsSurface::Definition &&definition)
+                                    { return model.replace(std::move(definition)); });
         if (result)
         {
             selected_pole_ = 0;

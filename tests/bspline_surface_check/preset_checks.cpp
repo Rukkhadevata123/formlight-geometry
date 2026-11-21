@@ -1,3 +1,4 @@
+#include "application/bezier_patch_presets.hpp"
 #include "application/editable_nurbs_surface.hpp"
 #include "application/nurbs_surface_creation.hpp"
 
@@ -9,6 +10,36 @@
 
 namespace
 {
+void check_bezier_presets()
+{
+    using namespace occt_lab;
+    const auto plane = make_bezier_nurbs_surface(planar_bezier_net());
+    const auto raised = make_bezier_nurbs_surface(raised_bezier_net());
+    EditableNurbsSurface model{plane};
+    if (model.current().surface->position(0.5, 0.5).value().z != 0.0)
+    {
+        throw std::runtime_error("The Bezier plane preset should lie in XY");
+    }
+    model.replace(raised).value();
+    const auto &surface = *model.current().surface;
+    if (!(std::abs(surface.position(0.5, 0.5).value().z - 16.03125) <= 1e-10))
+    {
+        throw std::runtime_error("The raised Bezier preset has the wrong center height");
+    }
+    // An off-center point also distinguishes the two interior rows and columns.
+    constexpr double u = 0.25, v = 0.75;
+    const auto point = surface.position(u, v).value();
+    if (!(std::hypot(point.x + 22.5, point.y - 18.0, point.z - 14985.0 / 2048.0) <= 1e-10))
+    {
+        throw std::runtime_error("The raised Bezier preset changed its control net ordering");
+    }
+    model.undo();
+    if (model.current().definition != plane)
+    {
+        throw std::runtime_error("Undo did not restore the Bezier plane preset");
+    }
+}
+
 void check_independent_degrees()
 {
     using occt_lab::PlanarSurfaceParameters;
@@ -109,6 +140,7 @@ void check_planar_creation()
 
 void check_nurbs_presets()
 {
+    check_bezier_presets();
     check_planar_creation();
     check_independent_degrees();
     const auto saddle = occt_lab::make_saddle_surface();

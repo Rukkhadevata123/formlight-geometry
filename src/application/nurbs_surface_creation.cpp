@@ -89,6 +89,12 @@ auto make_planar_nurbs_surface(const PlanarSurfaceParameters &parameters)
     return definition;
 }
 
+BSplineSurfaceDefinition make_bezier_nurbs_surface(const geometry::CubicBezierPatch::ControlNet &net)
+{
+    const geometry::BSplineSurfaceAxis cubic{.degree = 3, .pole_count = 4, .knots = {{0, 4}, {1, 4}}};
+    return {.u = cubic, .v = cubic, .poles = {net.begin(), net.end()}, .weights = std::vector<double>(net.size(), 1.0)};
+}
+
 BSplineSurfaceDefinition make_saddle_surface()
 {
     const geometry::BSplineSurfaceAxis axis{.degree = 2, .pole_count = 3, .knots = {{0, 3}, {1, 3}}};

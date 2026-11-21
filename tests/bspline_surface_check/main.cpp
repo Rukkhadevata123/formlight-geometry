@@ -223,7 +223,7 @@ int main()
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
                      "saddle preset and custom plane creation verified; independent U/V degrees verified; "
                      "custom knots verified; NURBS project round trips verified; Bezier import verified; "
-                     "NURBS resampling verified; NURBS probe verified");
+                     "NURBS resampling verified; NURBS probe verified; Bezier surface presets verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
