@@ -49,7 +49,7 @@ void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::Viewport
 } // namespace
 
 void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &transform, const PatchLayers &layers,
-                               const occt_lab::geometry::SurfaceSample *selected)
+                               const std::size_t selected_pole, const occt_lab::geometry::SurfaceSample *selected)
 {
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
@@ -91,6 +91,10 @@ void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &
             {
                 draw_list.AddCircleFilled(*point, 4.0F, net_color);
             }
+        }
+        if (const auto point = project.visible_point(model.current().control_net().at(selected_pole)))
+        {
+            draw_list.AddCircle(*point, 7.0F, IM_COL32_WHITE, 0, 1.5F);
         }
     }
     if (selected)

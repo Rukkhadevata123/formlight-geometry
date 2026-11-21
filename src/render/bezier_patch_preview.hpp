@@ -13,4 +13,4 @@ struct PatchLayers
 };
 
 void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &transform, const PatchLayers &layers,
-                               const occt_lab::geometry::SurfaceSample *selected);
+                               std::size_t selected_pole, const occt_lab::geometry::SurfaceSample *selected);

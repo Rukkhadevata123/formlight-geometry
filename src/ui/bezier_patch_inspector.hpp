@@ -19,6 +19,7 @@ class BezierPatchInspector
   public:
     explicit BezierPatchInspector(EditablePatch &model);
     void draw(PatchMeshControls &mesh, bool compute_supported);
+    [[nodiscard]] std::size_t selected_pole() const;
     [[nodiscard]] auto selected_sample() const -> const occt_lab::geometry::SurfaceSample *
     {
         return sample_ ? &*sample_ : nullptr;
@@ -26,10 +27,15 @@ class BezierPatchInspector
 
   private:
     void update_samples();
+    void refresh_after_edit(PatchMeshControls &mesh);
+    [[nodiscard]] bool draw_pole_editor();
     void draw_patch_commands(PatchMeshControls &mesh);
     void draw_reference() const;
     void draw_sampling_controls();
     EditablePatch &model_;
+    occt_lab::geometry::CubicBezierPatch::ControlNet draft_;
+    int pole_u_ = 1;
+    int pole_v_ = 1;
     std::string edit_error_;
     bool sampling_failed_ = false;
     double u_ = 0.5;

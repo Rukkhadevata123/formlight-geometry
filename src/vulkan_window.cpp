@@ -784,7 +784,8 @@ public:
                     patch_mesh_.report = error.what();
                 }
             }
-            draw_bezier_patch_preview(patch_, transform, patch_layers_, patch_inspector_.selected_sample());
+            draw_bezier_patch_preview(patch_, transform, patch_layers_, patch_inspector_.selected_pole(),
+                                      patch_inspector_.selected_sample());
         }
         ImGui::Render();
 

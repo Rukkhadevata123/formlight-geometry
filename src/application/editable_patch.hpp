@@ -38,6 +38,7 @@ class EditablePatch
     }
 
     [[nodiscard]] bool create_plane();
+    [[nodiscard]] auto apply(const Patch::ControlNet &poles) -> std::expected<bool, std::string>;
     void undo();
     void redo();
     [[nodiscard]] auto resample(Sampling sampling) -> std::expected<void, occt_lab::geometry::PatchError>;
@@ -51,6 +52,7 @@ class EditablePatch
 
     // A successful swap leaves the previous surface in replacement for undo/redo.
     void activate(std::unique_ptr<Surface> &replacement);
+    bool commit(const Patch &candidate);
     std::unique_ptr<Surface> current_;
     std::unique_ptr<Surface> history_;
     bool undone_ = false;

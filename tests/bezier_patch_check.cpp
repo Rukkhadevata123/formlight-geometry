@@ -183,6 +183,68 @@ void check_reference_failures(const OcctBezierPatch &reference)
     }
 }
 
+void check_control_net_edits()
+{
+    EditablePatch model;
+    if (!model.create_plane())
+    {
+        throw std::runtime_error("Expected a new plane for control point editing");
+    }
+    const auto plane = model.current().control_net();
+    auto draft = plane;
+    draft[2 * side_length + 1].z = 32;
+    draft[side_length + 2].x += 8;
+    draft[side_length + 2].y -= 4;
+    if (!model.apply(draft).value() || model.current().control_net() != draft)
+    {
+        throw std::runtime_error("Applying a multi-pole draft did not commit the control net");
+    }
+
+    // At (1/4, 3/4) the two transposed poles have different tensor-product weights.
+    constexpr double first_weight = 729.0 / 4096.0;
+    constexpr double second_weight = 81.0 / 4096.0;
+    constexpr Vec3 expected{.x = -22.5 + 8 * second_weight, .y = 18.0 - 4 * second_weight, .z = 32 * first_weight};
+    const auto sample = model.current().evaluate(0.25, 0.75).value();
+    const auto reference = model.reference().evaluate(0.25, 0.75).value();
+    if (!near(sample.position, expected) || !near(reference.position, expected) ||
+        !near(sample.normal, reference.normal) || !near(model.isolines().constant_u.at(2).at(24), expected))
+    {
+        throw std::runtime_error("An edited pole was transposed or its derived geometry is stale");
+    }
+
+    model.undo();
+    if (model.current().control_net() != plane || model.apply(plane).value() || !model.can_redo())
+    {
+        throw std::runtime_error("One undo should restore both edited poles; a no-op must retain redo");
+    }
+    auto invalid = plane;
+    invalid[1] = invalid[0]; // Zero u tangent at (0,0).
+    if (model.apply(invalid).has_value())
+    {
+        throw std::runtime_error("A degenerate corner was accepted");
+    }
+    for (const double coordinate : {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::max()})
+    {
+        invalid = plane;
+        invalid[1].x = coordinate;
+        if (model.apply(invalid).has_value())
+        {
+            throw std::runtime_error("An invalid control point coordinate was accepted");
+        }
+    }
+    if (!model.can_redo() || model.current().control_net() != plane ||
+        !near(model.reference().evaluate(0.5, 0.5).value().position, {}) ||
+        !near(model.isolines().constant_u.at(4).at(16), {}))
+    {
+        throw std::runtime_error("A rejected edit changed the plane, its samples, or its history");
+    }
+    model.redo();
+    if (model.current().control_net() != draft || !near(model.isolines().constant_u.at(2).at(24), expected))
+    {
+        throw std::runtime_error("Redo did not restore the edited surface");
+    }
+}
+
 void check_invalid_inputs(const CubicBezierPatch &patch)
 {
     if (const auto sample = patch.evaluate(1.25, 0.5); sample || sample.error() != PatchError::ParameterOutOfRange)
@@ -304,13 +366,14 @@ int main()
         const OcctBezierPatch reference{*patch};
         check_samples(*patch, reference);
         check_patch_creation();
+        check_control_net_edits();
         check_comparison_metrics();
         check_reference_failures(reference);
         check_isolines(*patch);
         check_invalid_inputs(*patch);
         check_large_normal();
         std::println(
-            "Bezier patch positions, normals, OCCT comparison, planar creation and undo/redo, adjustable sampling and invalid inputs verified");
+            "Bezier patch positions, normals, OCCT comparison, planar creation, control net edits, undo/redo, adjustable sampling and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

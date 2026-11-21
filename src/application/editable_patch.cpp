@@ -1,5 +1,8 @@
 #include "editable_patch.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <utility>
 
@@ -46,6 +49,10 @@ void EditablePatch::activate(std::unique_ptr<Surface> &replacement)
     auto lines = sample_patch_isolines(replacement->patch, sampling_);
     if (!lines)
     {
+        if (lines.error() == occt_lab::geometry::PatchError::DegenerateNormal)
+        {
+            throw std::runtime_error("The edited patch has an undefined normal at an isoline sample.");
+        }
         throw std::runtime_error("Could not sample the replacement Bezier patch");
     }
     current_.swap(replacement);
@@ -54,12 +61,40 @@ void EditablePatch::activate(std::unique_ptr<Surface> &replacement)
 
 bool EditablePatch::create_plane()
 {
-    const auto net = planar_control_net();
-    if (current().control_net() == net)
+    return commit(Patch::create(planar_control_net()).value());
+}
+
+auto EditablePatch::apply(const Patch::ControlNet &poles) -> std::expected<bool, std::string>
+{
+    const auto candidate = Patch::create(poles);
+    if (!candidate)
+    {
+        return std::unexpected("Control point coordinates must be finite.");
+    }
+    constexpr double gpu_limit = std::numeric_limits<float>::max();
+    if (std::ranges::any_of(
+            poles, [](const auto &p)
+            { return std::abs(p.x) > gpu_limit || std::abs(p.y) > gpu_limit || std::abs(p.z) > gpu_limit; }))
+    {
+        return std::unexpected("Control point coordinates exceed the GPU float range.");
+    }
+    try
+    {
+        return commit(*candidate);
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(error.what());
+    }
+}
+
+bool EditablePatch::commit(const Patch &candidate)
+{
+    if (current().control_net() == candidate.control_net())
     {
         return false;
     }
-    auto replacement = std::make_unique<Surface>(Patch::create(net).value());
+    auto replacement = std::make_unique<Surface>(candidate);
     activate(replacement);
     history_ = std::move(replacement);
     undone_ = false;

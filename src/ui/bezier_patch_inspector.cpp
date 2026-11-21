@@ -41,9 +41,56 @@ void draw_surface_sample(const occt_lab::geometry::SurfaceSample &sample)
 }
 } // namespace
 
-BezierPatchInspector::BezierPatchInspector(EditablePatch &model) : model_(model)
+BezierPatchInspector::BezierPatchInspector(EditablePatch &model) : model_(model), draft_(model.current().control_net())
 {
     update_samples();
+}
+
+std::size_t BezierPatchInspector::selected_pole() const
+{
+    return static_cast<std::size_t>(pole_v_ - 1) * EditablePatch::Patch::side_length +
+           static_cast<std::size_t>(pole_u_ - 1);
+}
+
+bool BezierPatchInspector::draw_pole_editor()
+{
+    if (!ImGui::CollapsingHeader("Control points"))
+    {
+        return false;
+    }
+    constexpr int side = static_cast<int>(EditablePatch::Patch::side_length);
+    ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
+    ImGui::SliderInt("Pole U", &pole_u_, 1, side, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderInt("Pole V", &pole_v_, 1, side, "%d", ImGuiSliderFlags_AlwaysClamp);
+    const auto index = selected_pole();
+    auto &[x, y, z] = draft_[index];
+    ImGui::PushID(static_cast<int>(index));
+    ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
+    constexpr auto flags = ImGuiInputTextFlags_ParseEmptyRefVal;
+    const bool changed_x = ImGui::InputDouble("X (mm)", &x, 0, 0, "%.8g", flags);
+    const bool changed_y = ImGui::InputDouble("Y (mm)", &y, 0, 0, "%.8g", flags);
+    const bool changed_z = ImGui::InputDouble("Z (mm)", &z, 0, 0, "%.8g", flags);
+    ImGui::PopItemFlag();
+    ImGui::PopID();
+    ImGui::PopItemWidth();
+    if (changed_x || changed_y || changed_z)
+    {
+        edit_error_.clear();
+    }
+
+    const auto &applied = model_.current().control_net();
+    const auto &point = applied[index];
+    ImGui::Text("Applied: (%.8g, %.8g, %.8g) mm", point.x, point.y, point.z);
+    ImGui::BeginDisabled(draft_ == applied);
+    const bool apply = ImGui::Button("Apply");
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel"))
+    {
+        draft_ = applied;
+        edit_error_.clear();
+    }
+    ImGui::EndDisabled();
+    return apply;
 }
 
 void BezierPatchInspector::update_samples()
@@ -54,6 +101,18 @@ void BezierPatchInspector::update_samples()
 
 void BezierPatchInspector::draw_patch_commands(PatchMeshControls &mesh)
 {
+    if (draw_pole_editor())
+    {
+        if (const auto applied = model_.apply(draft_); !applied)
+        {
+            edit_error_ = applied.error();
+        }
+        else if (*applied)
+        {
+            refresh_after_edit(mesh);
+        }
+    }
+    ImGui::BeginDisabled(draft_ != model_.current().control_net());
     const bool create = ImGui::Button("New planar patch");
     ImGui::SetItemTooltip("Replace the current patch with a 90 x 72 mm plane in XY.");
     ImGui::SameLine();
@@ -63,6 +122,7 @@ void BezierPatchInspector::draw_patch_commands(PatchMeshControls &mesh)
     ImGui::SameLine();
     ImGui::BeginDisabled(!model_.can_redo());
     const bool redo = ImGui::Button("Redo");
+    ImGui::EndDisabled();
     ImGui::EndDisabled();
 
     if (create || undo || redo)
@@ -84,11 +144,8 @@ void BezierPatchInspector::draw_patch_commands(PatchMeshControls &mesh)
             }
             if (changed)
             {
-                update_samples();
-                mesh.report.clear();
-                sampling_failed_ = false;
+                refresh_after_edit(mesh);
             }
-            edit_error_.clear();
         }
         catch (const std::exception &error)
         {
@@ -99,6 +156,15 @@ void BezierPatchInspector::draw_patch_commands(PatchMeshControls &mesh)
     {
         ImGui::TextUnformatted(edit_error_.c_str());
     }
+}
+
+void BezierPatchInspector::refresh_after_edit(PatchMeshControls &mesh)
+{
+    draft_ = model_.current().control_net();
+    update_samples();
+    mesh.report.clear();
+    sampling_failed_ = false;
+    edit_error_.clear();
 }
 
 void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supported)
