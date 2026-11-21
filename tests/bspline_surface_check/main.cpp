@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <string_view>
 
+void check_nurbs_pole_edits();
+
 namespace
 {
 using namespace occt_lab::geometry;
@@ -180,8 +182,9 @@ int main()
         check_invalid_definitions(definition);
         check_rational_surface(definition);
         check_invalid_weights(definition);
+        check_nurbs_pole_edits();
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
-                     "and rational weights verified; preview isolines verified");
+                     "and rational weights verified; preview isolines and pole edit history verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

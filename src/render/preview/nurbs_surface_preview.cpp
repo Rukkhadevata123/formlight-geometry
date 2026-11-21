@@ -1,27 +1,16 @@
 #include "nurbs_surface_preview.hpp"
 
-#include "application/nurbs_surface_example.hpp"
 #include "surface_wireframe.hpp"
 
 #include <Bnd_Box.hxx>
 
 #include <algorithm>
 #include <numeric>
-#include <stdexcept>
-#include <utility>
 
-NurbsSurfacePreview::NurbsSurfacePreview() : definition_(occt_lab::make_nurbs_surface_example())
+NurbsSurfacePreview::NurbsSurfacePreview(const std::span<const occt_lab::geometry::Vec3> initial_poles)
 {
-    const occt_lab::geometry::BSplineSurface surface{definition_};
-    auto lines = surface.isolines();
-    if (!lines)
-    {
-        throw std::runtime_error(lines.error());
-    }
-    isolines_ = std::move(*lines);
-
     Bnd_Box bounds;
-    for (const auto &[x, y, z] : definition_.poles)
+    for (const auto &[x, y, z] : initial_poles)
     {
         bounds.Add(gp_Pnt{x, y, z});
     }
@@ -38,14 +27,16 @@ occt_lab::render::ViewportProjection NurbsSurfacePreview::projection(const ClipT
     return {transform, *ImGui::GetMainViewport(), center_, scale_};
 }
 
-std::optional<std::size_t> NurbsSurfacePreview::pick_pole(const ClipTransform &transform, const ImVec2 cursor) const
+std::optional<std::size_t> NurbsSurfacePreview::pick_pole(const std::span<const occt_lab::geometry::Vec3> poles,
+                                                          const ClipTransform &transform, const ImVec2 cursor) const
 {
-    return projection(transform).pick_pole(definition_.poles, cursor);
+    return projection(transform).pick_pole(poles, cursor);
 }
 
-void NurbsSurfacePreview::draw(const ClipTransform &transform, const PatchLayers &layers,
-                               const std::size_t selected_pole) const
+void NurbsSurfacePreview::draw(const EditableNurbsSurface::Snapshot &surface, const ClipTransform &transform,
+                               const PatchLayers &layers, const std::size_t selected_pole) const
 {
     draw_surface_wireframe(*ImGui::GetBackgroundDrawList(ImGui::GetMainViewport()), projection(transform),
-                           definition_.poles, definition_.u.pole_count, isolines_, layers, selected_pole);
+                           surface.definition.poles, surface.definition.u.pole_count, surface.isolines, layers,
+                           selected_pole);
 }

@@ -42,6 +42,8 @@ add_executable(occt_lab
     src/main.cpp
     src/application/editable_curve.cpp
     src/application/editable_curve.hpp
+    src/application/editable_nurbs_surface.cpp
+    src/application/editable_nurbs_surface.hpp
     src/application/editable_patch.cpp
     src/application/editable_patch.hpp
     src/application/nurbs_surface_example.cpp
@@ -167,7 +169,11 @@ if(BUILD_TESTING)
         src/document/project_io.cpp
     )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
-    target_sources(bspline_surface_check PRIVATE src/application/nurbs_surface_example.cpp)
+    target_sources(bspline_surface_check PRIVATE
+        tests/bspline_surface_check/pole_edit_checks.cpp
+        src/application/editable_nurbs_surface.cpp
+        src/application/nurbs_surface_example.cpp
+    )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
         tests/support/project_test_directory.hpp

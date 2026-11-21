@@ -1,10 +1,16 @@
 #pragma once
 
-#include <cstddef>
+#include "application/editable_nurbs_surface.hpp"
 
-namespace occt_lab::geometry
+class NurbsPoleInspector
 {
-struct BSplineSurfaceDefinition;
-}
+  public:
+    explicit NurbsPoleInspector(const EditableNurbsSurface &model);
+    void draw(EditableNurbsSurface &model, std::size_t selected_pole);
 
-void draw_nurbs_pole_inspector(const occt_lab::geometry::BSplineSurfaceDefinition &surface, std::size_t selected_pole);
+  private:
+    void reset_draft(const EditableNurbsSurface &model);
+    std::vector<occt_lab::geometry::Vec3> poles_;
+    std::vector<double> weights_;
+    std::string error_;
+};

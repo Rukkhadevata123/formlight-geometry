@@ -1,13 +1,22 @@
 #include "nurbs_pole_inspector.hpp"
 
-#include "geometry/surfaces/bspline_surface.hpp"
-
 #include <imgui.h>
 
 #include <limits>
 
-void draw_nurbs_pole_inspector(const occt_lab::geometry::BSplineSurfaceDefinition &surface,
-                               const std::size_t selected_pole)
+NurbsPoleInspector::NurbsPoleInspector(const EditableNurbsSurface &model)
+{
+    reset_draft(model);
+}
+
+void NurbsPoleInspector::reset_draft(const EditableNurbsSurface &model)
+{
+    poles_ = model.current().definition.poles;
+    weights_ = model.current().definition.weights;
+    error_.clear();
+}
+
+void NurbsPoleInspector::draw(EditableNurbsSurface &model, const std::size_t selected_pole)
 {
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
@@ -15,18 +24,77 @@ void draw_nurbs_pole_inspector(const occt_lab::geometry::BSplineSurfaceDefinitio
     constexpr char title[] = "NURBS control point";
     const auto &style = ImGui::GetStyle();
     // Reserve a frame for the collapse button even when the selected pole has short coordinates.
-    const float min_width = ImGui::CalcTextSize(title).x + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
-                            2.0F * style.FramePadding.x;
+    const float min_width =
+        ImGui::CalcTextSize(title).x + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + 2.0F * style.FramePadding.x;
     constexpr float unlimited = std::numeric_limits<float>::max();
     ImGui::SetNextWindowSizeConstraints({min_width, 0.0F}, {unlimited, unlimited});
     if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        const auto &surface = model.current().definition;
         const auto columns = static_cast<std::size_t>(surface.u.pole_count);
-        const auto &[x, y, z] = surface.poles.at(selected_pole);
-        const double weight = surface.weights.empty() ? 1.0 : surface.weights.at(selected_pole);
         ImGui::Text("Pole U %zu   V %zu", selected_pole % columns + 1, selected_pole / columns + 1);
-        ImGui::Text("XYZ (mm)   (%.8g, %.8g, %.8g)", x, y, z);
-        ImGui::Text("Weight   %.8g", weight);
+        auto &[x, y, z] = poles_.at(selected_pole);
+        ImGui::PushID(static_cast<int>(selected_pole));
+        ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
+        constexpr auto flags = ImGuiInputTextFlags_ParseEmptyRefVal;
+        const bool changed_x = ImGui::InputDouble("X (mm)", &x, 0, 0, "%.8g", flags);
+        const bool changed_y = ImGui::InputDouble("Y (mm)", &y, 0, 0, "%.8g", flags);
+        const bool changed_z = ImGui::InputDouble("Z (mm)", &z, 0, 0, "%.8g", flags);
+        const bool changed_weight = ImGui::InputDouble("Weight", &weights_.at(selected_pole), 0, 0, "%.8g", flags);
+        ImGui::PopItemFlag();
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+        if (changed_x || changed_y || changed_z || changed_weight)
+        {
+            error_.clear();
+        }
+
+        bool dirty = poles_ != surface.poles || weights_ != surface.weights;
+        ImGui::BeginDisabled(!dirty);
+        if (ImGui::Button("Apply"))
+        {
+            const auto result = model.apply(poles_, weights_);
+            if (result)
+            {
+                dirty = false;
+                error_.clear();
+            }
+            else
+            {
+                error_ = result.error();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            reset_draft(model);
+            dirty = false;
+        }
+        ImGui::EndDisabled();
+
+        ImGui::BeginDisabled(dirty || !model.can_undo());
+        if (ImGui::Button("Undo"))
+        {
+            model.undo();
+            reset_draft(model);
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(dirty || !model.can_redo());
+        if (ImGui::Button("Redo"))
+        {
+            model.redo();
+            reset_draft(model);
+        }
+        ImGui::EndDisabled();
+        const auto &point = surface.poles.at(selected_pole);
+        ImGui::Text("Applied (mm)   (%.8g, %.8g, %.8g)", point.x, point.y, point.z);
+        ImGui::Text("Applied weight   %.8g", surface.weights.at(selected_pole));
+        if (!error_.empty())
+        {
+            ImGui::TextWrapped("%s", error_.c_str());
+        }
     }
     ImGui::End();
 }

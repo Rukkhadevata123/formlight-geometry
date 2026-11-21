@@ -1,6 +1,7 @@
 #include "vulkan_window.hpp"
 
 #include "application/editable_patch.hpp"
+#include "application/nurbs_surface_example.hpp"
 #include "render/preview/bezier_patch_preview.hpp"
 #include "render/preview/brep_preview.hpp"
 #include "render/compute/compute_bezier_patch.hpp"
@@ -361,6 +362,25 @@ struct Swapchain
     uint32_t min_image_count;
 };
 
+struct NurbsSurfaceSession
+{
+    EditableNurbsSurface model{occt_lab::make_nurbs_surface_example()};
+    NurbsSurfacePreview preview{model.current().definition.poles};
+    NurbsPoleInspector inspector{model};
+    std::size_t selected_pole = 0;
+
+    void draw(const ClipTransform &transform, const PatchLayers &layers, const bool pole_click)
+    {
+        if (pole_click && layers.control_net)
+        {
+            const auto hit = preview.pick_pole(model.current().definition.poles, transform, ImGui::GetMousePos());
+            selected_pole = hit.value_or(selected_pole);
+        }
+        inspector.draw(model, selected_pole);
+        preview.draw(model.current(), transform, layers, selected_pole);
+    }
+};
+
 class Renderer
 {
 public:
@@ -640,17 +660,11 @@ public:
         }
         else if (preview_mode_ == PreviewMode::nurbs_surface)
         {
-            if (!nurbs_preview_)
+            if (!nurbs_)
             {
-                nurbs_preview_.emplace();
+                nurbs_.emplace();
             }
-            if (pole_click && patch_layers_.control_net)
-            {
-                const auto hit = nurbs_preview_->pick_pole(transform, ImGui::GetMousePos());
-                selected_nurbs_pole_ = hit.value_or(selected_nurbs_pole_);
-            }
-            draw_nurbs_pole_inspector(nurbs_preview_->definition(), selected_nurbs_pole_);
-            nurbs_preview_->draw(transform, patch_layers_, selected_nurbs_pole_);
+            nurbs_->draw(transform, patch_layers_, pole_click);
         }
         ImGui::Render();
 
@@ -876,8 +890,7 @@ private:
     PatchMeshControls patch_mesh_;
     bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
-    std::optional<NurbsSurfacePreview> nurbs_preview_;
-    std::size_t selected_nurbs_pole_ = 0;
+    std::optional<NurbsSurfaceSession> nurbs_;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;
