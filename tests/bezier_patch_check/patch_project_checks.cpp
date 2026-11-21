@@ -1,5 +1,5 @@
 #include "document/patch_project.hpp"
-#include "project_test_directory.hpp"
+#include "../support/project_test_directory.hpp"
 
 #include <fstream>
 #include <iterator>

@@ -1,6 +1,6 @@
 #include "application/editable_curve.hpp"
 #include "document/curve_project.hpp"
-#include "project_test_directory.hpp"
+#include "../support/project_test_directory.hpp"
 
 #include <filesystem>
 #include <format>

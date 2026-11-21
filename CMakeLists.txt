@@ -145,22 +145,22 @@ add_dependencies(occt_lab occt_lab_shaders)
 include(CTest)
 if(BUILD_TESTING)
     foreach(check IN ITEMS occt_box_check occt_cylinder_check bezier_patch_check bspline_curve_check bspline_surface_check)
-        add_executable(${check} tests/${check}.cpp)
+        add_executable(${check} tests/${check}/main.cpp)
         target_link_libraries(${check} PRIVATE occt_lab_geometry)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
     target_sources(bezier_patch_check PRIVATE
-        tests/patch_project_checks.cpp
-        tests/project_test_directory.hpp
+        tests/bezier_patch_check/patch_project_checks.cpp
+        tests/support/project_test_directory.hpp
         src/application/editable_patch.cpp
         src/document/patch_project.cpp
         src/document/project_io.cpp
     )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_sources(bspline_curve_check PRIVATE
-        tests/curve_project_checks.cpp
-        tests/project_test_directory.hpp
+        tests/bspline_curve_check/curve_project_checks.cpp
+        tests/support/project_test_directory.hpp
         src/application/editable_curve.cpp
         src/document/curve_project.cpp
         src/document/project_io.cpp
