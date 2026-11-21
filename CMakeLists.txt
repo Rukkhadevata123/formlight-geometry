@@ -29,6 +29,7 @@ add_library(occt_lab_geometry STATIC
     src/geometry/surfaces/bspline_surface.hpp
     src/geometry/surfaces/occt_bezier_patch.cpp
     src/geometry/surfaces/occt_bezier_patch.hpp
+    src/geometry/surfaces/patch_grid.hpp
     src/geometry/surfaces/surface_isolines.hpp
     src/geometry/vec3.hpp
 )
@@ -193,6 +194,7 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/analytic_surface.hpp
         tests/bspline_surface_check/bezier_import_checks.cpp
         tests/bspline_surface_check/custom_knot_checks.cpp
+        tests/bspline_surface_check/grid_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
         tests/bspline_surface_check/project_checks.cpp

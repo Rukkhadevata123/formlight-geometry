@@ -8,9 +8,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <span>
 #include <stdexcept>
+#include <utility>
 
 namespace occt_lab::geometry
 {
@@ -202,5 +204,33 @@ auto BSplineSurface::probe(const double u, const double v) const -> std::expecte
         return SurfaceProbe{sample->position, std::unexpected("Surface tangents vanish or are parallel.")};
     }
     return SurfaceProbe{sample->position, Vec3{normal.X() / length, normal.Y() / length, normal.Z() / length}};
+}
+
+auto BSplineSurface::sample_grid(const PatchGrid grid) const -> std::expected<std::vector<SurfaceProbe>, std::string>
+{
+    if (!grid.valid())
+    {
+        return std::unexpected(std::format("Choose between 1 and {} subdivisions per axis.", PatchGrid::max_segments));
+    }
+
+    const auto bounds = domain();
+    std::vector<SurfaceProbe> vertices;
+    vertices.reserve(grid.vertex_count());
+    for (std::uint32_t row = 0; row <= grid.v_segments; ++row)
+    {
+        const double v = std::lerp(bounds.v_min, bounds.v_max, static_cast<double>(row) / grid.v_segments);
+        for (std::uint32_t column = 0; column <= grid.u_segments; ++column)
+        {
+            const double u = std::lerp(bounds.u_min, bounds.u_max, static_cast<double>(column) / grid.u_segments);
+            auto sample = probe(u, v);
+            if (!sample)
+            {
+                return std::unexpected(std::format("Grid vertex ({}, {}) at (u={}, v={}): {}", column, row, u, v,
+                                                   sample.error()));
+            }
+            vertices.push_back(std::move(*sample));
+        }
+    }
+    return vertices;
 }
 } // namespace occt_lab::geometry

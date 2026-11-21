@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry/bspline_knot.hpp"
+#include "patch_grid.hpp"
 #include "surface_isolines.hpp"
 
 #include <Geom_BSplineSurface.hxx>
@@ -54,6 +55,8 @@ class BSplineSurface
     // Endpoints use the interior derivative. An interior knot with only C0 continuity is rejected.
     [[nodiscard]] auto evaluate_d1(double u, double v) const -> std::expected<SurfaceD1, std::string>;
     [[nodiscard]] auto probe(double u, double v) const -> std::expected<SurfaceProbe, std::string>;
+    // V rows with U varying fastest, including all four boundaries of the knot domain.
+    [[nodiscard]] auto sample_grid(PatchGrid grid) const -> std::expected<std::vector<SurfaceProbe>, std::string>;
 
   private:
     Geom_BSplineSurface surface_;

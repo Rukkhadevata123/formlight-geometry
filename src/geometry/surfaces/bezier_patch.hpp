@@ -1,10 +1,10 @@
 #pragma once
 
+#include "patch_grid.hpp"
 #include "surface_isolines.hpp"
 
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <span>
 
@@ -45,14 +45,6 @@ class CubicBezierPatch
   private:
     explicit CubicBezierPatch(const ControlNet &control_points);
     ControlNet control_points_;
-};
-
-struct PatchGrid
-{
-    static constexpr uint32_t max_segments = 32;
-    uint32_t u_segments = 24;
-    uint32_t v_segments = 16;
-    bool operator==(const PatchGrid &) const = default;
 };
 
 [[nodiscard]] auto sample_patch_isolines(const CubicBezierPatch &patch, PatchSampling sampling = {})

@@ -34,11 +34,6 @@ static_assert(max_index_bytes <= 65536); // vkCmdUpdateBuffer limit
 static_assert(sizeof(MeshVertex) == 24 && offsetof(MeshVertex, normal) == 12 && sizeof(Pole) == 16);
 static_assert(CubicBezierPatch::side_length == 4);
 
-uint32_t vertex_count(const PatchGrid grid)
-{
-    return (grid.u_segments + 1) * (grid.v_segments + 1);
-}
-
 std::vector<uint32_t> grid_indices(const PatchGrid grid)
 {
     std::vector<uint32_t> indices;
@@ -67,7 +62,7 @@ ComputeBezierPatch::ComputeBezierPatch(const vk::raii::PhysicalDevice &physical_
 void ComputeBezierPatch::prepare(const vk::raii::CommandBuffer &commands, const CubicBezierPatch &patch,
                                  const PatchGrid grid, const bool readback)
 {
-    if (grid.u_segments < 1 || grid.v_segments < 1 || grid.u_segments > max_segments || grid.v_segments > max_segments)
+    if (!grid.valid())
     {
         throw std::out_of_range("Bezier grid subdivisions outside supported range");
     }
@@ -84,7 +79,7 @@ void ComputeBezierPatch::prepare(const vk::raii::CommandBuffer &commands, const 
         std::ranges::transform(
             patch.control_net(), input.begin(), [](const Vec3 &p) -> Pole
             { return {static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z), 0.0F}; });
-        commands.updateBuffer<Pole>(kernel_.buffer(), vertex_count(grid) * sizeof(MeshVertex), input);
+        commands.updateBuffer<Pole>(kernel_.buffer(), grid.vertex_count() * sizeof(MeshVertex), input);
         constexpr vk::MemoryBarrier2 uploaded{
             Stage::eAllTransfer, Access::eTransferWrite, Stage::eComputeShader | Stage::eIndexInput,
             Access::eShaderStorageRead | Access::eShaderStorageWrite | Access::eIndexRead};
@@ -118,7 +113,7 @@ void ComputeBezierPatch::draw(const vk::raii::CommandBuffer &commands, const BRe
 std::string ComputeBezierPatch::compare_with_occt(const OcctBezierPatch &reference) const
 {
     const auto grid = grid_.value();
-    std::vector<MeshVertex> vertices(vertex_count(grid));
+    std::vector<MeshVertex> vertices(grid.vertex_count());
     {
         const auto unmap = [this](void *) { kernel_.memory().unmapMemory(); };
         const std::unique_ptr<void, decltype(unmap)> mapped{kernel_.memory().mapMemory(0, VK_WHOLE_SIZE), unmap};
