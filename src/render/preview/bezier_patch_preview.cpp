@@ -1,11 +1,8 @@
 #include "bezier_patch_preview.hpp"
 
 #include "application/editable_patch.hpp"
+#include "surface_probe_marker.hpp"
 #include "surface_wireframe.hpp"
-
-#include <algorithm>
-#include <array>
-#include <cmath>
 
 namespace
 {
@@ -14,38 +11,6 @@ using occt_lab::geometry::Vec3;
 constexpr auto side = CubicBezierPatch::side_length;
 constexpr double half_width = 45.0;
 
-void draw_surface_normal(ImDrawList &draw_list, const occt_lab::render::ViewportProjection &project,
-                         const occt_lab::geometry::SurfaceSample &sample)
-{
-    const auto &[point, normal] = sample;
-    const auto base = project.visible_point(point);
-    if (!base)
-    {
-        return;
-    }
-    constexpr double arrow_length_mm = 12.0;
-    const Vec3 tip{.x = point.x + arrow_length_mm * normal.x,
-                   .y = point.y + arrow_length_mm * normal.y,
-                   .z = point.z + arrow_length_mm * normal.z};
-    constexpr ImU32 color = IM_COL32(255, 150, 118, 255);
-    project.draw_polyline(draw_list, std::array{point, tip}, color, 2.5F);
-    if (const auto end = project.visible_point(tip))
-    {
-        const float dx = end->x - base->x;
-        const float dy = end->y - base->y;
-        if (const float length = std::hypot(dx, dy); length > 1.0F)
-        {
-            // Size the arrowhead in screen space and shrink it when the normal points toward the eye.
-            const float scale = std::min(8.0F / length, 0.4F);
-            const ImVec2 back{end->x - scale * dx, end->y - scale * dy};
-            const ImVec2 wing{-0.5F * scale * dy, 0.5F * scale * dx};
-            draw_list.AddTriangleFilled(*end, {back.x + wing.x, back.y + wing.y}, {back.x - wing.x, back.y - wing.y},
-                                        color);
-        }
-    }
-    draw_list.AddCircleFilled(*base, 4.0F, color);
-    draw_list.AddCircle(*base, 6.0F, IM_COL32_WHITE, 0, 1.5F);
-}
 } // namespace
 
 std::optional<std::size_t> pick_patch_pole(const EditablePatch &model, const ClipTransform &transform,
@@ -72,6 +37,6 @@ void draw_bezier_patch_preview(const EditablePatch &model, const ClipTransform &
     draw_surface_wireframe(draw_list, project, net, side, model.isolines(), layers, selected_pole);
     if (selected)
     {
-        draw_surface_normal(draw_list, project, *selected);
+        draw_surface_probe_marker(draw_list, project, selected->position, selected->normal, 12.0);
     }
 }

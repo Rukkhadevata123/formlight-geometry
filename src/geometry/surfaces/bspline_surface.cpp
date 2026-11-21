@@ -3,6 +3,8 @@
 #include "geometry/bspline_weights.hpp"
 #include "geometry/occt_bspline_knots.hpp"
 
+#include <Precision.hxx>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -28,6 +30,17 @@ namespace
 bool finite(const Vec3 &p)
 {
     return std::isfinite(p.x) && std::isfinite(p.y) && std::isfinite(p.z);
+}
+
+gp_Vec tangent_direction(const Vec3 &tangent)
+{
+    // Rescale before taking the length so the knot interval cannot overflow or underflow the norm.
+    const double scale = std::max({std::abs(tangent.x), std::abs(tangent.y), std::abs(tangent.z)});
+    if (scale == 0.0)
+    {
+        return {};
+    }
+    return gp_Vec{tangent.x / scale, tangent.y / scale, tangent.z / scale}.Normalized();
 }
 
 OcctKnotArrays axis_knots(const BSplineSurfaceAxis &axis)
@@ -166,5 +179,28 @@ auto BSplineSurface::evaluate_d1(const double u, const double v) const -> std::e
     {
         return std::unexpected(error.what());
     }
+}
+
+auto BSplineSurface::probe(const double u, const double v) const -> std::expected<SurfaceProbe, std::string>
+{
+    const auto sample = evaluate_d1(u, v);
+    if (!sample)
+    {
+        // A crease can still supply a point even though it has no unique normal.
+        const auto point = position(u, v);
+        if (!point)
+        {
+            return std::unexpected(point.error());
+        }
+        return SurfaceProbe{*point, std::unexpected(sample.error())};
+    }
+
+    const auto normal = tangent_direction(sample->du).Crossed(tangent_direction(sample->dv));
+    const double length = normal.Magnitude();
+    if (length <= Precision::Angular())
+    {
+        return SurfaceProbe{sample->position, std::unexpected("Surface tangents vanish or are parallel.")};
+    }
+    return SurfaceProbe{sample->position, Vec3{normal.X() / length, normal.Y() / length, normal.Z() / length}};
 }
 } // namespace occt_lab::geometry

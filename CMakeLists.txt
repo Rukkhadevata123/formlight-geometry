@@ -79,6 +79,8 @@ add_executable(occt_lab
     src/render/preview/curve_preview.hpp
     src/render/preview/nurbs_surface_preview.cpp
     src/render/preview/nurbs_surface_preview.hpp
+    src/render/preview/surface_probe_marker.cpp
+    src/render/preview/surface_probe_marker.hpp
     src/render/preview/surface_wireframe.cpp
     src/render/preview/surface_wireframe.hpp
     src/render/viewport/orbit_camera.cpp
@@ -105,6 +107,7 @@ add_executable(occt_lab
     src/ui/nurbs_pole_inspector.cpp
     src/ui/nurbs_pole_inspector.hpp
     src/ui/nurbs_surface_creation_dialog.cpp
+    src/ui/nurbs_surface_probe.cpp
     src/ui/nurbs_surface_project_panel.cpp
     src/ui/pole_drag.hpp
     src/ui/project_file_controls.cpp

@@ -23,10 +23,9 @@ EditableNurbsSurface::Framing frame_control_net(const std::vector<occt_lab::geom
             .span = std::max({high.X() - low.X(), high.Y() - low.Y(), high.Z() - low.Z()})};
 }
 
-occt_lab::geometry::PatchIsolines sample_isolines(const EditableNurbsSurface::Definition &definition,
+occt_lab::geometry::PatchIsolines sample_isolines(const occt_lab::geometry::BSplineSurface &surface,
                                                   const occt_lab::geometry::PatchSampling sampling)
 {
-    const occt_lab::geometry::BSplineSurface surface{definition};
     auto lines = surface.isolines(sampling);
     if (!lines)
     {
@@ -43,12 +42,14 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
     {
         definition.weights.assign(definition.poles.size(), 1.0);
     }
-    auto lines = sample_isolines(definition, sampling);
+    auto surface = std::make_shared<const occt_lab::geometry::BSplineSurface>(definition);
+    auto lines = sample_isolines(*surface, sampling);
     if (!framing)
     {
         framing = frame_control_net(definition.poles);
     }
-    return {.definition = std::move(definition), .isolines = std::move(lines), .framing = *framing};
+    return {.definition = std::move(definition), .surface = std::move(surface), .isolines = std::move(lines),
+            .framing = *framing};
 }
 } // namespace
 
@@ -88,16 +89,16 @@ auto EditableNurbsSurface::resample(const occt_lab::geometry::PatchSampling samp
     try
     {
         auto [applied, alternate] = history_.stored_snapshots();
-        auto applied_lines = sample_isolines(applied.definition, sampling);
+        auto applied_lines = sample_isolines(*applied.surface, sampling);
         occt_lab::geometry::PatchIsolines alternate_lines;
         if (alternate)
         {
-            alternate_lines = sample_isolines(alternate->definition, sampling);
+            alternate_lines = sample_isolines(*alternate->surface, sampling);
         }
         // Publish the caches only after every geometry has sampled successfully.
         if (preview_)
         {
-            preview_->isolines = sample_isolines(preview_->definition, sampling);
+            preview_->isolines = sample_isolines(*preview_->surface, sampling);
         }
         if (alternate)
         {

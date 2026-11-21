@@ -34,10 +34,21 @@ void check_nurbs_pole_drag()
     {
         throw std::runtime_error("Preview isolines did not follow the weighted pole");
     }
+    const auto probe_height = [&model] { return model.displayed().surface->probe(3, -0.75).value().position.z; };
+    constexpr double original_height = 11.875;
+    constexpr double moved_height = original_height + 2.0 * 7.0 / 12.0;
+    if (!(std::abs(probe_height() - moved_height) <= 1e-10))
+    {
+        throw std::runtime_error("The probe did not follow the drag preview");
+    }
     model.discard_preview();
     if (&model.displayed() != &model.current() || !model.can_redo())
     {
         throw std::runtime_error("Cancelling a NURBS drag did not restore the committed view and history");
+    }
+    if (!(std::abs(probe_height() - original_height) <= 1e-10))
+    {
+        throw std::runtime_error("Cancelling the drag left the probe on the preview");
     }
 
     model.preview_pole_move(pole, position).value();
@@ -71,6 +82,10 @@ void check_nurbs_pole_drag()
         throw std::runtime_error("One undo should reverse every preview in a NURBS drag");
     }
     model.redo();
+    if (!(std::abs(probe_height() - moved_height) <= 1e-10))
+    {
+        throw std::runtime_error("Redo did not restore the probe on the edited surface");
+    }
     if (model.current().definition.poles.at(pole) != position ||
         model.current().definition.weights != original.definition.weights)
     {

@@ -378,8 +378,8 @@ struct NurbsSurfaceSession
         {
             inspector.cancel_drag(model);
         }
-        inspector.draw(model);
-        draw_nurbs_surface_preview(model.displayed(), transform, layers, inspector.selected_pole());
+        const auto *probe = inspector.draw(model);
+        draw_nurbs_surface_preview(model.displayed(), transform, layers, inspector.selected_pole(), probe);
     }
 };
 

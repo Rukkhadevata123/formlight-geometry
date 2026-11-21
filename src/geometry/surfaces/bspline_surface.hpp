@@ -37,6 +37,12 @@ struct SurfaceD1
     Vec3 dv;
 };
 
+struct SurfaceProbe
+{
+    Vec3 position;
+    std::expected<Vec3, std::string> normal;
+};
+
 // A non-periodic, clamped B-spline or NURBS surface.
 class BSplineSurface
 {
@@ -47,6 +53,7 @@ class BSplineSurface
     [[nodiscard]] auto isolines(PatchSampling sampling = {}) const -> std::expected<PatchIsolines, std::string>;
     // Endpoints use the interior derivative. An interior knot with only C0 continuity is rejected.
     [[nodiscard]] auto evaluate_d1(double u, double v) const -> std::expected<SurfaceD1, std::string>;
+    [[nodiscard]] auto probe(double u, double v) const -> std::expected<SurfaceProbe, std::string>;
 
   private:
     Geom_BSplineSurface surface_;

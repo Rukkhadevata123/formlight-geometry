@@ -82,7 +82,7 @@ void NurbsPoleInspector::handle_viewport_input(EditableNurbsSurface &model,
     }
 }
 
-void NurbsPoleInspector::draw(EditableNurbsSurface &model)
+const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model)
 {
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
@@ -94,7 +94,8 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
         ImGui::CalcTextSize(title).x + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + 2.0F * style.FramePadding.x;
     constexpr float unlimited = std::numeric_limits<float>::max();
     ImGui::SetNextWindowSizeConstraints({min_width, 0.0F}, {unlimited, unlimited});
-    if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    const bool visible = ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    if (visible)
     {
         ImGui::BeginDisabled(tracking_pole_);
         draw_project(model);
@@ -186,5 +187,8 @@ void NurbsPoleInspector::draw(EditableNurbsSurface &model)
             ImGui::TextWrapped("%s", sampling_error_.c_str());
         }
     }
+    const auto *probe = update_probe(
+        model.displayed(), visible && ImGui::CollapsingHeader("Surface probe", ImGuiTreeNodeFlags_DefaultOpen));
     ImGui::End();
+    return probe;
 }

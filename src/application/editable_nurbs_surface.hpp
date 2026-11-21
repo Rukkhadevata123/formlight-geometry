@@ -3,6 +3,7 @@
 #include "geometry/surfaces/bspline_surface.hpp"
 #include "single_step_history.hpp"
 
+#include <memory>
 #include <optional>
 
 class EditableNurbsSurface
@@ -20,6 +21,7 @@ class EditableNurbsSurface
     struct Snapshot
     {
         Definition definition;
+        std::shared_ptr<const occt_lab::geometry::BSplineSurface> surface;
         occt_lab::geometry::PatchIsolines isolines;
         Framing framing;
     };

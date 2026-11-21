@@ -50,10 +50,12 @@ void check_evaluation(const BSplineSurface &surface)
                 throw std::runtime_error(point.error());
             }
             check_vector(*point, expected, "position", u, v);
+            const auto probe = surface.probe(u, v).value();
+            check_vector(probe.position, expected, "probe position", u, v);
             const auto sample = surface.evaluate_d1(u, v);
             if (v == 0.5)
             {
-                if (sample)
+                if (sample || probe.normal)
                 {
                     throw std::runtime_error("D1 accepted a crease with two different V tangents");
                 }
@@ -66,12 +68,16 @@ void check_evaluation(const BSplineSurface &surface)
             check_vector(sample->position, expected, "D1 position", u, v);
             check_vector(sample->du, {1, 0, 2 * u + v}, "U derivative", u, v);
             check_vector(sample->dv, {0, 1, u + (v > 0.5 ? 1.0 : 0.0)}, "V derivative", u, v);
+            const double nx = -(2 * u + v);
+            const double ny = -(u + (v > 0.5 ? 1.0 : 0.0));
+            const double length = std::hypot(nx, ny, 1.0);
+            check_vector(probe.normal.value(), {nx / length, ny / length, 1.0 / length}, "probe normal", u, v);
         }
     }
     for (const auto [u, v] :
          {std::pair{1.0, 0.0}, std::pair{3.0, 2.1}, std::pair{std::numeric_limits<double>::quiet_NaN(), 0.0}})
     {
-        if (surface.position(u, v) || surface.evaluate_d1(u, v))
+        if (surface.position(u, v) || surface.evaluate_d1(u, v) || surface.probe(u, v))
         {
             throw std::runtime_error("Surface accepted an invalid parameter");
         }
@@ -115,6 +121,12 @@ void check_rational_surface(BSplineSurfaceDefinition definition)
         check_vector(sample.position, expected, "rational D1 position", u, v);
         check_vector(sample.du, {1.0, 0.625, 7.75}, "rational U derivative", u, v);
         check_vector(sample.dv, {0.2, 0.75, 3.55}, "rational V derivative", u, v);
+        const auto probe = surface.probe(u, v).value();
+        check_vector(probe.position, expected, "rational probe position", u, v);
+        constexpr Vec3 cross{-3.59375, -2.0, 0.625};
+        const double length = std::hypot(cross.x, cross.y, cross.z);
+        check_vector(probe.normal.value(), {cross.x / length, cross.y / length, cross.z / length},
+                     "rational probe normal", u, v);
         check_vector(surface.position(5, 2).value(), definition.poles.back(), "clamped corner", 5, 2);
     }
 }
@@ -136,6 +148,17 @@ void check_preview_isolines(const BSplineSurface &surface)
     if (surface.isolines({.samples_per_line = 1}))
     {
         throw std::runtime_error("NURBS isolines accepted a single point per line");
+    }
+}
+
+void check_singular_probe(BSplineSurfaceDefinition definition)
+{
+    std::ranges::fill(definition.poles, Vec3{0, 0, 0});
+    const auto probe = BSplineSurface{definition}.probe(3, 0).value();
+    check_vector(probe.position, {0, 0, 0}, "singular probe position", 3, 0);
+    if (probe.normal)
+    {
+        throw std::runtime_error("A collapsed surface produced a probe normal");
     }
 }
 
@@ -195,11 +218,12 @@ int main()
         check_nurbs_surface_projects();
         check_bezier_project_import();
         check_nurbs_resampling();
+        check_singular_probe(definition);
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
                      "saddle preset and custom plane creation verified; independent U/V degrees verified; "
                      "custom knots verified; NURBS project round trips verified; Bezier import verified; "
-                     "NURBS resampling verified");
+                     "NURBS resampling verified; NURBS probe verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

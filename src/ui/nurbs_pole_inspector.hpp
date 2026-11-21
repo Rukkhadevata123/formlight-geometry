@@ -24,11 +24,13 @@ class NurbsPoleInspector
     {
         return selected_pole_;
     }
-    void draw(EditableNurbsSurface &model);
+    [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model);
 
   private:
     void draw_creation_dialog(EditableNurbsSurface &model);
     void draw_project(EditableNurbsSurface &model);
+    const occt_lab::geometry::SurfaceProbe *update_probe(const EditableNurbsSurface::Snapshot &snapshot,
+                                                         bool show_controls);
     void reset_draft(const EditableNurbsSurface &model);
     [[nodiscard]] bool has_edits(const EditableNurbsSurface::Definition &surface) const;
     std::size_t selected_pole_ = 0;
@@ -38,6 +40,10 @@ class NurbsPoleInspector
     std::vector<double> weights_;
     std::string error_;
     std::string sampling_error_;
+    std::shared_ptr<const occt_lab::geometry::BSplineSurface> probed_surface_;
+    double probe_u_ = 0.0;
+    double probe_v_ = 0.0;
+    std::expected<occt_lab::geometry::SurfaceProbe, std::string> probe_;
     occt_lab::PlanarSurfaceParameters creation_parameters_;
     std::string creation_error_;
     ProjectFileControls project_file_{.path = "surface.occtlab"};
