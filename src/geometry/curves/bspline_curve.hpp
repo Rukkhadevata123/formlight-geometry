@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vec3.hpp"
+#include "geometry/vec3.hpp"
 
 #include <array>
 #include <cstddef>

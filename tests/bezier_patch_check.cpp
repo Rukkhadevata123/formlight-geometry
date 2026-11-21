@@ -1,6 +1,6 @@
 #include "application/editable_patch.hpp"
-#include "geometry/bezier_patch.hpp"
-#include "geometry/occt_bezier_patch.hpp"
+#include "geometry/surfaces/bezier_patch.hpp"
+#include "geometry/surfaces/occt_bezier_patch.hpp"
 
 #include <array>
 #include <cmath>

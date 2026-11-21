@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geometry/bezier_patch.hpp"
+#include "geometry/surfaces/bezier_patch.hpp"
 
 #include <string>
 

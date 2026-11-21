@@ -1,6 +1,6 @@
 #include "brep_preview.hpp"
 
-#include "geometry/brep_mesh.hpp"
+#include "geometry/brep/brep_mesh.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "render/vulkan_resources.hpp"
 

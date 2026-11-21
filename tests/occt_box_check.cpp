@@ -1,5 +1,5 @@
-#include "geometry/box_model.hpp"
-#include "geometry/brep_mesh.hpp"
+#include "geometry/brep/box_model.hpp"
+#include "geometry/brep/brep_mesh.hpp"
 
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>

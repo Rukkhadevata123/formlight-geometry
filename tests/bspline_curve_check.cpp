@@ -1,5 +1,5 @@
 #include "application/editable_curve.hpp"
-#include "geometry/bspline_curve.hpp"
+#include "geometry/curves/bspline_curve.hpp"
 
 #include <array>
 #include <cmath>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geometry/bspline_curve.hpp"
+#include "geometry/curves/bspline_curve.hpp"
 
 #include <expected>
 #include <optional>

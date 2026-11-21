@@ -10,18 +10,18 @@ find_package(slang CONFIG REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(occt_lab_geometry STATIC
-    src/geometry/bezier_patch.cpp
-    src/geometry/bezier_patch.hpp
-    src/geometry/box_model.cpp
-    src/geometry/box_model.hpp
-    src/geometry/brep_mesh.cpp
-    src/geometry/brep_mesh.hpp
-    src/geometry/bspline_curve.cpp
-    src/geometry/bspline_curve.hpp
-    src/geometry/curve_fitting.cpp
-    src/geometry/occt_bezier_patch.cpp
-    src/geometry/occt_bezier_patch.hpp
-    src/geometry/occt_bspline.hpp
+    src/geometry/brep/box_model.cpp
+    src/geometry/brep/box_model.hpp
+    src/geometry/brep/brep_mesh.cpp
+    src/geometry/brep/brep_mesh.hpp
+    src/geometry/curves/bspline_curve.cpp
+    src/geometry/curves/bspline_curve.hpp
+    src/geometry/curves/curve_fitting.cpp
+    src/geometry/curves/occt_bspline.hpp
+    src/geometry/surfaces/bezier_patch.cpp
+    src/geometry/surfaces/bezier_patch.hpp
+    src/geometry/surfaces/occt_bezier_patch.cpp
+    src/geometry/surfaces/occt_bezier_patch.hpp
     src/geometry/vec3.hpp
 )
 target_compile_features(occt_lab_geometry PUBLIC cxx_std_23)

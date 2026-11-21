@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geometry/occt_bezier_patch.hpp"
+#include "geometry/surfaces/occt_bezier_patch.hpp"
 
 #include <memory>
 

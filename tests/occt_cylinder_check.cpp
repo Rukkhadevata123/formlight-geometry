@@ -1,4 +1,4 @@
-#include "geometry/brep_mesh.hpp"
+#include "geometry/brep/brep_mesh.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <gp_Pnt.hxx>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "geometry/box_model.hpp"
+#include "geometry/brep/box_model.hpp"
 
 #include <string>
 

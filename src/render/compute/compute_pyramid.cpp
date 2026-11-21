@@ -1,6 +1,6 @@
 #include "compute_pyramid.hpp"
 
-#include "geometry/brep_mesh.hpp"
+#include "geometry/brep/brep_mesh.hpp"
 
 #include <cstddef>
 
