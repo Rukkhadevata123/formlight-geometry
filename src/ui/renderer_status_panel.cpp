@@ -1,6 +1,6 @@
 #include "renderer_status_panel.hpp"
 
-#include "render/preview/surface_wireframe.hpp"
+#include "render/preview/surface/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
 
 #include <imgui.h>

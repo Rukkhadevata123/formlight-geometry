@@ -3,7 +3,7 @@
 
 #include "application/editable_patch.hpp"
 #include "document/patch_project.hpp"
-#include "render/preview/bezier_patch_preview.hpp"
+#include "render/preview/surface/bezier_patch_preview.hpp"
 #include "ui/pole_drag.hpp"
 
 #include <imgui.h>

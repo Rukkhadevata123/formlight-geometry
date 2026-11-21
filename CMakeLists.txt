@@ -70,19 +70,19 @@ add_executable(occt_lab
     src/render/compute/compute_pyramid.hpp
     src/render/compute/storage_buffer_kernel.cpp
     src/render/compute/storage_buffer_kernel.hpp
-    src/render/preview/bezier_patch_preview.cpp
-    src/render/preview/bezier_patch_preview.hpp
     src/render/preview/brep_preview.cpp
     src/render/preview/brep_preview.hpp
     src/render/preview/curve_colors.hpp
     src/render/preview/curve_preview.cpp
     src/render/preview/curve_preview.hpp
-    src/render/preview/nurbs_surface_preview.cpp
-    src/render/preview/nurbs_surface_preview.hpp
-    src/render/preview/surface_probe_marker.cpp
-    src/render/preview/surface_probe_marker.hpp
-    src/render/preview/surface_wireframe.cpp
-    src/render/preview/surface_wireframe.hpp
+    src/render/preview/surface/bezier_patch_preview.cpp
+    src/render/preview/surface/bezier_patch_preview.hpp
+    src/render/preview/surface/nurbs_surface_preview.cpp
+    src/render/preview/surface/nurbs_surface_preview.hpp
+    src/render/preview/surface/surface_probe_marker.cpp
+    src/render/preview/surface/surface_probe_marker.hpp
+    src/render/preview/surface/surface_wireframe.cpp
+    src/render/preview/surface/surface_wireframe.hpp
     src/render/viewport/orbit_camera.cpp
     src/render/viewport/orbit_camera.hpp
     src/render/viewport/viewport_projection.cpp
@@ -114,6 +114,8 @@ add_executable(occt_lab
     src/ui/surface/nurbs_surface_creation_dialog.cpp
     src/ui/surface/nurbs_surface_probe.cpp
     src/ui/surface/nurbs_surface_project_panel.cpp
+    src/ui/surface/nurbs_surface_session.cpp
+    src/ui/surface/nurbs_surface_session.hpp
 )
 target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)

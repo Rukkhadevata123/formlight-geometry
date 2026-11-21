@@ -1,15 +1,13 @@
 #include "vulkan_window.hpp"
 
 #include "application/editable_patch.hpp"
-#include "application/nurbs_surface_creation.hpp"
-#include "render/preview/bezier_patch_preview.hpp"
-#include "render/preview/brep_preview.hpp"
 #include "render/compute/compute_bezier_patch.hpp"
 #include "render/compute/compute_buffer_check.hpp"
 #include "render/compute/compute_pyramid.hpp"
+#include "render/preview/brep_preview.hpp"
 #include "render/preview/curve_preview.hpp"
-#include "render/preview/nurbs_surface_preview.hpp"
-#include "render/preview/surface_wireframe.hpp"
+#include "render/preview/surface/bezier_patch_preview.hpp"
+#include "render/preview/surface/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "ui/box_editor.hpp"
 #include "ui/curve/curve_editor.hpp"
@@ -17,7 +15,7 @@
 #include "ui/imgui_session.hpp"
 #include "ui/renderer_status_panel.hpp"
 #include "ui/surface/bezier_patch_inspector.hpp"
-#include "ui/surface/nurbs_pole_inspector.hpp"
+#include "ui/surface/nurbs_surface_session.hpp"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -362,27 +360,6 @@ struct Swapchain
     uint32_t min_image_count;
 };
 
-struct NurbsSurfaceSession
-{
-    EditableNurbsSurface model{occt_lab::make_saddle_surface()};
-    NurbsPoleInspector inspector{model};
-
-    void draw(const ClipTransform &transform, const PatchLayers &layers, const bool pole_click)
-    {
-        if (layers.control_net)
-        {
-            const auto project = nurbs_surface_projection(transform, model.current().framing);
-            inspector.handle_viewport_input(model, project, pole_click);
-        }
-        else
-        {
-            inspector.cancel_drag(model);
-        }
-        const auto *probe = inspector.draw(model);
-        draw_nurbs_surface_preview(model.displayed(), transform, layers, inspector.selected_pole(), probe);
-    }
-};
-
 class Renderer
 {
 public:
@@ -417,7 +394,7 @@ public:
         patch_inspector_.cancel_drag();
         if (nurbs_)
         {
-            nurbs_->inspector.cancel_drag(nurbs_->model);
+            nurbs_->cancel_drag();
         }
         camera_drag_ = CameraDrag::none;
     }
@@ -559,7 +536,7 @@ public:
 
         imgui_.begin_frame();
         const bool moving_pole = curve_editor_.tracking_pole() || patch_inspector_.tracking_pole() ||
-                                 (nurbs_ && nurbs_->inspector.tracking_pole());
+                                 (nurbs_ && nurbs_->tracking_pole());
         if (!moving_pole)
         {
             update_camera_input(swapchain.extent);
