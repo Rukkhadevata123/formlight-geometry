@@ -10,7 +10,8 @@ class StorageBufferKernel
   public:
     StorageBufferKernel(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device,
                         std::string_view shader_file, vk::DeviceSize size, vk::BufferUsageFlags additional_usage,
-                        vk::MemoryPropertyFlags required_memory, uint32_t parameter_bytes = sizeof(uint32_t));
+                        vk::MemoryPropertyFlags required_memory, uint32_t parameter_bytes = sizeof(uint32_t),
+                        vk::DeviceSize trailing_bytes = 0);
 
     void dispatch(const vk::raii::CommandBuffer &commands, const vk::ArrayProxy<const uint32_t> &parameters,
                   uint32_t groups_x, uint32_t groups_y = 1) const;

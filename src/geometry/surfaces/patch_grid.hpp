@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 namespace occt_lab::geometry
 {
@@ -21,5 +22,12 @@ struct PatchGrid
     {
         return (u_segments + 1) * (v_segments + 1);
     }
+
+    [[nodiscard]] constexpr std::uint32_t index_count() const
+    {
+        return 6 * u_segments * v_segments;
+    }
+
+    [[nodiscard]] std::vector<std::uint32_t> triangle_indices() const;
 };
 } // namespace occt_lab::geometry

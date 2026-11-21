@@ -26,7 +26,7 @@ class NurbsPoleInspector
         return selected_pole_;
     }
     [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model,
-                                                               NurbsComparisonControls *comparison);
+                                                               NurbsMeshControls *mesh);
 
   private:
     void draw_creation_dialog(EditableNurbsSurface &model);

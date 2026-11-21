@@ -34,21 +34,6 @@ static_assert(max_index_bytes <= 65536); // vkCmdUpdateBuffer limit
 static_assert(sizeof(MeshVertex) == 24 && offsetof(MeshVertex, normal) == 12 && sizeof(Pole) == 16);
 static_assert(CubicBezierPatch::side_length == 4);
 
-std::vector<uint32_t> grid_indices(const PatchGrid grid)
-{
-    std::vector<uint32_t> indices;
-    indices.reserve(6 * grid.u_segments * grid.v_segments);
-    const auto stride = grid.u_segments + 1;
-    for (uint32_t v = 0; v < grid.v_segments; ++v)
-    {
-        for (uint32_t u = 0; u < grid.u_segments; ++u)
-        {
-            const auto a = v * stride + u;
-            indices.insert(indices.end(), {a, a + 1, a + stride + 1, a, a + stride + 1, a + stride});
-        }
-    }
-    return indices;
-}
 } // namespace
 
 ComputeBezierPatch::ComputeBezierPatch(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device)
@@ -72,7 +57,7 @@ void ComputeBezierPatch::prepare(const vk::raii::CommandBuffer &commands, const 
     {
         if (grid_ != grid)
         {
-            const auto indices = grid_indices(grid);
+            const auto indices = grid.triangle_indices();
             commands.updateBuffer<uint32_t>(kernel_.buffer(), index_offset, indices);
         }
         std::array<Pole, 16> input;
@@ -107,7 +92,7 @@ void ComputeBezierPatch::draw(const vk::raii::CommandBuffer &commands, const BRe
                               const vk::Extent2D extent, const ClipTransform &transform) const
 {
     preview.draw_indexed_triangles(commands, extent, transform, kernel_.buffer(), index_offset,
-                                   6 * grid_->u_segments * grid_->v_segments);
+                                   grid_->index_count());
 }
 
 std::string ComputeBezierPatch::compare_with_occt(const OcctBezierPatch &reference) const

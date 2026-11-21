@@ -1,24 +1,15 @@
 #pragma once
 
+#include "clip_transform.hpp"
+
 #include <gp_XYZ.hxx>
 
-#include <array>
 #include <cstdint>
 
 enum class ProjectionMode
 {
     perspective,
     orthographic,
-};
-
-using ClipRow = std::array<float, 4>;
-
-struct ClipTransform
-{
-    ClipRow x;
-    ClipRow y;
-    ClipRow z;
-    ClipRow w;
 };
 
 class OrbitCamera

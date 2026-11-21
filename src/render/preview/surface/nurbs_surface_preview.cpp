@@ -7,8 +7,7 @@ occt_lab::render::ViewportProjection nurbs_surface_projection(const ClipTransfor
                                                               const EditableNurbsSurface::Framing &frame)
 {
     // Frame the longest side in the same 90-unit view as the Bezier example.
-    const double scale = frame.span > 0.0 ? frame.span / 90.0 : 1.0;
-    return {transform, *ImGui::GetMainViewport(), frame.center, scale};
+    return {transform, *ImGui::GetMainViewport(), frame.center, frame.world_units_per_view_unit()};
 }
 
 void draw_nurbs_surface_preview(const EditableNurbsSurface::Snapshot &surface, const ClipTransform &transform,

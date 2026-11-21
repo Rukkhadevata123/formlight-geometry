@@ -14,7 +14,7 @@ void NurbsSurfaceSession::cancel_drag()
 }
 
 const EditableNurbsSurface::Snapshot &NurbsSurfaceSession::draw(const ClipTransform &transform, const PatchLayers &layers,
-                                                               const bool pole_click, NurbsComparisonControls *comparison)
+                                                               const bool pole_click, NurbsMeshControls *mesh)
 {
     if (layers.control_net)
     {
@@ -25,7 +25,7 @@ const EditableNurbsSurface::Snapshot &NurbsSurfaceSession::draw(const ClipTransf
     {
         cancel_drag();
     }
-    const auto *probe = inspector_.draw(model_, comparison);
+    const auto *probe = inspector_.draw(model_, mesh);
     draw_nurbs_surface_preview(model_.displayed(), transform, layers, inspector_.selected_pole(), probe);
     return model_.displayed();
 }

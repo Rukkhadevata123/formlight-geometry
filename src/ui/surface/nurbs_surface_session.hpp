@@ -16,7 +16,7 @@ class NurbsSurfaceSession
     }
     void cancel_drag();
     [[nodiscard]] const EditableNurbsSurface::Snapshot &draw(const ClipTransform &transform, const PatchLayers &layers,
-                                                             bool pole_click, NurbsComparisonControls *comparison);
+                                                             bool pole_click, NurbsMeshControls *mesh);
 
   private:
     EditableNurbsSurface model_;

@@ -1,4 +1,5 @@
 #include "analytic_surface.hpp"
+#include "render/viewport/clip_transform.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -77,5 +78,38 @@ void check_nurbs_reference_grid()
         {
             throw std::runtime_error("Accepted an unsupported reference grid size");
         }
+    }
+}
+
+void check_nurbs_mesh_drawing()
+{
+    const auto indices = PatchGrid{2, 1}.triangle_indices();
+    if (indices != std::vector<std::uint32_t>{0, 1, 4, 0, 4, 3, 1, 2, 5, 1, 5, 4})
+    {
+        throw std::runtime_error("Surface triangles lost U-first ordering or positive UV winding");
+    }
+    for (const auto grid : {PatchGrid{1, 1}, PatchGrid{}, PatchGrid{32, 32}})
+    {
+        const auto triangles = grid.triangle_indices();
+        if (triangles.size() != grid.index_count() || std::ranges::max(triangles) != grid.vertex_count() - 1)
+        {
+            throw std::runtime_error("Surface index range does not match the vertex grid");
+        }
+    }
+
+    // Keep the pole origin and the fitted center distinct, including after a large world translation.
+    constexpr Vec3 origin{1e12 + 17, -1e12 - 3, 2e12 + 9};
+    constexpr Vec3 center{1e12, -1e12, 2e12};
+    constexpr Vec3 local{1, -5, 13};
+    constexpr double scale = 2;
+    constexpr ClipTransform camera{{1, 2, 0, -3}, {-1, 0, 2, 7}, {0, 1, -1, 3}, {0.5F, 0, -1, 40}};
+    const auto mesh = camera.from_local_frame(origin, center, scale);
+    const auto apply = [](const ClipRow &r, Vec3 p) { return r[0] * p.x + r[1] * p.y + r[2] * p.z + r[3]; };
+    const Vec3 wire{(origin.x + local.x - center.x) / scale, (origin.y + local.y - center.y) / scale,
+                    (origin.z + local.z - center.z) / scale};
+    if (apply(mesh.x, local) != apply(camera.x, wire) || apply(mesh.y, local) != apply(camera.y, wire) ||
+        apply(mesh.z, local) != apply(camera.z, wire) || apply(mesh.w, local) != apply(camera.w, wire))
+    {
+        throw std::runtime_error("The locally framed GPU vertex does not align with the CPU wireframe in clip space");
     }
 }

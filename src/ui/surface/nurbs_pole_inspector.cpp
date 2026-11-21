@@ -83,7 +83,7 @@ void NurbsPoleInspector::handle_viewport_input(EditableNurbsSurface &model,
 }
 
 const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model,
-                                                                NurbsComparisonControls *comparison)
+                                                                NurbsMeshControls *mesh)
 {
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
@@ -188,25 +188,26 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
             ImGui::TextWrapped("%s", sampling_error_.c_str());
         }
     }
-    if (comparison)
+    if (mesh)
     {
-        comparison->requested = false;
+        mesh->requested = false;
         if (probed_surface_ != model.displayed().surface)
         {
-            comparison->report.clear();
+            mesh->report.clear();
         }
-        if (visible && ImGui::CollapsingHeader("GPU grid comparison"))
+        if (visible && ImGui::CollapsingHeader("GPU surface mesh"))
         {
-            if (draw_grid_subdivisions(comparison->grid))
+            ImGui::Checkbox("Show GPU mesh", &mesh->visible);
+            if (draw_grid_subdivisions(mesh->grid))
             {
-                comparison->report.clear();
+                mesh->report.clear();
             }
             ImGui::BeginDisabled(tracking_pole_ || has_edits(model.current().definition));
-            comparison->requested = ImGui::Button("Compare positions and normals with OCCT");
+            mesh->requested = ImGui::Button("Compare positions and normals with OCCT");
             ImGui::EndDisabled();
-            if (!comparison->report.empty())
+            if (!mesh->report.empty())
             {
-                ImGui::TextUnformatted(comparison->report.c_str());
+                ImGui::TextUnformatted(mesh->report.c_str());
             }
         }
     }

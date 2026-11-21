@@ -15,6 +15,10 @@ class EditableNurbsSurface
     {
         occt_lab::geometry::Vec3 center;
         double span;
+        [[nodiscard]] double world_units_per_view_unit() const
+        {
+            return span > 0.0 ? span / 90.0 : 1.0;
+        }
         bool operator==(const Framing &) const = default;
     };
 

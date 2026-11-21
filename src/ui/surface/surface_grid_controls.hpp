@@ -6,9 +6,10 @@
 
 [[nodiscard]] bool draw_grid_subdivisions(occt_lab::geometry::PatchGrid &grid);
 
-struct NurbsComparisonControls
+struct NurbsMeshControls
 {
     occt_lab::geometry::PatchGrid grid;
+    bool visible = false;
     bool requested = false;
     std::string report;
 };

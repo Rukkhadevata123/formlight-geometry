@@ -29,6 +29,8 @@ enum class PreviewShape
     cylinder,
 };
 
+enum class PreviewVertexLayout { mesh, nurbs_grid };
+
 class BRepPreview
 {
   public:
@@ -52,11 +54,12 @@ class BRepPreview
     void draw_triangles(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
                         vk::Buffer vertices, uint32_t vertex_count) const;
     void draw_indexed_triangles(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
-                                vk::Buffer mesh, vk::DeviceSize index_offset, uint32_t index_count) const;
+                                vk::Buffer mesh, vk::DeviceSize index_offset, uint32_t index_count,
+                                PreviewVertexLayout vertex_layout = PreviewVertexLayout::mesh) const;
 
   private:
     void bind_mesh_pipeline(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, const ClipTransform &transform,
-                            vk::Buffer vertices) const;
+                            vk::Buffer vertices, vk::Pipeline pipeline) const;
 
     struct MeshBuffer
     {
@@ -88,4 +91,5 @@ class BRepPreview
     MeshBuffer cylinder_;
     vk::raii::PipelineLayout layout_{nullptr};
     vk::raii::Pipeline pipeline_{nullptr};
+    vk::raii::Pipeline nurbs_pipeline_{nullptr};
 };

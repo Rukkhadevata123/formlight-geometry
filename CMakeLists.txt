@@ -30,6 +30,7 @@ add_library(occt_lab_geometry STATIC
     src/geometry/surfaces/occt_bezier_patch.cpp
     src/geometry/surfaces/occt_bezier_patch.hpp
     src/geometry/surfaces/patch_grid.hpp
+    src/geometry/surfaces/patch_grid.cpp
     src/geometry/surfaces/surface_isolines.hpp
     src/geometry/vec3.hpp
 )
@@ -70,8 +71,8 @@ add_executable(occt_lab
     src/render/compute/compute_buffer_check.hpp
     src/render/compute/compute_pyramid.cpp
     src/render/compute/compute_pyramid.hpp
-    src/render/compute/nurbs_grid_comparison.cpp
-    src/render/compute/nurbs_grid_comparison.hpp
+    src/render/compute/nurbs_grid_mesh.cpp
+    src/render/compute/nurbs_grid_mesh.hpp
     src/render/compute/nurbs_grid_input.cpp
     src/render/compute/nurbs_grid_input.hpp
     src/render/compute/nurbs_grid_report.cpp
@@ -92,6 +93,7 @@ add_executable(occt_lab
     src/render/preview/surface/surface_wireframe.cpp
     src/render/preview/surface/surface_wireframe.hpp
     src/render/viewport/orbit_camera.cpp
+    src/render/viewport/clip_transform.hpp
     src/render/viewport/orbit_camera.hpp
     src/render/viewport/viewport_projection.cpp
     src/render/viewport/viewport_projection.hpp

@@ -1,6 +1,7 @@
 #include "brep_preview.hpp"
 
 #include "geometry/brep/brep_mesh.hpp"
+#include "render/compute/nurbs_grid_input.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "render/vulkan_resources.hpp"
 
@@ -255,8 +256,8 @@ void BRepPreview::create_pipeline(const vk::Format color_format)
         vk::PipelineShaderStageCreateInfo{{}, vk::ShaderStageFlagBits::eFragment, *fragment_shader, "fragmentMain"},
     };
 
-    constexpr vk::VertexInputBindingDescription binding{0, sizeof(MeshVertex), vk::VertexInputRate::eVertex};
-    constexpr std::array attributes{
+    vk::VertexInputBindingDescription binding{0, sizeof(MeshVertex), vk::VertexInputRate::eVertex};
+    std::array attributes{
         vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, offsetof(MeshVertex, position)},
         vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat, offsetof(MeshVertex, normal)},
     };
@@ -306,15 +307,22 @@ void BRepPreview::create_pipeline(const vk::Format color_format)
     info.pDynamicState = &dynamic;
     info.layout = *layout_;
     pipeline_ = vk::raii::Pipeline{device_, nullptr, info};
+    using occt_lab::render::NurbsGridVertex;
+    binding.stride = sizeof(NurbsGridVertex);
+    attributes[1].offset = offsetof(NurbsGridVertex, normal);
+    attributes[1].format = vk::Format::eR32G32B32A32Sfloat;
+    raster.cullMode = vk::CullModeFlagBits::eNone;
+    nurbs_pipeline_ = vk::raii::Pipeline{device_, nullptr, info};
 }
 
 void BRepPreview::bind_mesh_pipeline(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent,
-                                     const ClipTransform &transform, const vk::Buffer vertices) const
+                                     const ClipTransform &transform, const vk::Buffer vertices,
+                                     const vk::Pipeline pipeline) const
 {
     const auto width = static_cast<float>(extent.width);
     const auto height = static_cast<float>(extent.height);
 
-    commands.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline_);
+    commands.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
     commands.setViewport(0, vk::Viewport{0.0F, 0.0F, width, height, 0.0F, 1.0F});
     commands.setScissor(0, vk::Rect2D{{0, 0}, extent});
     commands.pushConstants<ClipTransform>(*layout_, vk::ShaderStageFlagBits::eVertex, 0, transform);
@@ -325,7 +333,7 @@ void BRepPreview::draw_triangles(const vk::raii::CommandBuffer &commands, const 
                                  const ClipTransform &transform, const vk::Buffer vertices,
                                  const uint32_t vertex_count) const
 {
-    bind_mesh_pipeline(commands, extent, transform, vertices);
+    bind_mesh_pipeline(commands, extent, transform, vertices, *pipeline_);
     commands.draw(vertex_count, 1, 0, 0);
 }
 
@@ -338,9 +346,11 @@ void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Exte
 
 void BRepPreview::draw_indexed_triangles(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent,
                                          const ClipTransform &transform, const vk::Buffer mesh,
-                                         const vk::DeviceSize index_offset, const uint32_t index_count) const
+                                         const vk::DeviceSize index_offset, const uint32_t index_count,
+                                         const PreviewVertexLayout vertex_layout) const
 {
-    bind_mesh_pipeline(commands, extent, transform, mesh);
+    const auto pipeline = vertex_layout == PreviewVertexLayout::nurbs_grid ? *nurbs_pipeline_ : *pipeline_;
+    bind_mesh_pipeline(commands, extent, transform, mesh, pipeline);
     commands.bindIndexBuffer(mesh, index_offset, vk::IndexType::eUint32);
     commands.drawIndexed(index_count, 1, 0, 0, 0);
 }

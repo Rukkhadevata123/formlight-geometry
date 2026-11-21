@@ -12,10 +12,11 @@ constexpr auto compute_stage = vk::ShaderStageFlagBits::eCompute;
 StorageBufferKernel::StorageBufferKernel(const vk::raii::PhysicalDevice &physical_device,
                                          const vk::raii::Device &device, const std::string_view shader_file,
                                          const vk::DeviceSize size, const vk::BufferUsageFlags additional_usage,
-                                         const vk::MemoryPropertyFlags required_memory, const uint32_t parameter_bytes)
+                                         const vk::MemoryPropertyFlags required_memory, const uint32_t parameter_bytes,
+                                         const vk::DeviceSize trailing_bytes)
 {
     vk::BufferCreateInfo buffer_info;
-    buffer_info.size = size;
+    buffer_info.size = size + trailing_bytes;
     buffer_info.usage = vk::BufferUsageFlagBits::eStorageBuffer | additional_usage;
     buffer_ = vk::raii::Buffer{device, buffer_info};
     const auto requirements = device.getBufferMemoryRequirements2({*buffer_}).memoryRequirements;

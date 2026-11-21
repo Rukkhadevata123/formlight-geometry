@@ -4,7 +4,7 @@
 #include "render/compute/compute_bezier_patch.hpp"
 #include "render/compute/compute_buffer_check.hpp"
 #include "render/compute/compute_pyramid.hpp"
-#include "render/compute/nurbs_grid_comparison.hpp"
+#include "render/compute/nurbs_grid_mesh.hpp"
 #include "render/preview/brep_preview.hpp"
 #include "render/preview/curve_preview.hpp"
 #include "render/preview/surface/bezier_patch_preview.hpp"
@@ -486,11 +486,11 @@ public:
         {
             throw vk::SystemError(vk::make_error_code(wait_result), "waiting for the previous frame");
         }
-        if (nurbs_job_)
+        if (nurbs_readback_pending_)
         {
             try
             {
-                nurbs_comparison_.report = nurbs_job_->read_report();
+                nurbs_controls_.report = gpu_nurbs_->read_report();
             }
             catch (const vk::DeviceLostError &)
             {
@@ -498,9 +498,9 @@ public:
             }
             catch (const std::exception &error)
             {
-                nurbs_comparison_.report = error.what();
+                nurbs_controls_.report = error.what();
             }
-            nurbs_job_.reset();
+            nurbs_readback_pending_ = false;
         }
         if (patch_readback_pending_)
         {
@@ -666,14 +666,16 @@ public:
                 nurbs_.emplace();
             }
             const auto &snapshot = nurbs_->draw(transform, patch_layers_, pole_click,
-                                                selected_.compute_supported ? &nurbs_comparison_ : nullptr);
-            if (selected_.compute_supported && nurbs_comparison_.requested)
+                                                selected_.compute_supported ? &nurbs_controls_ : nullptr);
+            if (selected_.compute_supported && (nurbs_controls_.visible || nurbs_controls_.requested))
             {
                 try
                 {
-                    const auto input = occt_lab::render::pack_nurbs_grid(
-                        snapshot.definition, nurbs_comparison_.grid, selected_.properties.limits.maxStorageBufferRange);
-                    nurbs_job_.emplace(selected_.physical_device, device_, input, snapshot.surface);
+                    if (!gpu_nurbs_)
+                    {
+                        gpu_nurbs_.emplace(selected_.physical_device, device_, selected_.properties.limits.maxStorageBufferRange);
+                    }
+                    gpu_nurbs_->prepare(snapshot, nurbs_controls_.grid);
                 }
                 catch (const vk::DeviceLostError &)
                 {
@@ -681,7 +683,9 @@ public:
                 }
                 catch (const std::exception &error)
                 {
-                    nurbs_comparison_.report = error.what();
+                    gpu_nurbs_.reset();
+                    nurbs_controls_.visible = false;
+                    nurbs_controls_.report = error.what();
                 }
             }
         }
@@ -701,6 +705,7 @@ public:
         device_.resetFences(*frame_finished_);
         graphics_queue_.submit2(submit, *frame_finished_);
         compute_readback_pending_ = dispatch_compute;
+        nurbs_readback_pending_ = preview_mode_ == PreviewMode::nurbs_surface && gpu_nurbs_ && nurbs_controls_.requested;
         patch_readback_pending_ = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible &&
                                   patch_mesh_.compare_requested;
 
@@ -809,9 +814,10 @@ private:
     {
         command_buffer_.reset();
         command_buffer_.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-        if (nurbs_job_)
+        const bool nurbs_ready = preview_mode_ == PreviewMode::nurbs_surface && gpu_nurbs_.has_value();
+        if (nurbs_ready && (nurbs_controls_.visible || nurbs_controls_.requested))
         {
-            nurbs_job_->record(command_buffer_);
+            gpu_nurbs_->dispatch_if_needed(command_buffer_);
         }
         if (dispatch_compute)
         {
@@ -871,6 +877,10 @@ private:
         {
             gpu_patch_->draw(command_buffer_, preview_, swapchain.extent, transform);
         }
+        else if (nurbs_ready && nurbs_controls_.visible)
+        {
+            gpu_nurbs_->draw(command_buffer_, preview_, swapchain.extent, transform);
+        }
         ImGui_ImplVulkan_RenderDrawData(draw_data, *command_buffer_);
         command_buffer_.endRendering();
 
@@ -914,8 +924,9 @@ private:
     bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
     std::optional<NurbsSurfaceSession> nurbs_;
-    NurbsComparisonControls nurbs_comparison_;
-    std::optional<NurbsGridComparison> nurbs_job_;
+    NurbsMeshControls nurbs_controls_;
+    std::optional<NurbsGridMesh> gpu_nurbs_;
+    bool nurbs_readback_pending_ = false;
     PreviewMode preview_mode_ = PreviewMode::box;
     ProjectionMode projection_ = ProjectionMode::perspective;
     OrbitCamera camera_;
