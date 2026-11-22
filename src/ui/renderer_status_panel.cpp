@@ -37,8 +37,7 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         const float combo_width = 9.0F * ImGui::GetFontSize();
         ImGui::SetNextItemWidth(combo_width);
         auto mode_index = static_cast<int>(mode);
-        constexpr const char *shapes[] = {"Box",          "Cylinder",      "B-spline",
-                                          "Bezier patch", "NURBS surface", "Compute pyramid"};
+        constexpr const char *shapes[] = {"Box", "Cylinder", "B-spline", "NURBS surface", "Compute pyramid"};
         const int shape_count = status.compute_supported ? IM_ARRAYSIZE(shapes) : IM_ARRAYSIZE(shapes) - 1;
         if (ImGui::Combo("Shape", &mode_index, shapes, shape_count))
         {
@@ -63,7 +62,7 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         {
             ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
         }
-        else if (mode == PreviewMode::bezier_patch || mode == PreviewMode::nurbs_surface)
+        else if (mode == PreviewMode::nurbs_surface)
         {
             ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);

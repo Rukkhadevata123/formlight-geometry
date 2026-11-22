@@ -127,7 +127,9 @@ void check_bezier_project_import()
     }
     const auto bad = directory.path / "invalid.occtlab";
     for (const auto [field, replacement] : {std::pair{"patch 1", "patch 9"}, std::pair{"poles 4 4", "poles 3 4"},
-                                            std::pair{"5 7 17", "5 7 1"}, std::pair{"end\n", ""}})
+                                            std::pair{"units mm", "units m"}, std::pair{"5 7 17", "5 7 1"},
+                                            std::pair{"-15 -9 0", "nan -9 0"}, std::pair{"-15 -9 0", ""},
+                                            std::pair{"end\n", ""}, std::pair{"end\n", "end\nextra"}})
     {
         std::string text{legacy_file};
         text.replace(text.find(field), std::string_view{field}.size(), replacement);

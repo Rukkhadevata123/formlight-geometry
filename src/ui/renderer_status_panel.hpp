@@ -13,7 +13,6 @@ enum class PreviewMode
     box,
     cylinder,
     bspline,
-    bezier_patch,
     nurbs_surface,
     compute_pyramid,
 };

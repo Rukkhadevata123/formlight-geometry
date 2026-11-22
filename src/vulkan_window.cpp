@@ -1,13 +1,10 @@
 #include "vulkan_window.hpp"
 
-#include "application/editable_patch.hpp"
-#include "render/compute/compute_bezier_patch.hpp"
 #include "render/compute/compute_buffer_check.hpp"
 #include "render/compute/compute_pyramid.hpp"
 #include "render/compute/nurbs_grid_mesh.hpp"
 #include "render/preview/brep_preview.hpp"
 #include "render/preview/curve_preview.hpp"
-#include "render/preview/surface/bezier_patch_preview.hpp"
 #include "render/preview/surface/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "ui/box_editor.hpp"
@@ -15,7 +12,6 @@
 #include "ui/developer_diagnostics.hpp"
 #include "ui/imgui_session.hpp"
 #include "ui/renderer_status_panel.hpp"
-#include "ui/surface/bezier_patch_inspector.hpp"
 #include "ui/surface/nurbs_surface_session.hpp"
 
 #include <SDL3/SDL.h>
@@ -392,7 +388,6 @@ public:
     void cancel_viewport_gesture()
     {
         curve_editor_.cancel_drag(curve_);
-        patch_inspector_.cancel_drag();
         if (nurbs_)
         {
             nurbs_->cancel_drag();
@@ -502,22 +497,6 @@ public:
             }
             nurbs_readback_pending_ = false;
         }
-        if (patch_readback_pending_)
-        {
-            patch_readback_pending_ = false;
-            try
-            {
-                patch_mesh_.report = gpu_patch_->compare_with_occt(patch_.reference());
-            }
-            catch (const vk::DeviceLostError &)
-            {
-                throw;
-            }
-            catch (const std::exception &error)
-            {
-                patch_mesh_.report = error.what();
-            }
-        }
         if (compute_readback_pending_)
         {
             compute_readback_pending_ = false;
@@ -552,8 +531,7 @@ public:
         }
 
         imgui_.begin_frame();
-        const bool moving_pole = curve_editor_.tracking_pole() || patch_inspector_.tracking_pole() ||
-                                 (nurbs_ && nurbs_->tracking_pole());
+        const bool moving_pole = curve_editor_.tracking_pole() || (nurbs_ && nurbs_->tracking_pole());
         if (!moving_pole)
         {
             update_camera_input(swapchain.extent);
@@ -612,7 +590,6 @@ public:
             }
             break;
         case PreviewMode::bspline:
-        case PreviewMode::bezier_patch:
         case PreviewMode::nurbs_surface:
             break;
         }
@@ -628,36 +605,6 @@ public:
             curve_editor_.handle_viewport_input(curve_, transform, pole_click);
             curve_editor_.draw(curve_);
             draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
-        }
-        else if (preview_mode_ == PreviewMode::bezier_patch)
-        {
-            if (patch_layers_.control_net)
-            {
-                patch_inspector_.handle_viewport_input(transform, pole_click, patch_mesh_);
-            }
-            else
-            {
-                patch_inspector_.cancel_drag();
-            }
-            patch_inspector_.draw(patch_mesh_, selected_.compute_supported);
-            if (patch_mesh_.visible && !gpu_patch_)
-            {
-                try
-                {
-                    gpu_patch_.emplace(selected_.physical_device, device_);
-                }
-                catch (const vk::DeviceLostError &)
-                {
-                    throw;
-                }
-                catch (const std::exception &error)
-                {
-                    patch_mesh_.visible = false;
-                    patch_mesh_.report = error.what();
-                }
-            }
-            draw_bezier_patch_preview(patch_, transform, patch_layers_, patch_inspector_.selected_pole(),
-                                      patch_inspector_.selected_sample());
         }
         else if (preview_mode_ == PreviewMode::nurbs_surface)
         {
@@ -706,8 +653,6 @@ public:
         graphics_queue_.submit2(submit, *frame_finished_);
         compute_readback_pending_ = dispatch_compute;
         nurbs_readback_pending_ = preview_mode_ == PreviewMode::nurbs_surface && gpu_nurbs_ && nurbs_controls_.requested;
-        patch_readback_pending_ = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible &&
-                                  patch_mesh_.compare_requested;
 
         vk::PresentInfoKHR present;
         present.setWaitSemaphores(*image.ready_to_present)
@@ -824,11 +769,6 @@ private:
             compute_check_->record(command_buffer_);
         }
         const bool draw_pyramid = preview_mode_ == PreviewMode::compute_pyramid && pyramid_.has_value();
-        const bool draw_patch = preview_mode_ == PreviewMode::bezier_patch && patch_mesh_.visible;
-        if (draw_patch)
-        {
-            gpu_patch_->prepare(command_buffer_, patch_.displayed(), patch_mesh_.grid, patch_mesh_.compare_requested);
-        }
         if (draw_pyramid)
         {
             pyramid_->generate_if_changed(command_buffer_, static_cast<uint32_t>(pyramid_controls_.height_mm));
@@ -873,10 +813,6 @@ private:
             preview_.draw_triangles(command_buffer_, swapchain.extent, transform, pyramid_->vertices(),
                                     ComputePyramid::vertex_count);
         }
-        else if (draw_patch)
-        {
-            gpu_patch_->draw(command_buffer_, preview_, swapchain.extent, transform);
-        }
         else if (nurbs_ready && nurbs_controls_.visible)
         {
             gpu_nurbs_->draw(command_buffer_, preview_, swapchain.extent, transform);
@@ -917,11 +853,6 @@ private:
     BoxEditor box_editor_{preview_.box_dimensions()};
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
-    EditablePatch patch_;
-    BezierPatchInspector patch_inspector_{patch_};
-    std::optional<ComputeBezierPatch> gpu_patch_;
-    PatchMeshControls patch_mesh_;
-    bool patch_readback_pending_ = false;
     PatchLayers patch_layers_;
     std::optional<NurbsSurfaceSession> nurbs_;
     NurbsMeshControls nurbs_controls_;

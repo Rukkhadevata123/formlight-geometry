@@ -1,4 +1,3 @@
-#include "application/editable_patch.hpp"
 #include "geometry/surfaces/bezier_patch.hpp"
 #include "geometry/surfaces/bspline_surface.hpp"
 #include "geometry/surfaces/occt_bezier_patch.hpp"
@@ -15,8 +14,6 @@
 #include <print>
 #include <stdexcept>
 #include <vector>
-
-void check_patch_projects();
 
 namespace
 {
@@ -151,44 +148,6 @@ void check_comparison_metrics()
     }
 }
 
-void check_patch_creation()
-{
-    EditablePatch model;
-    const auto example = model.current().control_net();
-    if (model.can_undo() || model.can_redo() || !model.create_plane() || !model.can_undo() || model.can_redo())
-    {
-        throw std::runtime_error("Creating a planar patch should add one undo step");
-    }
-    constexpr Vec3 expected_point{.x = -22.5, .y = 18.0, .z = 0.0};
-    constexpr Vec3 up{.x = 0.0, .y = 0.0, .z = 1.0};
-    const auto sample = model.current().evaluate(0.25, 0.75);
-    const auto reference = model.reference().evaluate(0.25, 0.75);
-    if (!sample || !reference || !near(sample->position, expected_point) ||
-        !near(reference->position, expected_point) || !near(sample->normal, up) || !near(reference->normal, up))
-    {
-        throw std::runtime_error("The planar patch and its OCCT reference should agree in XY");
-    }
-    constexpr PatchSampling sampling{.constant_u_lines = 3, .constant_v_lines = 5, .samples_per_line = 3};
-    if (model.create_plane() || !model.resample(sampling))
-    {
-        throw std::runtime_error("Repeating planar creation should preserve the previous patch");
-    }
-    model.undo();
-    constexpr Vec3 raised_center{.x = 0.0, .y = 0.0, .z = 16.03125};
-    if (model.current().control_net() != example || model.can_undo() || !model.can_redo() ||
-        model.sampling() != sampling || !near(model.isolines().constant_u.at(1).at(1), raised_center) ||
-        !near(model.reference().evaluate(0.5, 0.5).value().position, raised_center))
-    {
-        throw std::runtime_error("Undo should restore the raised patch and use the current sampling density");
-    }
-    model.redo();
-    if (!model.can_undo() || model.can_redo() || !near(model.isolines().constant_v.at(2).at(1), {}) ||
-        !near(model.reference().evaluate(0.5, 0.5).value().normal, up))
-    {
-        throw std::runtime_error("Redo should restore the planar patch and its derived geometry");
-    }
-}
-
 void check_reference_failures(const OcctBezierPatch &reference)
 {
     if (reference.evaluate(-0.1, 0.5) || reference.evaluate(0.0, std::numeric_limits<double>::quiet_NaN()))
@@ -200,135 +159,6 @@ void check_reference_failures(const OcctBezierPatch &reference)
         OcctBezierPatch{collapsed}.evaluate(0.5, 0.5))
     {
         throw std::runtime_error("OCCT reference returned a normal for a collapsed patch");
-    }
-}
-
-void check_control_net_edits()
-{
-    EditablePatch model;
-    if (!model.create_plane())
-    {
-        throw std::runtime_error("Expected a new plane for control point editing");
-    }
-    const auto plane = model.current().control_net();
-    auto draft = plane;
-    draft[2 * side_length + 1].z = 32;
-    draft[side_length + 2].x += 8;
-    draft[side_length + 2].y -= 4;
-    if (!model.apply(draft).value() || model.current().control_net() != draft)
-    {
-        throw std::runtime_error("Applying a multi-pole draft did not commit the control net");
-    }
-
-    // At (1/4, 3/4) the two transposed poles have different tensor-product weights.
-    constexpr double first_weight = 729.0 / 4096.0;
-    constexpr double second_weight = 81.0 / 4096.0;
-    constexpr Vec3 expected{.x = -22.5 + 8 * second_weight, .y = 18.0 - 4 * second_weight, .z = 32 * first_weight};
-    const auto sample = model.current().evaluate(0.25, 0.75).value();
-    const auto reference = model.reference().evaluate(0.25, 0.75).value();
-    if (!near(sample.position, expected) || !near(reference.position, expected) ||
-        !near(sample.normal, reference.normal) || !near(model.isolines().constant_u.at(2).at(24), expected))
-    {
-        throw std::runtime_error("An edited pole was transposed or its derived geometry is stale");
-    }
-
-    model.undo();
-    if (model.current().control_net() != plane || model.apply(plane).value() || !model.can_redo())
-    {
-        throw std::runtime_error("One undo should restore both edited poles; a no-op must retain redo");
-    }
-    auto invalid = plane;
-    invalid[1] = invalid[0]; // Zero u tangent at (0,0).
-    if (model.apply(invalid).has_value())
-    {
-        throw std::runtime_error("A degenerate corner was accepted");
-    }
-    for (const double coordinate : {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::max()})
-    {
-        invalid = plane;
-        invalid[1].x = coordinate;
-        if (model.apply(invalid).has_value())
-        {
-            throw std::runtime_error("An invalid control point coordinate was accepted");
-        }
-    }
-    if (!model.can_redo() || model.current().control_net() != plane ||
-        !near(model.reference().evaluate(0.5, 0.5).value().position, {}) ||
-        !near(model.isolines().constant_u.at(4).at(16), {}))
-    {
-        throw std::runtime_error("A rejected edit changed the plane, its samples, or its history");
-    }
-    model.redo();
-    if (model.current().control_net() != draft || !near(model.isolines().constant_u.at(2).at(24), expected))
-    {
-        throw std::runtime_error("Redo did not restore the edited surface");
-    }
-}
-
-void check_pole_drag()
-{
-    EditablePatch model;
-    if (!model.create_plane())
-    {
-        throw std::runtime_error("Expected planar drag baseline");
-    }
-    model.undo();
-    const auto original = model.current().control_net();
-    constexpr std::size_t pole = 2 * side_length + 1;
-    const auto move_to = [&](const Vec3 &target)
-    {
-        if (!model.preview_pole_move(pole, target).value())
-        {
-            throw std::runtime_error("Expected the pole drag to update the preview");
-        }
-    };
-    auto position = original[pole];
-    position.z += 32;
-    move_to(position);
-    if (model.displayed().control_net()[pole] != position || model.current().control_net() != original ||
-        !model.can_redo())
-    {
-        throw std::runtime_error("A drag preview changed the committed patch or its redo history");
-    }
-    constexpr Vec3 center{.x = 0, .y = 0, .z = 16.03125 + 4.5};
-    if (!near(model.reference().evaluate(0.5, 0.5).value().position, center) ||
-        !near(model.isolines().constant_u.at(4).at(16), center))
-    {
-        throw std::runtime_error("The OCCT or isoline preview did not follow the dragged pole");
-    }
-    auto invalid = position;
-    invalid.x = std::numeric_limits<double>::infinity();
-    if (model.preview_pole_move(pole, invalid).has_value() || model.displayed().control_net()[pole] != position)
-    {
-        throw std::runtime_error("An invalid drag position replaced the last valid preview");
-    }
-    model.discard_preview();
-    if (model.displayed().control_net() != original || !model.can_redo() || model.commit_preview())
-    {
-        throw std::runtime_error("Cancelling a drag must restore the patch and preserve redo");
-    }
-    move_to(position);
-    move_to(original[pole]);
-    if (model.commit_preview() || !model.can_redo())
-    {
-        throw std::runtime_error("Dragging back to the origin must preserve redo");
-    }
-    move_to(position);
-    position.x += 3;
-    move_to(position);
-    if (!model.commit_preview() || model.can_redo() || model.current().control_net()[pole] != position)
-    {
-        throw std::runtime_error("Releasing a drag must commit the final position");
-    }
-    model.undo();
-    if (model.current().control_net() != original)
-    {
-        throw std::runtime_error("One undo should restore the original control net after multiple drag updates");
-    }
-    model.redo();
-    if (model.current().control_net()[pole] != position)
-    {
-        throw std::runtime_error("Redo should restore the final dragged position");
     }
 }
 
@@ -452,18 +282,12 @@ int main()
 
         const OcctBezierPatch reference{*patch};
         check_samples(*patch, reference);
-        check_patch_creation();
-        check_control_net_edits();
-        check_pole_drag();
-        check_patch_projects();
         check_comparison_metrics();
         check_reference_failures(reference);
         check_isolines(*patch);
         check_invalid_inputs(*patch);
         check_large_normal();
-        std::println(
-            "Bezier patch positions, normals, OCCT comparison, planar creation, control net edits, pole dragging, "
-            "undo/redo, adjustable sampling, project round trips and invalid inputs verified");
+        std::println("Bernstein positions, oriented normals, OCCT comparison, isoline sampling and invalid inputs verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

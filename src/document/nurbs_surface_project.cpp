@@ -2,7 +2,6 @@
 
 #include "application/nurbs_surface_creation.hpp"
 #include "project_io.hpp"
-#include "surface_project_io.hpp"
 
 #include <utility>
 
@@ -10,6 +9,35 @@ namespace occt_lab::document
 {
 namespace
 {
+geometry::PatchSampling read_sampling(std::istream &in)
+{
+    io::expect_token(in, "isolines");
+    return {.constant_u_lines = io::read_number<int>(in, "constant u lines"),
+            .constant_v_lines = io::read_number<int>(in, "constant v lines"),
+            .samples_per_line = io::read_number<int>(in, "points per line")};
+}
+
+EditableNurbsSurface read_bezier_patch(std::istream &in)
+{
+    if (io::read_number<int>(in, "format version") != 1)
+    {
+        throw std::runtime_error("Unsupported Bezier patch project version");
+    }
+    io::expect_token(in, "units");
+    io::expect_token(in, "mm");
+    const auto sampling = read_sampling(in);
+    io::expect_token(in, "poles");
+    io::expect_token(in, "4");
+    io::expect_token(in, "4");
+    geometry::CubicBezierPatch::ControlNet poles;
+    for (auto &pole : poles)
+    {
+        pole = io::read_position(in);
+    }
+    io::expect_end(in);
+    return EditableNurbsSurface{make_bezier_nurbs_surface(poles), sampling};
+}
+
 void write_axis(std::ostream &out, const char *name, const geometry::BSplineSurfaceAxis &axis)
 {
     out << name << " degree " << axis.degree << " poles " << axis.pole_count << " knots " << axis.knots.size() << '\n';
@@ -54,7 +82,9 @@ auto save_nurbs_surface_project(const std::filesystem::path &path, const Editabl
     {
         const auto &definition = model.current().definition;
         out << "occt-lab-nurbs-surface 2\nunits mm\n";
-        io::write_sampling(out, model.sampling());
+        const auto sampling = model.sampling();
+        out << "isolines " << sampling.constant_u_lines << ' ' << sampling.constant_v_lines << ' '
+            << sampling.samples_per_line << '\n';
         write_axis(out, "U", definition.u);
         write_axis(out, "V", definition.v);
         out << "control_net\n";
@@ -77,8 +107,7 @@ auto open_nurbs_surface_project(const std::filesystem::path &path) -> std::expec
         in >> type;
         if (type == "occt-lab-bezier-patch")
         {
-            const auto patch = io::read_bezier_patch(in);
-            return EditableNurbsSurface{make_bezier_nurbs_surface(patch.poles), patch.sampling};
+            return read_bezier_patch(in);
         }
         if (type != "occt-lab-nurbs-surface")
         {
@@ -91,7 +120,7 @@ auto open_nurbs_surface_project(const std::filesystem::path &path) -> std::expec
         }
         io::expect_token(in, "units");
         io::expect_token(in, "mm");
-        const auto sampling = version == 1 ? geometry::PatchSampling{} : io::read_sampling(in);
+        const auto sampling = version == 1 ? geometry::PatchSampling{} : read_sampling(in);
         EditableNurbsSurface::Definition definition{.u = read_axis(in, "U"), .v = read_axis(in, "V")};
         const auto count = definition.control_net_size();
         io::expect_token(in, "control_net");

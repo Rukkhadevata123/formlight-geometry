@@ -49,8 +49,6 @@ add_executable(occt_lab
     src/application/editable_curve.hpp
     src/application/editable_nurbs_surface.cpp
     src/application/editable_nurbs_surface.hpp
-    src/application/editable_patch.cpp
-    src/application/editable_patch.hpp
     src/application/nurbs_surface_creation.cpp
     src/application/nurbs_surface_creation.hpp
     src/application/single_step_history.hpp
@@ -58,16 +56,10 @@ add_executable(occt_lab
     src/document/curve_project.hpp
     src/document/nurbs_surface_project.cpp
     src/document/nurbs_surface_project.hpp
-    src/document/patch_project.cpp
-    src/document/patch_project.hpp
     src/document/project_io.cpp
     src/document/project_io.hpp
-    src/document/surface_project_io.cpp
-    src/document/surface_project_io.hpp
     src/vulkan_window.cpp
     src/vulkan_window.hpp
-    src/render/compute/compute_bezier_patch.cpp
-    src/render/compute/compute_bezier_patch.hpp
     src/render/compute/compute_buffer_check.cpp
     src/render/compute/compute_buffer_check.hpp
     src/render/compute/compute_pyramid.cpp
@@ -85,8 +77,6 @@ add_executable(occt_lab
     src/render/preview/curve_colors.hpp
     src/render/preview/curve_preview.cpp
     src/render/preview/curve_preview.hpp
-    src/render/preview/surface/bezier_patch_preview.cpp
-    src/render/preview/surface/bezier_patch_preview.hpp
     src/render/preview/surface/nurbs_surface_preview.cpp
     src/render/preview/surface/nurbs_surface_preview.hpp
     src/render/preview/surface/surface_probe_marker.cpp
@@ -116,8 +106,6 @@ add_executable(occt_lab
     src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp
     src/ui/renderer_status_panel.hpp
-    src/ui/surface/bezier_patch_inspector.cpp
-    src/ui/surface/bezier_patch_inspector.hpp
     src/ui/surface/isoline_sampling.cpp
     src/ui/surface/isoline_sampling.hpp
     src/ui/surface/nurbs_pole_inspector.cpp
@@ -164,7 +152,7 @@ add_custom_command(
     VERBATIM
 )
 
-foreach(name IN ITEMS buffer_check compute_pyramid bezier_patch nurbs_grid)
+foreach(name IN ITEMS buffer_check compute_pyramid nurbs_grid)
     set(source "${CMAKE_CURRENT_SOURCE_DIR}/shaders/${name}.slang")
     set(output "${shader_output_dir}/${name}.comp.spv")
     add_custom_command(
@@ -192,14 +180,6 @@ if(BUILD_TESTING)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
-    target_sources(bezier_patch_check PRIVATE
-        tests/bezier_patch_check/patch_project_checks.cpp
-        tests/support/project_test_directory.hpp
-        src/application/editable_patch.cpp
-        src/document/patch_project.cpp
-        src/document/project_io.cpp
-        src/document/surface_project_io.cpp
-    )
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
@@ -220,7 +200,6 @@ if(BUILD_TESTING)
         src/render/compute/nurbs_grid_report.cpp
         src/document/nurbs_surface_project.cpp
         src/document/project_io.cpp
-        src/document/surface_project_io.cpp
     )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
