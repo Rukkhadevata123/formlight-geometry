@@ -60,12 +60,18 @@ EditableNurbsSurface::EditableNurbsSurface(Definition definition, const occt_lab
 
 auto EditableNurbsSurface::replace(Definition definition) -> std::expected<void, std::string>
 {
+    return preview_replacement(std::move(definition)).transform([this] { commit_preview(); });
+}
+
+auto EditableNurbsSurface::preview_replacement(Definition definition, std::optional<Framing> framing)
+    -> std::expected<void, std::string>
+{
     try
     {
-        auto next = sample_surface(std::move(definition), sampling_);
+        auto next = sample_surface(std::move(definition), sampling_, framing);
         if (next.definition != current().definition || next.framing != current().framing)
         {
-            commit(std::move(next));
+            preview_ = std::move(next);
         }
         else
         {

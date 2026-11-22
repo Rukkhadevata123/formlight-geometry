@@ -119,6 +119,7 @@ add_executable(occt_lab
     src/ui/surface/nurbs_surface_project_panel.cpp
     src/ui/surface/nurbs_surface_session.cpp
     src/ui/surface/nurbs_surface_session.hpp
+    src/ui/surface/surface_control_net_input.cpp
     src/ui/surface/surface_grid_controls.cpp
     src/ui/surface/surface_grid_controls.hpp
     src/ui/surface/surface_sample_readout.cpp
@@ -190,6 +191,7 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/analytic_surface.cpp
         tests/bspline_surface_check/analytic_surface.hpp
         tests/bspline_surface_check/custom_knot_checks.cpp
+        tests/bspline_surface_check/control_net_creation_checks.cpp
         tests/bspline_surface_check/grid_checks.cpp
         tests/bspline_surface_check/gpu_input_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp

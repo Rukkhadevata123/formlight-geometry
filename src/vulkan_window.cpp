@@ -546,10 +546,14 @@ public:
             .image_count = swapchain.images.size(),
         };
         draw_status_panel(status, preview_mode_, projection_, camera_, moving_pole, patch_layers_, show_diagnostics_,
-                          pyramid_controls_, curve_editor_.picking_points());
+                          pyramid_controls_, curve_editor_.picking_points() || (nurbs_ && nurbs_->picking_net()));
         if (preview_mode_ != PreviewMode::nurbs_curve)
         {
             curve_editor_.cancel_point_picking();
+        }
+        if (nurbs_ && preview_mode_ != PreviewMode::nurbs_surface)
+        {
+            nurbs_->cancel_creation();
         }
         const bool run_compute =
             draw_developer_diagnostics(show_diagnostics_, selected_.compute_supported, compute_status_);
@@ -617,7 +621,8 @@ public:
             }
             const auto &snapshot = nurbs_->draw(transform, patch_layers_, pole_click,
                                                 selected_.compute_supported ? &nurbs_controls_ : nullptr);
-            if (selected_.compute_supported && (nurbs_controls_.visible || nurbs_controls_.requested))
+            if (selected_.compute_supported && !nurbs_->picking_net() &&
+                (nurbs_controls_.visible || nurbs_controls_.requested))
             {
                 try
                 {
@@ -762,7 +767,8 @@ private:
     {
         command_buffer_.reset();
         command_buffer_.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-        const bool nurbs_ready = preview_mode_ == PreviewMode::nurbs_surface && gpu_nurbs_.has_value();
+        const bool nurbs_ready =
+            preview_mode_ == PreviewMode::nurbs_surface && gpu_nurbs_.has_value() && !nurbs_->picking_net();
         if (nurbs_ready && (nurbs_controls_.visible || nurbs_controls_.requested))
         {
             gpu_nurbs_->dispatch_if_needed(command_buffer_);

@@ -35,7 +35,7 @@ void check_nurbs_surface_projects()
     const ProjectTestDirectory directory;
     const auto path = directory.path / u8"自定义曲面.occtlab";
     using KnotList = std::vector<occt_lab::geometry::BSplineKnot>;
-    const occt_lab::PlanarSurfaceParameters parameters{
+    const occt_lab::SurfaceCreationParameters parameters{
         .u_poles = 6,
         .v_poles = 4,
         .u_degree = 2,

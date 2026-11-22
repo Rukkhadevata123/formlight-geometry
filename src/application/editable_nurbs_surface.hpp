@@ -36,6 +36,8 @@ class EditableNurbsSurface
         return sampling_;
     }
     [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
+    [[nodiscard]] auto preview_replacement(Definition definition, std::optional<Framing> framing = {})
+        -> std::expected<void, std::string>;
     [[nodiscard]] auto resample(occt_lab::geometry::PatchSampling sampling) -> std::expected<void, std::string>;
     [[nodiscard]] const Snapshot &current() const
     {

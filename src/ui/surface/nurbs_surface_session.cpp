@@ -16,6 +16,15 @@ void NurbsSurfaceSession::cancel_drag()
 const EditableNurbsSurface::Snapshot &NurbsSurfaceSession::draw(const ClipTransform &transform, const PatchLayers &layers,
                                                                const bool pole_click, NurbsMeshControls *mesh)
 {
+    if (inspector_.picking_net())
+    {
+        if (mesh)
+        {
+            mesh->requested = false;
+        }
+        inspector_.draw_net_picker(transform, pole_click);
+        return model_.current();
+    }
     if (layers.control_net)
     {
         const auto project = nurbs_surface_projection(transform, model_.current().framing);
@@ -26,6 +35,9 @@ const EditableNurbsSurface::Snapshot &NurbsSurfaceSession::draw(const ClipTransf
         cancel_drag();
     }
     const auto *probe = inspector_.draw(model_, mesh);
-    draw_nurbs_surface_preview(model_.displayed(), transform, layers, inspector_.selected_pole(), probe);
+    if (!inspector_.picking_net())
+    {
+        draw_nurbs_surface_preview(model_.displayed(), transform, layers, inspector_.selected_pole(), probe);
+    }
     return model_.displayed();
 }

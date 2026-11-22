@@ -109,8 +109,8 @@ void check_bezier_presets()
 
 void check_independent_degrees()
 {
-    using occt_lab::PlanarSurfaceParameters;
-    PlanarSurfaceParameters parameters{.u_poles = 7, .v_poles = 7, .u_degree = 2, .v_degree = 5};
+    using occt_lab::SurfaceCreationParameters;
+    SurfaceCreationParameters parameters{.u_poles = 7, .v_poles = 7, .u_degree = 2, .v_degree = 5};
     const auto plane = occt_lab::make_planar_nurbs_surface(parameters).value();
     if (plane.u.degree != 2 || plane.v.degree != 5 || plane.u.knots.size() != 6 || plane.v.knots.size() != 3 ||
         plane.u.knots.front().multiplicity != 3 || plane.v.knots.back().multiplicity != 6)
@@ -137,7 +137,7 @@ void check_independent_degrees()
     }
 
     const int occt_limit = Geom_BSplineSurface::MaxDegree();
-    parameters = {.u_poles = PlanarSurfaceParameters::max_poles, .v_poles = 2, .u_degree = occt_limit, .v_degree = 1};
+    parameters = {.u_poles = SurfaceCreationParameters::max_poles, .v_poles = 2, .u_degree = occt_limit, .v_degree = 1};
     const auto highest = occt_lab::make_planar_nurbs_surface(parameters).value();
     const occt_lab::geometry::BSplineSurface reference{highest};
     if (highest.u.degree != occt_limit || !reference.position(0.25, 0.75))
@@ -145,9 +145,9 @@ void check_independent_degrees()
         throw std::runtime_error("The supported OCCT degree limit should produce an evaluable plane");
     }
     for (const auto invalid :
-         {PlanarSurfaceParameters{.u_degree = 0}, PlanarSurfaceParameters{.v_degree = -1},
-          PlanarSurfaceParameters{.u_poles = 4, .u_degree = 4}, PlanarSurfaceParameters{.v_poles = 2, .v_degree = 2},
-          PlanarSurfaceParameters{.v_poles = PlanarSurfaceParameters::max_poles, .v_degree = occt_limit + 1}})
+         {SurfaceCreationParameters{.u_degree = 0}, SurfaceCreationParameters{.v_degree = -1},
+          SurfaceCreationParameters{.u_poles = 4, .u_degree = 4}, SurfaceCreationParameters{.v_poles = 2, .v_degree = 2},
+          SurfaceCreationParameters{.v_poles = SurfaceCreationParameters::max_poles, .v_degree = occt_limit + 1}})
     {
         if (occt_lab::make_planar_nurbs_surface(invalid))
         {
@@ -158,9 +158,9 @@ void check_independent_degrees()
 
 void check_planar_creation()
 {
-    using occt_lab::PlanarSurfaceParameters;
+    using occt_lab::SurfaceCreationParameters;
     for (const auto [u_count, v_count] :
-         {std::pair{2, 2}, std::pair{6, 3}, std::pair{3, PlanarSurfaceParameters::max_poles}})
+         {std::pair{2, 2}, std::pair{6, 3}, std::pair{3, SurfaceCreationParameters::max_poles}})
     {
         const auto plane = occt_lab::make_planar_nurbs_surface({u_count, v_count, 120, 40}).value();
         if (plane.u.pole_count != u_count || plane.v.pole_count != v_count ||
@@ -192,10 +192,10 @@ void check_planar_creation()
         }
     }
 
-    for (const auto invalid : {PlanarSurfaceParameters{1, 4, 120, 40}, PlanarSurfaceParameters{4, 65, 120, 40},
-                               PlanarSurfaceParameters{4, 4, 0, 40}, PlanarSurfaceParameters{4, 4, 120, -1},
-                               PlanarSurfaceParameters{4, 4, std::numeric_limits<double>::quiet_NaN(), 40},
-                               PlanarSurfaceParameters{4, 4, 120, std::numeric_limits<double>::infinity()}})
+    for (const auto invalid : {SurfaceCreationParameters{1, 4, 120, 40}, SurfaceCreationParameters{4, 65, 120, 40},
+                               SurfaceCreationParameters{4, 4, 0, 40}, SurfaceCreationParameters{4, 4, 120, -1},
+                               SurfaceCreationParameters{4, 4, std::numeric_limits<double>::quiet_NaN(), 40},
+                               SurfaceCreationParameters{4, 4, 120, std::numeric_limits<double>::infinity()}})
     {
         if (occt_lab::make_planar_nurbs_surface(invalid))
         {

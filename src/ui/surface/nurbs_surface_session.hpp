@@ -15,6 +15,14 @@ class NurbsSurfaceSession
         return inspector_.tracking_pole();
     }
     void cancel_drag();
+    [[nodiscard]] bool picking_net() const
+    {
+        return inspector_.picking_net();
+    }
+    void cancel_creation()
+    {
+        inspector_.cancel_creation(model_);
+    }
     [[nodiscard]] const EditableNurbsSurface::Snapshot &draw(const ClipTransform &transform, const PatchLayers &layers,
                                                              bool pole_click, NurbsMeshControls *mesh);
 

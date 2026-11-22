@@ -10,6 +10,8 @@ namespace occt_lab::render
 class ViewportProjection;
 }
 
+struct ClipTransform;
+
 class NurbsPoleInspector
 {
   public:
@@ -23,13 +25,19 @@ class NurbsPoleInspector
     }
     [[nodiscard]] std::size_t selected_pole() const
     {
-        return selected_pole_;
+        return net_preview_ ? net_selected_ : selected_pole_;
     }
-    [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model,
-                                                               NurbsMeshControls *mesh);
+    [[nodiscard]] bool picking_net() const
+    {
+        return picked_net_.has_value();
+    }
+    void cancel_creation(EditableNurbsSurface &model);
+    void draw_net_picker(const ClipTransform &transform, bool scene_click);
+    [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model, NurbsMeshControls *mesh);
 
   private:
     void draw_creation_dialog(EditableNurbsSurface &model);
+    bool draw_net_table();
     void draw_project(EditableNurbsSurface &model);
     const occt_lab::geometry::SurfaceProbe *update_probe(const EditableNurbsSurface::Snapshot &snapshot,
                                                          bool show_controls);
@@ -47,7 +55,19 @@ class NurbsPoleInspector
     double probe_v_ = 0.0;
     std::expected<occt_lab::geometry::SurfaceProbe, std::string> probe_;
     std::expected<occt_lab::geometry::SurfaceSample, occt_lab::geometry::PatchError> bernstein_sample_;
-    occt_lab::PlanarSurfaceParameters creation_parameters_;
+    occt_lab::SurfaceCreationParameters creation_parameters_;
+    occt_lab::SurfaceCreationParameters net_parameters_{.v_poles = 3};
+    occt_lab::SurfacePoleRows creation_net_;
+    struct NetPicking
+    {
+        EditableNurbsSurface::Framing framing;
+        std::vector<occt_lab::geometry::Vec3> positions;
+    };
+    std::optional<NetPicking> picked_net_;
+    std::optional<EditableNurbsSurface::Framing> net_frame_;
+    std::size_t net_selected_ = 0;
+    bool resume_net_ = false;
+    bool net_preview_ = false;
     int creation_preset_ = 0;
     std::string creation_error_;
     ProjectFileControls project_file_{.path = "surface.occtlab"};

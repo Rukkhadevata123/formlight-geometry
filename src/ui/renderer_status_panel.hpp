@@ -37,4 +37,4 @@ struct RendererStatus
 
 void draw_status_panel(const RendererStatus &status, PreviewMode &mode, ProjectionMode &projection, OrbitCamera &camera,
                        bool moving_pole, PatchLayers &patch_layers, bool &show_diagnostics, PyramidControls &pyramid,
-                       bool picking_curve_points);
+                       bool picking_points);

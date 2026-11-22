@@ -13,6 +13,7 @@
 void check_nurbs_pole_edits();
 void check_nurbs_pole_drag();
 void check_nurbs_presets();
+void check_control_net_creation();
 void check_custom_surface_knots();
 void check_nurbs_surface_projects();
 void check_nurbs_resampling();
@@ -217,6 +218,7 @@ int main()
         check_nurbs_pole_edits();
         check_nurbs_pole_drag();
         check_nurbs_presets();
+        check_control_net_creation();
         check_custom_surface_knots();
         check_nurbs_surface_projects();
         check_nurbs_resampling();
@@ -227,7 +229,8 @@ int main()
         check_singular_probe(definition);
         std::println("B-spline surface: 4x3 control net, parameter bounds, positions, derivatives, crease "
                      "and rational weights verified; preview isolines, pole edit history and pole dragging verified; "
-                     "saddle preset and custom plane creation verified; independent U/V degrees verified; "
+                     "saddle preset and custom plane creation verified; control net creation verified; "
+                     "independent U/V degrees verified; "
                      "custom knots verified; NURBS v2 project round trips verified; "
                      "NURBS resampling verified; NURBS probe verified; Bezier surface presets verified; "
                      "NURBS reference grid verified; NURBS GPU input verified; NURBS GPU normal comparison verified; "

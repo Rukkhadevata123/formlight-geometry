@@ -8,7 +8,7 @@
 
 void draw_status_panel(const RendererStatus &status, PreviewMode &mode, ProjectionMode &projection, OrbitCamera &camera,
                        const bool moving_pole, PatchLayers &patch_layers, bool &show_diagnostics,
-                       PyramidControls &pyramid, const bool picking_curve_points)
+                       PyramidControls &pyramid, const bool picking_points)
 {
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar))
@@ -60,7 +60,7 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         ImGui::TextUnformatted("Mouse wheel to zoom");
         if (mode == PreviewMode::nurbs_curve)
         {
-            ImGui::TextUnformatted(picking_curve_points ? "Left-click to place points on XY, Esc to cancel"
+            ImGui::TextUnformatted(picking_points ? "Left-click to place points on XY, Esc to cancel"
                                                         : "Left-drag a blue pole to move it, Esc to cancel");
         }
         else if (mode == PreviewMode::nurbs_surface)
@@ -68,7 +68,11 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
             ImGui::Checkbox("Control net (blue)", &patch_layers.control_net);
             ImGui::Checkbox("Constant u (gold)", &patch_layers.constant_u);
             ImGui::Checkbox("Constant v (green)", &patch_layers.constant_v);
-            if (patch_layers.control_net)
+            if (picking_points)
+            {
+                ImGui::TextUnformatted("Left-click to place the next U/V pole on XY");
+            }
+            else if (patch_layers.control_net)
             {
                 ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
             }

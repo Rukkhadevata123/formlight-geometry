@@ -11,7 +11,7 @@ void check_custom_surface_knots()
     using KnotList = std::vector<occt_lab::geometry::BSplineKnot>;
     const KnotList u{{-2, 3}, {0, 2}, {3, 1}, {5, 3}};
     const KnotList v{{-4, 2}, {-1, 1}, {1, 1}, {4, 2}};
-    occt_lab::PlanarSurfaceParameters parameters{.u_poles = 6, .v_poles = 4, .u_degree = 2, .v_degree = 1};
+    occt_lab::SurfaceCreationParameters parameters{.u_poles = 6, .v_poles = 4, .u_degree = 2, .v_degree = 1};
     const auto uniform = occt_lab::make_planar_nurbs_surface(parameters).value();
     parameters.u_knots = u;
     const auto custom_u = occt_lab::make_planar_nurbs_surface(parameters).value();
