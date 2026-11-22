@@ -67,6 +67,9 @@ void CurveEditor::draw(EditableCurve &curve)
     {
         ImGui::BeginDisabled(tracking_pole_);
         draw_project(curve);
+        ImGui::BeginDisabled(draft_ != curve.current().definition);
+        draw_creation_dialog(curve);
+        ImGui::EndDisabled();
         ImGui::PushItemWidth(9.0F * ImGui::GetFontSize());
         ImGui::SliderInt("Pole", &settings_.pole_number, 1, static_cast<int>(draft_.poles.size()), "%d",
                          ImGuiSliderFlags_AlwaysClamp);

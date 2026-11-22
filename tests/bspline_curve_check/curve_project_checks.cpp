@@ -2,6 +2,7 @@
 #include "document/curve_project.hpp"
 #include "../support/project_test_directory.hpp"
 
+#include <cmath>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -13,6 +14,63 @@ namespace
 {
 namespace fs = std::filesystem;
 using namespace occt_lab::document;
+
+void check_custom_curve(const fs::path &path)
+{
+    EditableCurve curve;
+    const auto original = curve.current();
+    if (!curve.create_line({}))
+    {
+        throw std::runtime_error("Could not create the six-pole cubic line");
+    }
+    const auto line = curve.current();
+    const auto &definition = line.definition;
+    using occt_lab::geometry::CurveKnot;
+    const std::vector<CurveKnot> knots{{0, 4}, {1.0 / 3, 1}, {2.0 / 3, 1}, {1, 4}};
+    if (definition.degree != 3 || definition.knots != knots || definition.poles.size() != 6 ||
+        definition.weights != std::vector<double>(6, 1.0))
+    {
+        throw std::runtime_error("The new line must have unit weights and uniform clamped knots");
+    }
+    for (std::size_t i = 0; i < definition.poles.size(); ++i)
+    {
+        const auto [x, y, z] = definition.poles[i];
+        if (std::abs(x - (-45.0 + 18.0 * static_cast<double>(i))) > 1e-12 || y != 0 || z != 0)
+        {
+            throw std::runtime_error("Expected equally spaced control points centered on the X axis");
+        }
+    }
+    curve.undo();
+    if (curve.current() != original || curve.create_line({.pole_count = 2, .degree = 2}) ||
+        curve.create_line({.pole_count = LineCurveParameters::max_poles + 1}) || !curve.can_redo())
+    {
+        throw std::runtime_error("Undo and rejected creation must preserve the previous curve and redo");
+    }
+    curve.redo();
+    if (curve.current() != line || !curve.preview_pole_move(2, {.x = -9, .y = 12, .z = 0}))
+    {
+        throw std::runtime_error("Could not move a control point on the recreated line");
+    }
+    curve.accept_pole_move();
+    if (curve.current().samples == line.samples || !save_curve_project(path, curve.current(), {}))
+    {
+        throw std::runtime_error("Moving the middle pole must bend the new curve and allow saving");
+    }
+    const auto reopened = open_curve_project(path);
+    if (!reopened || reopened->curve != curve.current())
+    {
+        throw std::runtime_error("The custom curve changed after reopening");
+    }
+    curve.undo();
+    if (curve.current() != line || !curve.create_line({}) || !curve.can_redo())
+    {
+        throw std::runtime_error("Recreating an identical line must preserve the undone pole edit");
+    }
+    if (!curve.create_line({.pole_count = 2, .degree = 1}) || curve.current().definition.poles.size() != 2)
+    {
+        throw std::runtime_error("Could not create the minimal two-pole linear curve");
+    }
+}
 
 void check_invalid_file(const fs::path &path, const std::string &original, const std::string_view part,
                         const std::string_view replacement)
@@ -33,6 +91,7 @@ void check_invalid_file(const fs::path &path, const std::string &original, const
 void check_curve_projects()
 {
     const ProjectTestDirectory directory;
+    check_custom_curve(directory.path / "custom.occtlab");
     const auto path = directory.path / u8"曲线.occtlab";
     EditableCurve curve;
     auto definition = curve.current().definition;

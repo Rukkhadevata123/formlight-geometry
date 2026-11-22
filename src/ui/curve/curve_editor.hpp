@@ -26,11 +26,14 @@ class CurveEditor
 
   private:
     void draw_project(EditableCurve &curve);
+    void draw_creation_dialog(EditableCurve &curve);
     void draw_history(EditableCurve &curve);
     void draw_refinement(EditableCurve &curve);
     void draw_point_fitting(EditableCurve &curve);
     void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
+    LineCurveParameters creation_parameters_;
+    std::string creation_error_;
     occt_lab::document::CurveProjectSettings settings_;
     ProjectFileControls project_file_{.path = "curve.occtlab"};
     bool tracking_pole_ = false;

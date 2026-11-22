@@ -551,7 +551,7 @@ int main()
         check_off_grid_residual();
         check_approximation();
         check_curve_projects();
-        std::println("B-spline geometry, editing, history and project round trips verified");
+        std::println("B-spline geometry, custom curve creation, editing, history and project round trips verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

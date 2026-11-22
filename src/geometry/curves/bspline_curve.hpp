@@ -56,6 +56,7 @@ struct SampledCurve
     std::optional<RefinementComparison> refinement;
     std::vector<CurveDataPoint> data_points;
     std::optional<ApproximationComparison> approximation;
+    bool operator==(const SampledCurve &) const = default;
 };
 
 [[nodiscard]] CurveDefinition make_uniform_cubic(std::span<const Vec3> poles, std::span<const double> weights = {});

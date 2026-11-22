@@ -7,6 +7,15 @@
 #include <optional>
 #include <string>
 
+struct LineCurveParameters
+{
+    static constexpr int min_poles = 2;
+    static constexpr int max_poles = 64;
+    [[nodiscard]] static int degree_limit(int pole_count);
+    int pole_count = 6;
+    int degree = 3;
+};
+
 class EditableCurve
 {
   public:
@@ -24,6 +33,7 @@ class EditableCurve
     void cancel_pole_move();
 
     // clang-format off
+    [[nodiscard]] auto create_line(LineCurveParameters params)   -> std::expected<void, std::string>;
     [[nodiscard]] auto apply(const Definition &definition)       -> std::expected<void, std::string>;
     [[nodiscard]] auto insert_knot(double parameter)             -> std::expected<void, std::string>;
     [[nodiscard]] auto elevate_degree(int target_degree)         -> std::expected<void, std::string>;

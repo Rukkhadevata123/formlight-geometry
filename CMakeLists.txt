@@ -92,6 +92,7 @@ add_executable(occt_lab
     src/render/vulkan_resources.hpp
     src/ui/box_editor.cpp
     src/ui/box_editor.hpp
+    src/ui/curve/curve_creation_dialog.cpp
     src/ui/curve/curve_editor.cpp
     src/ui/curve/curve_editor.hpp
     src/ui/curve/curve_project_panel.cpp
