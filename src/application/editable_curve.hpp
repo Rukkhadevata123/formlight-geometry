@@ -12,6 +12,11 @@ class EditableCurve
   public:
     using Curve = occt_lab::geometry::SampledCurve;
     using Definition = occt_lab::geometry::CurveDefinition;
+    enum class Framing
+    {
+        fit_curve,
+        keep_view
+    };
 
     EditableCurve();
     explicit EditableCurve(Curve curve);
@@ -32,7 +37,8 @@ class EditableCurve
     [[nodiscard]] auto interpolate_through_poles()               -> std::expected<void, std::string>;
     [[nodiscard]] auto approximate_data_points(double tolerance) -> std::expected<void, std::string>;
     // clang-format on
-    [[nodiscard]] auto create_interpolated_curve(std::span<const occt_lab::geometry::Vec3> points)
+    [[nodiscard]] auto create_interpolated_curve(std::span<const occt_lab::geometry::Vec3> points,
+                                                 Framing framing = Framing::fit_curve)
         -> std::expected<void, std::string>;
 
     [[nodiscard]] bool history_changes_knots() const

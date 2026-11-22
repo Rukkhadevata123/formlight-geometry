@@ -15,6 +15,14 @@ class CurveEditor
     void draw(EditableCurve &curve);
     void handle_viewport_input(EditableCurve &curve, const ClipTransform &transform, bool pole_click);
     void cancel_drag(EditableCurve &curve);
+    void cancel_point_picking()
+    {
+        picking_points_ = false;
+    }
+    [[nodiscard]] bool picking_points() const
+    {
+        return picking_points_;
+    }
     [[nodiscard]] bool tracking_pole() const
     {
         return tracking_pole_;
@@ -27,6 +35,8 @@ class CurveEditor
   private:
     void draw_project(EditableCurve &curve);
     void draw_creation_dialog(EditableCurve &curve);
+    void draw_point_picker(EditableCurve &curve);
+    void preview_point_picking(const EditableCurve &curve, const ClipTransform &transform, bool scene_click);
     void draw_history(EditableCurve &curve);
     void draw_refinement(EditableCurve &curve);
     void draw_point_fitting(EditableCurve &curve);
@@ -34,6 +44,7 @@ class CurveEditor
     EditableCurve::Definition draft_;
     LineCurveParameters creation_parameters_;
     std::vector<occt_lab::geometry::Vec3> creation_points_;
+    bool picking_points_ = false;
     int creation_preset_ = 0;
     std::string creation_error_;
     occt_lab::document::CurveProjectSettings settings_;

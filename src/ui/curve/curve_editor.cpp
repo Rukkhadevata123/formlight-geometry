@@ -17,6 +17,18 @@ void CurveEditor::cancel_drag(EditableCurve &curve)
 
 void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransform &transform, const bool pole_click)
 {
+    if (picking_points_)
+    {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+        {
+            cancel_point_picking();
+        }
+        else
+        {
+            preview_point_picking(curve, transform, pole_click);
+        }
+        return;
+    }
     if (!tracking_pole_)
     {
         if (!pole_click)
@@ -65,6 +77,12 @@ void CurveEditor::draw(EditableCurve &curve)
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
     if (ImGui::Begin("NURBS curve control points", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        if (picking_points_)
+        {
+            draw_point_picker(curve);
+            ImGui::End();
+            return;
+        }
         ImGui::BeginDisabled(tracking_pole_);
         draw_project(curve);
         ImGui::BeginDisabled(draft_ != curve.current().definition);

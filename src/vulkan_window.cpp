@@ -547,7 +547,11 @@ public:
             .image_count = swapchain.images.size(),
         };
         draw_status_panel(status, preview_mode_, projection_, camera_, moving_pole, patch_layers_, show_diagnostics_,
-                          pyramid_controls_);
+                          pyramid_controls_, curve_editor_.picking_points());
+        if (preview_mode_ != PreviewMode::nurbs_curve)
+        {
+            curve_editor_.cancel_point_picking();
+        }
         const bool run_compute =
             draw_developer_diagnostics(show_diagnostics_, selected_.compute_supported, compute_status_);
         if (run_compute && !compute_check_)
@@ -604,7 +608,10 @@ public:
         {
             curve_editor_.handle_viewport_input(curve_, transform, pole_click);
             curve_editor_.draw(curve_);
-            draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
+            if (!curve_editor_.picking_points())
+            {
+                draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
+            }
         }
         else if (preview_mode_ == PreviewMode::nurbs_surface)
         {

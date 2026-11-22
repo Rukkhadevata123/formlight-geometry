@@ -8,7 +8,7 @@
 
 void draw_status_panel(const RendererStatus &status, PreviewMode &mode, ProjectionMode &projection, OrbitCamera &camera,
                        const bool moving_pole, PatchLayers &patch_layers, bool &show_diagnostics,
-                       PyramidControls &pyramid)
+                       PyramidControls &pyramid, const bool picking_curve_points)
 {
     ImGui::SetNextWindowPos({16.0F, 16.0F}, ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Renderer status", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar))
@@ -60,7 +60,8 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         ImGui::TextUnformatted("Mouse wheel to zoom");
         if (mode == PreviewMode::nurbs_curve)
         {
-            ImGui::TextUnformatted("Left-drag a blue pole to move it, Esc to cancel");
+            ImGui::TextUnformatted(picking_curve_points ? "Left-click to place points on XY, Esc to cancel"
+                                                        : "Left-drag a blue pole to move it, Esc to cancel");
         }
         else if (mode == PreviewMode::nurbs_surface)
         {

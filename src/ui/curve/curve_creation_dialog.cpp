@@ -136,6 +136,14 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
         break;
     case interpolate_points:
         parameters_changed = draw_point_table(creation_points_);
+        if (ImGui::Button("Start picking on XY plane..."))
+        {
+            creation_points_.clear();
+            creation_error_.clear();
+            picking_points_ = true;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemTooltip("Start an empty point list on the world XY plane (Z = 0 mm).");
         break;
     }
     ImGui::PopItemWidth();

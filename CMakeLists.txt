@@ -97,6 +97,7 @@ add_executable(occt_lab
     src/ui/curve/curve_creation_dialog.cpp
     src/ui/curve/curve_editor.cpp
     src/ui/curve/curve_editor.hpp
+    src/ui/curve/curve_point_picker.cpp
     src/ui/curve/curve_project_panel.cpp
     src/ui/curve/fit_residuals.cpp
     src/ui/curve/fit_residuals.hpp
@@ -206,6 +207,7 @@ if(BUILD_TESTING)
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
         tests/bspline_curve_check/interpolation_creation_checks.cpp
+        tests/bspline_curve_check/viewport_picking_checks.cpp
         tests/support/project_test_directory.hpp
         src/application/editable_curve.cpp
         src/application/nurbs_curve_creation.cpp

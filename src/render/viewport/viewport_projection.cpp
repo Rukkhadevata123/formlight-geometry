@@ -21,6 +21,12 @@ struct ClipPoint
 
 namespace
 {
+bool contains_cursor(const ImGuiViewport &viewport, const ImVec2 cursor)
+{
+    return cursor.x >= viewport.Pos.x && cursor.x < viewport.Pos.x + viewport.Size.x && cursor.y >= viewport.Pos.y &&
+           cursor.y < viewport.Pos.y + viewport.Size.y;
+}
+
 double clip_component(const ClipRow &row, const Vec3 &point)
 {
     return row[0] * point.x + row[1] * point.y + row[2] * point.z + row[3];
@@ -92,10 +98,29 @@ std::optional<ImVec2> ViewportProjection::visible_point(const Vec3 &world) const
     return std::nullopt;
 }
 
+std::optional<Vec3> ViewportProjection::xy_plane_point(const ImVec2 cursor) const
+{
+    if (!contains_cursor(viewport_, cursor))
+    {
+        return std::nullopt;
+    }
+    const double ndc_x = 2.0 * (cursor.x - viewport_.Pos.x) / viewport_.Size.x - 1.0;
+    const double ndc_y = 2.0 * (cursor.y - viewport_.Pos.y) / viewport_.Size.y - 1.0;
+    const auto hit = transform_.intersect_z_plane(ndc_x, ndc_y, -center_.z / scale_);
+    if (hit)
+    {
+        const Vec3 world{hit->x * scale_ + center_.x, hit->y * scale_ + center_.y, 0};
+        if (std::isfinite(world.x) && std::isfinite(world.y))
+        {
+            return world;
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<std::size_t> ViewportProjection::pick_pole(const std::span<const Vec3> poles, const ImVec2 cursor) const
 {
-    if (cursor.x < viewport_.Pos.x || cursor.x >= viewport_.Pos.x + viewport_.Size.x || cursor.y < viewport_.Pos.y ||
-        cursor.y >= viewport_.Pos.y + viewport_.Size.y)
+    if (!contains_cursor(viewport_, cursor))
     {
         return std::nullopt;
     }

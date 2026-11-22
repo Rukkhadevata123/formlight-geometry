@@ -60,9 +60,10 @@ void check_interpolated_curve_creation()
     }
 
     const auto pair = std::span{points}.first<2>();
-    if (!curve.create_interpolated_curve(pair) || curve.current().data_points.size() != 2 ||
+    if (!curve.create_interpolated_curve(pair, EditableCurve::Framing::keep_view) ||
+        curve.current().framing_extent != interpolant.framing_extent || curve.current().data_points.size() != 2 ||
         curve.current().samples.front() != pair.front() || curve.current().samples.back() != pair.back())
     {
-        throw std::runtime_error("The minimal two-row input must interpolate both endpoints");
+        throw std::runtime_error("Picking two points must preserve the view and interpolate both endpoints");
     }
 }

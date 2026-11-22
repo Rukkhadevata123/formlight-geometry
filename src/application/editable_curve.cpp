@@ -198,12 +198,17 @@ std::expected<void, std::string> EditableCurve::interpolate_through_poles()
     return create_interpolated_curve(current().definition.poles);
 }
 
-auto EditableCurve::create_interpolated_curve(const std::span<const occt_lab::geometry::Vec3> points)
-    -> std::expected<void, std::string>
+auto EditableCurve::create_interpolated_curve(const std::span<const occt_lab::geometry::Vec3> points,
+                                              const Framing framing) -> std::expected<void, std::string>
 {
     try
     {
-        replace_with_created_curve(occt_lab::geometry::interpolate_curve(points));
+        auto candidate = occt_lab::geometry::interpolate_curve(points);
+        if (framing == Framing::keep_view)
+        {
+            candidate.framing_extent = current().framing_extent;
+        }
+        replace_with_created_curve(std::move(candidate));
         return {};
     }
     catch (const std::exception &error)
