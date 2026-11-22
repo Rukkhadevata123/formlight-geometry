@@ -188,7 +188,6 @@ if(BUILD_TESTING)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp
         tests/bspline_surface_check/analytic_surface.hpp
-        tests/bspline_surface_check/bezier_import_checks.cpp
         tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/grid_checks.cpp
         tests/bspline_surface_check/gpu_input_checks.cpp

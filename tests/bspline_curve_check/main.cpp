@@ -15,7 +15,6 @@ void check_interpolated_curve_creation();
 
 namespace
 {
-using occt_lab::geometry::sample_clamped_cubic_bspline;
 using occt_lab::geometry::Vec3;
 
 bool near(const Vec3 &actual, const Vec3 &expected)
@@ -26,37 +25,34 @@ bool near(const Vec3 &actual, const Vec3 &expected)
 
 void check_curve_samples()
 {
+    using occt_lab::geometry::make_uniform_cubic;
     constexpr std::array poles{
         Vec3{.x = -3.0, .y = 1.0, .z = 0.0}, Vec3{.x = -2.0, .y = 2.0, .z = 1.0}, Vec3{.x = 1.0, .y = 4.0, .z = 3.0},
         Vec3{.x = 3.0, .y = -2.0, .z = 1.0}, Vec3{.x = 6.0, .y = 0.0, .z = 0.0},
     };
-    std::array<Vec3, 3> samples{};
-    sample_clamped_cubic_bspline(poles, samples);
+    const auto samples = sample_curve(make_uniform_cubic(poles)).samples;
+    const auto middle = samples.size() / 2;
 
     if (!near(samples.front(), poles.front()) || !near(samples.back(), poles.back()))
     {
         throw std::runtime_error("The clamped curve must interpolate both endpoint poles");
     }
     // At the interior knot, the three active basis functions are 1/4, 1/2 and 1/4.
-    if (constexpr Vec3 expected_middle{.x = 0.75, .y = 2.0, .z = 2.0}; !near(samples[1], expected_middle))
+    if (constexpr Vec3 expected_middle{.x = 0.75, .y = 2.0, .z = 2.0}; !near(samples[middle], expected_middle))
     {
         throw std::runtime_error("Unexpected cubic B-spline sample at the middle knot");
     }
 
     constexpr std::array unit_weights{1.0, 1.0, 1.0, 1.0, 1.0};
-    std::array<Vec3, 3> weighted{};
-    sample_clamped_cubic_bspline(poles, weighted, unit_weights);
-    for (std::size_t i = 0; i < samples.size(); ++i)
+    const auto unit = sample_curve(make_uniform_cubic(poles, unit_weights)).samples;
+    if (unit != samples)
     {
-        if (!near(weighted[i], samples[i]))
-        {
-            throw std::runtime_error("Unit weights must reproduce the polynomial B-spline");
-        }
+        throw std::runtime_error("Unit weights must reproduce the polynomial B-spline");
     }
 
     constexpr std::array weights{1.0, 1.0, 3.0, 1.0, 1.0};
-    sample_clamped_cubic_bspline(poles, weighted, weights);
-    if (constexpr Vec3 rational_middle{.x = 0.875, .y = 3.0, .z = 2.5}; !near(weighted[1], rational_middle) ||
+    const auto weighted = sample_curve(make_uniform_cubic(poles, weights)).samples;
+    if (constexpr Vec3 rational_middle{.x = 0.875, .y = 3.0, .z = 2.5}; !near(weighted[middle], rational_middle) ||
                                                                         !near(weighted.front(), poles.front()) ||
                                                                         !near(weighted.back(), poles.back()))
     {
@@ -64,10 +60,13 @@ void check_curve_samples()
     }
 
     constexpr std::array scaled_weights{2.0, 2.0, 6.0, 2.0, 2.0};
-    sample_clamped_cubic_bspline(poles, samples, scaled_weights);
-    if (!near(samples[1], weighted[1]))
+    const auto scaled = sample_curve(make_uniform_cubic(poles, scaled_weights)).samples;
+    for (std::size_t i = 0; i < samples.size(); ++i)
     {
-        throw std::runtime_error("Common scaling of all weights changed the rational midpoint");
+        if (!near(scaled[i], weighted[i]))
+        {
+            throw std::runtime_error("Common scaling of all weights changed the rational curve");
+        }
     }
 }
 

@@ -25,8 +25,8 @@ void check_custom_curve(const fs::path &path)
     }
     const auto line = curve.current();
     const auto &definition = line.definition;
-    using occt_lab::geometry::CurveKnot;
-    const std::vector<CurveKnot> knots{{0, 4}, {1.0 / 3, 1}, {2.0 / 3, 1}, {1, 4}};
+    using occt_lab::geometry::BSplineKnot;
+    const std::vector<BSplineKnot> knots{{0, 4}, {1.0 / 3, 1}, {2.0 / 3, 1}, {1, 4}};
     if (definition.degree != 3 || definition.knots != knots || definition.poles.size() != 6 ||
         definition.weights != std::vector<double>(6, 1.0))
     {
@@ -86,7 +86,7 @@ void check_bezier_preset(const fs::path &path)
     }
     const auto bezier = curve.current();
     const auto &definition = bezier.definition;
-    const std::vector<occt_lab::geometry::CurveKnot> knots{{0, 4}, {1, 4}};
+    const std::vector<occt_lab::geometry::BSplineKnot> knots{{0, 4}, {1, 4}};
     if (definition.degree != 3 || definition.poles.size() != 4 || definition.weights != std::vector<double>(4, 1.0) ||
         definition.knots != knots || !bezier.data_points.empty())
     {

@@ -64,12 +64,9 @@ Geom_BSplineCurve make_curve(const CurveDefinition &definition, const bool use_u
     return Geom_BSplineCurve{poles, normalized_weights(definition.weights, pole_count), knots, multiplicities, degree};
 }
 
-void sample_positions(const Geom_BSplineCurve &curve, const std::span<Vec3> samples)
+void sample_positions(const Geom_BSplineCurve &curve, SampledCurve::Samples &samples)
 {
-    if (samples.size() < 2)
-    {
-        throw std::invalid_argument("B-spline sampling requires space for both endpoints");
-    }
+    static_assert(std::tuple_size_v<SampledCurve::Samples> >= 2);
     const double first = curve.FirstParameter();
     const double last = curve.LastParameter();
     const auto intervals = static_cast<double>(samples.size() - 1);
@@ -120,12 +117,6 @@ CurveDefinition make_uniform_cubic(const std::span<const Vec3> poles, const std:
     }
     definition.knots = make_uniform_clamped_knots(pole_count, degree);
     return definition;
-}
-
-void sample_clamped_cubic_bspline(const std::span<const Vec3> control_points, const std::span<Vec3> samples,
-                                  const std::span<const double> weights)
-{
-    sample_positions(make_curve(make_uniform_cubic(control_points, weights)), samples);
 }
 
 SampledCurve sample_curve(const CurveDefinition &definition, const std::span<const CurveDataPoint> data_points)

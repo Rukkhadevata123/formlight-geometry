@@ -1,6 +1,5 @@
 #include "nurbs_surface_project.hpp"
 
-#include "application/nurbs_surface_creation.hpp"
 #include "project_io.hpp"
 
 #include <utility>
@@ -15,27 +14,6 @@ geometry::PatchSampling read_sampling(std::istream &in)
     return {.constant_u_lines = io::read_number<int>(in, "constant u lines"),
             .constant_v_lines = io::read_number<int>(in, "constant v lines"),
             .samples_per_line = io::read_number<int>(in, "points per line")};
-}
-
-EditableNurbsSurface read_bezier_patch(std::istream &in)
-{
-    if (io::read_number<int>(in, "format version") != 1)
-    {
-        throw std::runtime_error("Unsupported Bezier patch project version");
-    }
-    io::expect_token(in, "units");
-    io::expect_token(in, "mm");
-    const auto sampling = read_sampling(in);
-    io::expect_token(in, "poles");
-    io::expect_token(in, "4");
-    io::expect_token(in, "4");
-    geometry::CubicBezierPatch::ControlNet poles;
-    for (auto &pole : poles)
-    {
-        pole = io::read_position(in);
-    }
-    io::expect_end(in);
-    return EditableNurbsSurface{make_bezier_nurbs_surface(poles), sampling};
 }
 
 void write_axis(std::ostream &out, const char *name, const geometry::BSplineSurfaceAxis &axis)
@@ -103,24 +81,14 @@ auto open_nurbs_surface_project(const std::filesystem::path &path) -> std::expec
     try
     {
         auto in = io::open_input(path);
-        std::string type;
-        in >> type;
-        if (type == "occt-lab-bezier-patch")
-        {
-            return read_bezier_patch(in);
-        }
-        if (type != "occt-lab-nurbs-surface")
-        {
-            return std::unexpected("Expected a NURBS surface or Bezier patch project");
-        }
-        const int version = io::read_number<int>(in, "format version");
-        if (version != 1 && version != 2)
+        io::expect_token(in, "occt-lab-nurbs-surface");
+        if (io::read_number<int>(in, "format version") != 2)
         {
             return std::unexpected("Unsupported NURBS surface project version");
         }
         io::expect_token(in, "units");
         io::expect_token(in, "mm");
-        const auto sampling = version == 1 ? geometry::PatchSampling{} : read_sampling(in);
+        const auto sampling = read_sampling(in);
         EditableNurbsSurface::Definition definition{.u = read_axis(in, "U"), .v = read_axis(in, "V")};
         const auto count = definition.control_net_size();
         io::expect_token(in, "control_net");

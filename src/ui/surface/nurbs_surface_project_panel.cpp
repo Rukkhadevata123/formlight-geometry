@@ -8,9 +8,7 @@
 
 void NurbsPoleInspector::draw_project(EditableNurbsSurface &model)
 {
-    const bool expanded = ImGui::CollapsingHeader("Surface project");
-    ImGui::SetItemTooltip("Open a NURBS surface or Bezier patch. Choose a new path to save a converted copy.");
-    if (!expanded)
+    if (!ImGui::CollapsingHeader("Surface project"))
     {
         return;
     }

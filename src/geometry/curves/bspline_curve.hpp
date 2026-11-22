@@ -11,14 +11,12 @@
 
 namespace occt_lab::geometry
 {
-using CurveKnot = BSplineKnot;
-
 struct CurveDefinition
 {
     int degree = 3;
     std::vector<Vec3> poles;
     std::vector<double> weights;
-    std::vector<CurveKnot> knots;
+    std::vector<BSplineKnot> knots;
 
     bool operator==(const CurveDefinition &) const = default;
 };
@@ -72,8 +70,4 @@ struct SampledCurve
 [[nodiscard]] auto elevate_curve_degree(const CurveDefinition &definition, int target_degree) -> CurveDefinition;
 // clang-format on
 
-// Samples a non-periodic cubic B-spline with uniformly spaced interior knots, including both endpoints.
-// An empty weight span assigns unit weight to every pole.
-void sample_clamped_cubic_bspline(std::span<const Vec3> control_points, std::span<Vec3> samples,
-                                  std::span<const double> weights = {});
 } // namespace occt_lab::geometry
