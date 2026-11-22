@@ -7,25 +7,6 @@ namespace occt_lab::geometry
 {
 namespace
 {
-constexpr Vec3 operator+(const Vec3 &left, const Vec3 &right)
-{
-    return {.x = left.x + right.x, .y = left.y + right.y, .z = left.z + right.z};
-}
-
-constexpr Vec3 operator*(const Vec3 &value, const double scale)
-{
-    return {.x = value.x * scale, .y = value.y * scale, .z = value.z * scale};
-}
-
-constexpr Vec3 cross(const Vec3 &left, const Vec3 &right)
-{
-    return {
-        .x = left.y * right.z - left.z * right.y,
-        .y = left.z * right.x - left.x * right.z,
-        .z = left.x * right.y - left.y * right.x,
-    };
-}
-
 struct CubicBasis
 {
     std::array<double, 4> value;

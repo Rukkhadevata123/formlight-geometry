@@ -17,9 +17,7 @@ void draw_surface_probe_marker(ImDrawList &draw_list, const occt_lab::render::Vi
     constexpr ImU32 color = IM_COL32(255, 150, 118, 255);
     if (normal)
     {
-        const Vec3 tip{.x = point.x + arrow_length * normal->x,
-                       .y = point.y + arrow_length * normal->y,
-                       .z = point.z + arrow_length * normal->z};
+        const Vec3 tip = point + *normal * arrow_length;
         project.draw_polyline(draw_list, std::array{point, tip}, color, 2.5F);
         if (const auto end = project.visible_point(tip))
         {
