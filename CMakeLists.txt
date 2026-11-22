@@ -89,6 +89,8 @@ add_executable(occt_lab
     src/render/viewport/clip_transform.hpp
     src/render/viewport/orbit_camera.hpp
     src/render/viewport/viewport_projection.cpp
+    src/render/viewport/brep_face_picking.cpp
+    src/render/viewport/brep_face_picking.hpp
     src/render/viewport/viewport_projection.hpp
     src/render/vulkan_resources.cpp
     src/render/vulkan_resources.hpp
@@ -186,6 +188,7 @@ if(BUILD_TESTING)
     endforeach()
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
+    target_sources(occt_cylinder_check PRIVATE src/render/viewport/brep_face_picking.cpp)
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp

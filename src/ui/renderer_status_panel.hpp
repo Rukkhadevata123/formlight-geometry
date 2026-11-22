@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <optional>
 
 class OrbitCamera;
 enum class ProjectionMode;
@@ -33,6 +34,7 @@ struct RendererStatus
     std::uint32_t width;
     std::uint32_t height;
     std::size_t image_count;
+    std::optional<std::size_t> selected_face;
 };
 
 void draw_status_panel(const RendererStatus &status, PreviewMode &mode, ProjectionMode &projection, OrbitCamera &camera,

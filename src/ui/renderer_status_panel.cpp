@@ -58,7 +58,15 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         ImGui::EndDisabled();
         ImGui::TextUnformatted("Middle-drag to orbit, Shift + middle-drag to pan");
         ImGui::TextUnformatted("Mouse wheel to zoom");
-        if (mode == PreviewMode::nurbs_curve)
+        if (mode == PreviewMode::box || mode == PreviewMode::cylinder)
+        {
+            ImGui::TextUnformatted("Left-click a face to select it");
+            if (status.selected_face)
+            {
+                ImGui::Text("Selected face: %zu", *status.selected_face + 1);
+            }
+        }
+        else if (mode == PreviewMode::nurbs_curve)
         {
             ImGui::TextUnformatted(picking_points ? "Left-click to place points on XY, Esc to cancel"
                                                         : "Left-drag a blue pole to move it, Esc to cancel");

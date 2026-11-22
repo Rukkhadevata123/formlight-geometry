@@ -544,9 +544,15 @@ public:
             .width = swapchain.extent.width,
             .height = swapchain.extent.height,
             .image_count = swapchain.images.size(),
+            .selected_face = preview_.selected_face(),
         };
+        const auto previous_mode = preview_mode_;
         draw_status_panel(status, preview_mode_, projection_, camera_, moving_pole, patch_layers_, show_diagnostics_,
                           pyramid_controls_, curve_editor_.picking_points() || (nurbs_ && nurbs_->picking_net()));
+        if (preview_mode_ != previous_mode)
+        {
+            preview_.clear_selection();
+        }
         if (preview_mode_ != PreviewMode::nurbs_curve)
         {
             curve_editor_.cancel_point_picking();
@@ -607,7 +613,15 @@ public:
         const auto &io = ImGui::GetIO();
         const bool pole_click = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !io.WantCaptureMouse &&
                                 io.KeyMods == ImGuiMod_None && !ImGui::IsMouseDown(ImGuiMouseButton_Middle);
-        if (preview_mode_ == PreviewMode::nurbs_curve)
+        if (solid && pole_click)
+        {
+            const auto &viewport = *ImGui::GetMainViewport();
+            const auto mouse = ImGui::GetMousePos();
+            const double x = 2.0 * (mouse.x - viewport.Pos.x) / viewport.Size.x - 1.0;
+            const double y = 2.0 * (mouse.y - viewport.Pos.y) / viewport.Size.y - 1.0;
+            preview_.pick_face(*solid, transform, x, y);
+        }
+        else if (preview_mode_ == PreviewMode::nurbs_curve)
         {
             curve_editor_.handle_viewport_input(curve_, transform, pole_click);
             curve_editor_.draw(curve_);

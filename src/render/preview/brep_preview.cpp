@@ -3,6 +3,7 @@
 #include "geometry/brep/brep_mesh.hpp"
 #include "render/compute/nurbs_grid_input.hpp"
 #include "render/viewport/orbit_camera.hpp"
+#include "render/viewport/brep_face_picking.hpp"
 #include "render/vulkan_resources.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
@@ -26,6 +27,7 @@ using occt_lab::render::load_shader;
 constexpr vk::ImageSubresourceRange depth_range{vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1};
 constexpr auto depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 constexpr double linear_deflection = 0.1;
+constexpr auto mesh_stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
 static_assert(sizeof(ClipTransform) == 64 && offsetof(ClipTransform, w) == 48);
 static_assert(offsetof(MeshVertex, normal) == 12 && sizeof(MeshVertex) == 24);
@@ -91,9 +93,9 @@ BRepPreview::BRepPreview(const vk::raii::PhysicalDevice &physical_device, const 
       depth_format_(choose_depth_format(physical_device)), box_(build_box(BoxDimensions{})),
       cylinder_(upload_mesh(make_cylinder_mesh()))
 {
-    constexpr vk::PushConstantRange projection{vk::ShaderStageFlagBits::eVertex, 0, sizeof(ClipTransform)};
+    constexpr vk::PushConstantRange mesh_parameters{mesh_stages, 0, sizeof(ClipTransform) + sizeof(uint32_t)};
     vk::PipelineLayoutCreateInfo info;
-    info.setPushConstantRanges(projection);
+    info.setPushConstantRanges(mesh_parameters);
     layout_ = vk::raii::PipelineLayout{device_, info};
 }
 
@@ -102,7 +104,7 @@ auto BRepPreview::build_box(const BoxDimensions &dimensions) const -> std::uniqu
     auto model = make_box(dimensions);
     const auto [length, width, height] = model.dimensions;
     const gp_Pnt center{0.5 * length, 0.5 * width, 0.5 * height};
-    const auto mesh = triangulate_brep(model.shape, center, linear_deflection);
+    auto mesh = triangulate_brep(model.shape, center, linear_deflection);
 
     // Keep comparable boxes at the same scale and adjust framing for sizes outside that range.
     constexpr BoxDimensions defaults;
@@ -111,7 +113,7 @@ auto BRepPreview::build_box(const BoxDimensions &dimensions) const -> std::uniqu
     const double view_diagonal = std::clamp(diagonal, 0.25 * default_diagonal, 1.125 * default_diagonal);
     return std::make_unique<BoxPreview>(BoxPreview{
         .model = std::move(model),
-        .mesh = upload_mesh(mesh),
+        .mesh = upload_mesh(std::move(mesh)),
         .view_scale = diagonal / view_diagonal,
     });
 }
@@ -148,6 +150,7 @@ std::expected<void, std::string> BRepPreview::rebuild_box(const BoxDimensions &d
         auto replacement = build_box(dimensions);
         undo_box_ = std::exchange(box_, std::move(replacement));
         redo_box_.reset();
+        clear_selection();
         return {};
     }
     catch (const vk::DeviceLostError &)
@@ -166,6 +169,7 @@ void BRepPreview::undo_box()
     if (undo_box_)
     {
         redo_box_ = std::exchange(box_, std::move(undo_box_));
+        clear_selection();
     }
 }
 
@@ -174,10 +178,17 @@ void BRepPreview::redo_box()
     if (redo_box_)
     {
         undo_box_ = std::exchange(box_, std::move(redo_box_));
+        clear_selection();
     }
 }
 
-auto BRepPreview::upload_mesh(const BRepMeshData &mesh) const -> MeshBuffer
+void BRepPreview::pick_face(const PreviewShape shape, const ClipTransform &transform, const double ndc_x, const double ndc_y)
+{
+    const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
+    selected_face_ = pick_brep_face(mesh.cpu_mesh, transform, ndc_x, ndc_y);
+}
+
+auto BRepPreview::upload_mesh(BRepMeshData mesh) const -> MeshBuffer
 {
     const auto vertices = std::as_bytes(std::span{mesh.vertices});
     const auto indices = std::as_bytes(std::span{mesh.indices});
@@ -189,7 +200,6 @@ auto BRepPreview::upload_mesh(const BRepMeshData &mesh) const -> MeshBuffer
         .memory = vk::raii::DeviceMemory{nullptr},
         .buffer = vk::raii::Buffer{device_, info},
         .index_offset = vertices.size(),
-        .index_count = static_cast<uint32_t>(mesh.indices.size()),
     };
 
     const auto requirements = device_.getBufferMemoryRequirements2({*buffers.buffer}).memoryRequirements;
@@ -210,6 +220,7 @@ auto BRepPreview::upload_mesh(const BRepMeshData &mesh) const -> MeshBuffer
             device_.flushMappedMemoryRanges(vk::MappedMemoryRange{*buffers.memory, 0, VK_WHOLE_SIZE});
         }
     }
+    buffers.cpu_mesh = std::move(mesh);
     return buffers;
 }
 
@@ -325,7 +336,8 @@ void BRepPreview::bind_mesh_pipeline(const vk::raii::CommandBuffer &commands, co
     commands.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
     commands.setViewport(0, vk::Viewport{0.0F, 0.0F, width, height, 0.0F, 1.0F});
     commands.setScissor(0, vk::Rect2D{{0, 0}, extent});
-    commands.pushConstants<ClipTransform>(*layout_, vk::ShaderStageFlagBits::eVertex, 0, transform);
+    commands.pushConstants<ClipTransform>(*layout_, mesh_stages, 0, transform);
+    commands.pushConstants<uint32_t>(*layout_, mesh_stages, sizeof(ClipTransform), 0U);
     commands.bindVertexBuffers(0, vertices, vk::DeviceSize{0});
 }
 
@@ -341,7 +353,26 @@ void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Exte
                          const ClipTransform &transform) const
 {
     const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
-    draw_indexed_triangles(commands, extent, transform, *mesh.buffer, mesh.index_offset, mesh.index_count);
+    bind_mesh_pipeline(commands, extent, transform, *mesh.buffer, *pipeline_);
+    commands.bindIndexBuffer(*mesh.buffer, mesh.index_offset, vk::IndexType::eUint32);
+    const auto count = static_cast<uint32_t>(mesh.cpu_mesh.indices.size());
+    if (!selected_face_)
+    {
+        commands.drawIndexed(count, 1, 0, 0, 0);
+        return;
+    }
+    const auto &face = mesh.cpu_mesh.faces.at(*selected_face_);
+    // Each triangle is drawn once, with the normal depth test for all three ranges.
+    if (face.first_index > 0)
+    {
+        commands.drawIndexed(face.first_index, 1, 0, 0, 0);
+    }
+    if (const auto after = face.first_index + face.index_count; after < count)
+    {
+        commands.drawIndexed(count - after, 1, after, 0, 0);
+    }
+    commands.pushConstants<uint32_t>(*layout_, mesh_stages, sizeof(ClipTransform), 1U);
+    commands.drawIndexed(face.index_count, 1, face.first_index, 0, 0);
 }
 
 void BRepPreview::draw_indexed_triangles(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent,

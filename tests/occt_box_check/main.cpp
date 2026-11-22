@@ -102,7 +102,8 @@ void check_mesh(const TopoDS_Shape &box, const double length, const double width
     };
     for (std::size_t face_number = 0; face_number < mesh.faces.size(); ++face_number)
     {
-        const auto [first, count] = mesh.faces[face_number];
+        const auto &range = mesh.faces[face_number];
+        const auto first = range.first_index, count = range.index_count;
         if (first != face_number * 6 || count != 6)
         {
             throw std::runtime_error("Expected two triangles in each box face's index range");

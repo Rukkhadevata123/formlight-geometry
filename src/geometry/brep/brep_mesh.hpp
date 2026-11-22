@@ -1,5 +1,7 @@
 #pragma once
 
+#include <TopoDS_Face.hxx>
+
 #include <array>
 #include <cstdint>
 #include <vector>
@@ -17,6 +19,7 @@ struct FaceIndexRange
 {
     std::uint32_t first_index;
     std::uint32_t index_count;
+    TopoDS_Face face;
 };
 
 struct BRepMeshData

@@ -132,6 +132,7 @@ void append_face(BRepMeshData &mesh, const TopoDS_Face &face, const gp_Pnt &orig
     mesh.faces.push_back({
         .first_index = first_index,
         .index_count = static_cast<std::uint32_t>(mesh.indices.size() - first_index),
+        .face = face,
     });
 }
 } // namespace
