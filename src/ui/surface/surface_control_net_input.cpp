@@ -109,7 +109,7 @@ void NurbsPoleInspector::draw_net_picker(const ClipTransform &transform, const b
         }
     }
     bool done = false;
-    if (ImGui::Begin("Pick surface control net", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (begin_inspector_window())
     {
         ImGui::Text("XY plane (Z = 0 mm)    %zu / %zu", points.size(), count);
         if (points.size() < count)

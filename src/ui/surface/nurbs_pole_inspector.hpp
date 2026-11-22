@@ -36,6 +36,7 @@ class NurbsPoleInspector
     [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model, NurbsMeshControls *mesh);
 
   private:
+    [[nodiscard]] bool begin_inspector_window() const;
     void draw_creation_dialog(EditableNurbsSurface &model);
     bool draw_net_table();
     void draw_project(EditableNurbsSurface &model);

@@ -82,20 +82,28 @@ void NurbsPoleInspector::handle_viewport_input(EditableNurbsSurface &model,
     }
 }
 
-const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model,
-                                                                NurbsMeshControls *mesh)
+bool NurbsPoleInspector::begin_inspector_window() const
 {
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
-    constexpr char title[] = "NURBS control point";
+    // Both titles identify the same ImGui window so picking follows the inspector if it was moved.
+    const char *title = picking_net() ? "Pick surface control net###SurfaceInspector"
+                                      : "NURBS control point###SurfaceInspector";
     const auto &style = ImGui::GetStyle();
     // Reserve a frame for the collapse button even when the selected pole has short coordinates.
     const float min_width =
-        ImGui::CalcTextSize(title).x + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x + 2.0F * style.FramePadding.x;
+        ImGui::CalcTextSize(title, nullptr, true).x + ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
+        2.0F * style.FramePadding.x;
     constexpr float unlimited = std::numeric_limits<float>::max();
     ImGui::SetNextWindowSizeConstraints({min_width, 0.0F}, {unlimited, unlimited});
-    const bool visible = ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    return ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+}
+
+const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model,
+                                                                NurbsMeshControls *mesh)
+{
+    const bool visible = begin_inspector_window();
     if (visible)
     {
         ImGui::BeginDisabled(tracking_pole_);
