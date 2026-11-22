@@ -56,10 +56,11 @@ class EditableCurve
     }
     void undo();
     void redo();
+    // Publish an already sampled creation preview as one undoable edit.
+    void replace_with_created_curve(Curve candidate, Framing framing = Framing::fit_curve);
 
   private:
     void commit(Curve candidate);
-    void replace_with_created_curve(Curve candidate);
     void commit_refinement(const Definition &definition);
     SingleStepHistory<Curve> history_;
     std::optional<Curve> pole_preview_;

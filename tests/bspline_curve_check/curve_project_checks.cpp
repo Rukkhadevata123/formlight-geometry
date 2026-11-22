@@ -2,6 +2,8 @@
 #include "document/curve_project.hpp"
 #include "../support/project_test_directory.hpp"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <format>
@@ -9,6 +11,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
 namespace
 {
@@ -126,6 +129,50 @@ void check_bezier_preset(const fs::path &path)
     }
 }
 
+void check_control_point_curve(const fs::path &path)
+{
+    using namespace occt_lab::geometry;
+    constexpr std::array<Vec3, 4> points{{{0, 0, 0}, {8, 0, 8}, {8, 16, 8}, {16, 16, 0}}};
+    EditableCurve editor;
+    editor.create_interpolated_curve(points).value();
+    const auto interpolant = editor.current();
+
+    auto candidate = sample_curve(make_uniform_clamped_curve(points, 3));
+    // Cubic Bernstein coefficients at 1/2 are (1, 3, 3, 1) / 8.
+    const auto midpoint = candidate.samples[candidate.samples.size() / 2];
+    if (std::hypot(midpoint.x - 8, midpoint.y - 8, midpoint.z - 6) > 1e-12 ||
+        !std::ranges::equal(candidate.definition.poles, points) ||
+        candidate.definition.weights != std::vector<double>(4, 1) || !candidate.data_points.empty() ||
+        candidate.samples == interpolant.samples)
+    {
+        throw std::runtime_error("The supplied points must form the control polygon of the previewed cubic");
+    }
+    editor.replace_with_created_curve(std::move(candidate), EditableCurve::Framing::keep_view);
+    const auto created = editor.current();
+    if (created.framing_extent != interpolant.framing_extent)
+    {
+        throw std::runtime_error("Accepting picked control points changed the viewport scale");
+    }
+    editor.undo();
+    if (editor.current() != interpolant)
+    {
+        throw std::runtime_error("Undoing a control polygon must restore the previous interpolation data");
+    }
+    editor.redo();
+    save_curve_project(path, editor.current(), {}).value();
+    if (open_curve_project(path).value().curve != created)
+    {
+        throw std::runtime_error("Redo or reopening changed the curve created from control points");
+    }
+
+    const auto quadratic = sample_curve(make_uniform_clamped_curve(points, 2));
+    const std::vector<BSplineKnot> expected_knots{{0, 3}, {0.5, 1}, {1, 3}};
+    if (quadratic.definition.knots != expected_knots || quadratic.samples == created.samples)
+    {
+        throw std::runtime_error("Changing the degree must rebuild the clamped knots for the same polygon");
+    }
+}
+
 void check_invalid_file(const fs::path &path, const std::string &original, const std::string_view part,
                         const std::string_view replacement)
 {
@@ -147,6 +194,7 @@ void check_curve_projects()
     const ProjectTestDirectory directory;
     check_custom_curve(directory.path / "custom.occtlab");
     check_bezier_preset(directory.path / "bezier.occtlab");
+    check_control_point_curve(directory.path / "control-points.occtlab");
     const auto path = directory.path / u8"曲线.occtlab";
     EditableCurve curve;
     auto definition = curve.current().definition;

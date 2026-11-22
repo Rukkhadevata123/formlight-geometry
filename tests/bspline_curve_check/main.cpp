@@ -25,12 +25,12 @@ bool near(const Vec3 &actual, const Vec3 &expected)
 
 void check_curve_samples()
 {
-    using occt_lab::geometry::make_uniform_cubic;
+    using occt_lab::geometry::make_uniform_clamped_curve;
     constexpr std::array poles{
         Vec3{.x = -3.0, .y = 1.0, .z = 0.0}, Vec3{.x = -2.0, .y = 2.0, .z = 1.0}, Vec3{.x = 1.0, .y = 4.0, .z = 3.0},
         Vec3{.x = 3.0, .y = -2.0, .z = 1.0}, Vec3{.x = 6.0, .y = 0.0, .z = 0.0},
     };
-    const auto samples = sample_curve(make_uniform_cubic(poles)).samples;
+    const auto samples = sample_curve(make_uniform_clamped_curve(poles, 3)).samples;
     const auto middle = samples.size() / 2;
 
     if (!near(samples.front(), poles.front()) || !near(samples.back(), poles.back()))
@@ -44,14 +44,14 @@ void check_curve_samples()
     }
 
     constexpr std::array unit_weights{1.0, 1.0, 1.0, 1.0, 1.0};
-    const auto unit = sample_curve(make_uniform_cubic(poles, unit_weights)).samples;
+    const auto unit = sample_curve(make_uniform_clamped_curve(poles, 3, unit_weights)).samples;
     if (unit != samples)
     {
         throw std::runtime_error("Unit weights must reproduce the polynomial B-spline");
     }
 
     constexpr std::array weights{1.0, 1.0, 3.0, 1.0, 1.0};
-    const auto weighted = sample_curve(make_uniform_cubic(poles, weights)).samples;
+    const auto weighted = sample_curve(make_uniform_clamped_curve(poles, 3, weights)).samples;
     if (constexpr Vec3 rational_middle{.x = 0.875, .y = 3.0, .z = 2.5}; !near(weighted[middle], rational_middle) ||
                                                                         !near(weighted.front(), poles.front()) ||
                                                                         !near(weighted.back(), poles.back()))
@@ -60,7 +60,7 @@ void check_curve_samples()
     }
 
     constexpr std::array scaled_weights{2.0, 2.0, 6.0, 2.0, 2.0};
-    const auto scaled = sample_curve(make_uniform_cubic(poles, scaled_weights)).samples;
+    const auto scaled = sample_curve(make_uniform_clamped_curve(poles, 3, scaled_weights)).samples;
     for (std::size_t i = 0; i < samples.size(); ++i)
     {
         if (!near(scaled[i], weighted[i]))
@@ -375,7 +375,7 @@ void check_interpolation()
                               Vec3{.x = 1.0, .y = 2.0, .z = 0.0}, Vec3{.x = 1.0, .y = 2.0, .z = 1.0}};
     constexpr std::array parameters{0.0, 0.25, 0.75, 1.0};
     EditableCurve curve;
-    auto source = occt_lab::geometry::make_uniform_cubic(data);
+    auto source = occt_lab::geometry::make_uniform_clamped_curve(data, 3);
     source.weights[1] = 4.0;
     if (!curve.apply(source) || !curve.interpolate_through_poles())
     {
@@ -465,7 +465,7 @@ void check_approximation()
         data[i] = {.x = static_cast<double>(i), .y = static_cast<double>(i % 2), .z = 0.0};
     }
     EditableCurve curve;
-    const auto source = occt_lab::geometry::make_uniform_cubic(data);
+    const auto source = occt_lab::geometry::make_uniform_clamped_curve(data, 3);
     constexpr double tolerance = 2.0;
     if (!curve.apply(source) || !curve.approximate_data_points(tolerance))
     {
@@ -553,7 +553,7 @@ int main()
         check_curve_projects();
         check_interpolated_curve_creation();
         std::println("B-spline geometry, custom curve creation, cubic Bezier preset, "
-                     "XYZ interpolation, editing, history and project round trips verified");
+                     "XYZ interpolation, control polygon creation, editing, history and project round trips verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

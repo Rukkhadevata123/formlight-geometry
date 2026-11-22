@@ -35,7 +35,7 @@ double max_sample_deviation(const EditableCurve::Curve::Samples &before, const E
 }
 } // namespace
 
-EditableCurve::EditableCurve() : history_(sample_curve(occt_lab::geometry::make_uniform_cubic(initial_poles)))
+EditableCurve::EditableCurve() : history_(sample_curve(occt_lab::geometry::make_uniform_clamped_curve(initial_poles, 3)))
 {
 }
 
@@ -140,8 +140,12 @@ auto EditableCurve::create_cubic_bezier() -> std::expected<void, std::string>
     }
 }
 
-void EditableCurve::replace_with_created_curve(Curve candidate)
+void EditableCurve::replace_with_created_curve(Curve candidate, const Framing framing)
 {
+    if (framing == Framing::keep_view)
+    {
+        candidate.framing_extent = current().framing_extent;
+    }
     if (candidate == current())
     {
         cancel_pole_move();
@@ -203,12 +207,7 @@ auto EditableCurve::create_interpolated_curve(const std::span<const occt_lab::ge
 {
     try
     {
-        auto candidate = occt_lab::geometry::interpolate_curve(points);
-        if (framing == Framing::keep_view)
-        {
-            candidate.framing_extent = current().framing_extent;
-        }
-        replace_with_created_curve(std::move(candidate));
+        replace_with_created_curve(occt_lab::geometry::interpolate_curve(points), framing);
         return {};
     }
     catch (const std::exception &error)

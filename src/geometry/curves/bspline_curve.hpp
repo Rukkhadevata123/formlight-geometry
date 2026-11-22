@@ -57,7 +57,9 @@ struct SampledCurve
     bool operator==(const SampledCurve &) const = default;
 };
 
-[[nodiscard]] CurveDefinition make_uniform_cubic(std::span<const Vec3> poles, std::span<const double> weights = {});
+[[nodiscard]] int curve_degree_limit(std::size_t pole_count);
+[[nodiscard]] CurveDefinition make_uniform_clamped_curve(std::span<const Vec3> poles, int degree,
+                                                         std::span<const double> weights = {});
 [[nodiscard]] SampledCurve sample_curve(const CurveDefinition &definition,
                                         std::span<const CurveDataPoint> data_points = {});
 [[nodiscard]] SampledCurve::ApproximationComparison compare_to_interpolant(const SampledCurve &interpolated,

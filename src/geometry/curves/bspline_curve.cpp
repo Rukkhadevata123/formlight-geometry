@@ -101,9 +101,18 @@ CurveDefinition read_bspline_definition(const Geom_BSplineCurve &curve, const do
     return result;
 }
 
-CurveDefinition make_uniform_cubic(const std::span<const Vec3> poles, const std::span<const double> weights)
+int curve_degree_limit(const std::size_t pole_count)
 {
-    constexpr int degree = 3;
+    if (pole_count < 2)
+    {
+        return 0;
+    }
+    return static_cast<int>(std::min<std::size_t>(pole_count - 1, Geom_BSplineCurve::MaxDegree()));
+}
+
+CurveDefinition make_uniform_clamped_curve(const std::span<const Vec3> poles, const int degree,
+                                           const std::span<const double> weights)
+{
     const int pole_count = checked_pole_count(poles.size(), degree);
     CurveDefinition definition{.degree = degree};
     definition.poles.assign(poles.begin(), poles.end());

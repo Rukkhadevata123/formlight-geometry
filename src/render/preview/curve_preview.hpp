@@ -18,4 +18,4 @@ struct ImVec2;
 [[nodiscard]] auto dragged_pole_position(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
                                          std::size_t index, ImVec2 screen_delta) -> occt_lab::geometry::Vec3;
 void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
-                        std::size_t selected_pole);
+                        std::optional<std::size_t> selected_pole = std::nullopt);

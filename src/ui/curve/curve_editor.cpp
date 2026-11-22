@@ -70,6 +70,18 @@ void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransfor
     }
 }
 
+void CurveEditor::draw_preview(const EditableCurve &curve, const ClipTransform &transform) const
+{
+    if (control_preview_)
+    {
+        draw_curve_preview(*control_preview_, transform);
+    }
+    else if (!picking_points_)
+    {
+        draw_curve_preview(curve.displayed(), transform, selected_index());
+    }
+}
+
 void CurveEditor::draw(EditableCurve &curve)
 {
     const auto *viewport = ImGui::GetMainViewport();

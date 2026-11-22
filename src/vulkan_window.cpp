@@ -4,7 +4,6 @@
 #include "render/compute/compute_pyramid.hpp"
 #include "render/compute/nurbs_grid_mesh.hpp"
 #include "render/preview/brep_preview.hpp"
-#include "render/preview/curve_preview.hpp"
 #include "render/preview/surface/surface_wireframe.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "ui/box_editor.hpp"
@@ -608,10 +607,7 @@ public:
         {
             curve_editor_.handle_viewport_input(curve_, transform, pole_click);
             curve_editor_.draw(curve_);
-            if (!curve_editor_.picking_points())
-            {
-                draw_curve_preview(curve_.displayed(), transform, curve_editor_.selected_index());
-            }
+            curve_editor_.draw_preview(curve_, transform);
         }
         else if (preview_mode_ == PreviewMode::nurbs_surface)
         {

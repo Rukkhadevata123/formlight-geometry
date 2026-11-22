@@ -3,16 +3,11 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <exception>
+#include <utility>
 
 namespace
 {
-enum CreationPreset
-{
-    custom_line,
-    cubic_bezier,
-    interpolate_points
-};
-
 bool draw_line_parameters(LineCurveParameters &parameters)
 {
     auto &[count, degree] = parameters;
@@ -20,7 +15,7 @@ bool draw_line_parameters(LineCurveParameters &parameters)
     constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
     const bool count_changed =
         ImGui::SliderInt("Poles", &count, LineCurveParameters::min_poles, LineCurveParameters::max_poles, "%d", flags);
-    const int limit = LineCurveParameters::degree_limit(count);
+    const int limit = occt_lab::geometry::curve_degree_limit(count);
     degree = std::min(degree, limit);
     ImGui::BeginDisabled(limit == 1);
     const bool degree_changed = ImGui::SliderInt("Degree", &degree, 1, limit, "%d", flags);
@@ -30,7 +25,6 @@ bool draw_line_parameters(LineCurveParameters &parameters)
 
 bool draw_point_table(std::vector<occt_lab::geometry::Vec3> &points)
 {
-    ImGui::TextUnformatted("The curve passes through these points in row order.");
     const float em = ImGui::GetFontSize();
     const float height = 7 * ImGui::GetFrameHeightWithSpacing();
     std::optional<std::size_t> remove;
@@ -90,22 +84,72 @@ bool draw_point_table(std::vector<occt_lab::geometry::Vec3> &points)
     return changed;
 }
 
-auto create_curve(EditableCurve &curve, const int preset, const LineCurveParameters &line,
-                  const std::span<const occt_lab::geometry::Vec3> points) -> std::expected<void, std::string>
+} // namespace
+
+bool CurveEditor::draw_control_degree()
 {
-    switch (preset)
+    const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
+    if (limit < 1)
+    {
+        return false;
+    }
+    int degree = std::min(control_degree_, limit);
+    ImGui::BeginDisabled(limit == 1);
+    const bool changed = ImGui::SliderInt("Degree", &degree, 1, limit, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::EndDisabled();
+    if (changed)
+    {
+        control_degree_ = degree;
+    }
+    return changed;
+}
+
+void CurveEditor::refresh_control_preview(const EditableCurve &curve)
+{
+    control_preview_.reset();
+    creation_error_.clear();
+    if (creation_preset_ != control_points || creation_points_.size() < 2)
+    {
+        return;
+    }
+    try
+    {
+        const int degree = std::min(control_degree_, occt_lab::geometry::curve_degree_limit(creation_points_.size()));
+        control_preview_ = sample_curve(occt_lab::geometry::make_uniform_clamped_curve(creation_points_, degree));
+        if (picking_points_)
+        {
+            control_preview_->framing_extent = curve.current().framing_extent;
+        }
+    }
+    catch (const std::exception &error)
+    {
+        creation_error_ = error.what();
+    }
+}
+
+auto CurveEditor::create_from_draft(EditableCurve &curve, const EditableCurve::Framing framing)
+    -> std::expected<void, std::string>
+{
+    switch (creation_preset_)
     {
     case custom_line:
-        return curve.create_line(line);
+        return curve.create_line(creation_parameters_);
     case cubic_bezier:
         return curve.create_cubic_bezier();
     case interpolate_points:
-        return curve.create_interpolated_curve(points);
+        return curve.create_interpolated_curve(creation_points_, framing);
+    case control_points:
+        if (!control_preview_)
+        {
+            return std::unexpected("A valid control polygon is required.");
+        }
+        curve.replace_with_created_curve(std::move(*control_preview_), framing);
+        control_preview_.reset();
+        return {};
     default:
         return std::unexpected("Unknown curve preset.");
     }
 }
-} // namespace
 
 void CurveEditor::draw_creation_dialog(EditableCurve &curve)
 {
@@ -113,6 +157,8 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     if (ImGui::Button("New curve..."))
     {
         creation_parameters_ = {};
+        control_degree_ = 3;
+        control_preview_.reset();
         creation_points_ = {{-45, -10, 0}, {-20, 28, 8}, {18, -18, 16}, {45, 12, 0}};
         creation_preset_ = custom_line;
         creation_error_.clear();
@@ -120,11 +166,12 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     }
     if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        control_preview_.reset();
         return;
     }
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
-    const bool preset_changed =
-        ImGui::Combo("Preset", &creation_preset_, "Custom line\0Cubic Bezier\0Interpolate through points\0");
+    const bool preset_changed = ImGui::Combo(
+        "Preset", &creation_preset_, "Custom line\0Cubic Bezier\0Interpolate through points\0From control points\0");
     bool parameters_changed = false;
     switch (creation_preset_)
     {
@@ -135,11 +182,20 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
         ImGui::TextUnformatted("Four control points form a cubic arc in the XY plane.");
         break;
     case interpolate_points:
+    case control_points:
+        ImGui::TextUnformatted(creation_preset_ == control_points
+                                   ? "Rows form the control polygon in order."
+                                   : "The curve passes through these points in row order.");
         parameters_changed = draw_point_table(creation_points_);
+        if (creation_preset_ == control_points && draw_control_degree())
+        {
+            parameters_changed = true;
+        }
         if (ImGui::Button("Start picking on XY plane..."))
         {
             creation_points_.clear();
             creation_error_.clear();
+            control_preview_.reset();
             picking_points_ = true;
             ImGui::CloseCurrentPopup();
         }
@@ -149,12 +205,13 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     ImGui::PopItemWidth();
     if (preset_changed || parameters_changed)
     {
-        creation_error_.clear();
+        refresh_control_preview(curve);
     }
 
+    ImGui::BeginDisabled(creation_preset_ == control_points && !control_preview_);
     if (ImGui::Button("Create"))
     {
-        const auto result = create_curve(curve, creation_preset_, creation_parameters_, creation_points_);
+        const auto result = create_from_draft(curve, EditableCurve::Framing::fit_curve);
         if (result)
         {
             finish_curve_operation(curve, result);
@@ -165,9 +222,11 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
             creation_error_ = result.error();
         }
     }
+    ImGui::EndDisabled();
     ImGui::SameLine();
     if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
     {
+        control_preview_.reset();
         ImGui::CloseCurrentPopup();
     }
     if (!creation_error_.empty())

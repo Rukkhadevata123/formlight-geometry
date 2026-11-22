@@ -24,7 +24,7 @@ auto dragged_pole_position(const occt_lab::geometry::SampledCurve &curve, const 
 }
 
 void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
-                        const std::size_t selected_pole)
+                        const std::optional<std::size_t> selected_pole)
 {
     auto *viewport = ImGui::GetMainViewport();
     auto &draw_list = *ImGui::GetBackgroundDrawList(viewport);
@@ -52,9 +52,12 @@ void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const Cli
             draw_list.AddCircleFilled(*point, 4.0F, pole_color);
         }
     }
-    if (const auto selected = project.visible_point(poles.at(selected_pole)))
+    if (selected_pole)
     {
-        draw_list.AddCircle(*selected, 7.0F, IM_COL32(255, 255, 255, 255), 0, 1.5F);
+        if (const auto selected = project.visible_point(poles.at(*selected_pole)))
+        {
+            draw_list.AddCircle(*selected, 7.0F, IM_COL32(255, 255, 255, 255), 0, 1.5F);
+        }
     }
     constexpr ImU32 data_color = IM_COL32(104, 226, 153, 255);
     for (const auto &input : curve.data_points)
