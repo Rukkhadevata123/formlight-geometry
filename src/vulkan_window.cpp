@@ -589,7 +589,7 @@ public:
                 }
             }
             break;
-        case PreviewMode::bspline:
+        case PreviewMode::nurbs_curve:
         case PreviewMode::nurbs_surface:
             break;
         }
@@ -600,7 +600,7 @@ public:
         const auto &io = ImGui::GetIO();
         const bool pole_click = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !io.WantCaptureMouse &&
                                 io.KeyMods == ImGuiMod_None && !ImGui::IsMouseDown(ImGuiMouseButton_Middle);
-        if (preview_mode_ == PreviewMode::bspline)
+        if (preview_mode_ == PreviewMode::nurbs_curve)
         {
             curve_editor_.handle_viewport_input(curve_, transform, pole_click);
             curve_editor_.draw(curve_);

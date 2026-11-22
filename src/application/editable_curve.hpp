@@ -34,6 +34,7 @@ class EditableCurve
 
     // clang-format off
     [[nodiscard]] auto create_line(LineCurveParameters params)   -> std::expected<void, std::string>;
+    [[nodiscard]] auto create_cubic_bezier()                     -> std::expected<void, std::string>;
     [[nodiscard]] auto apply(const Definition &definition)       -> std::expected<void, std::string>;
     [[nodiscard]] auto insert_knot(double parameter)             -> std::expected<void, std::string>;
     [[nodiscard]] auto elevate_degree(int target_degree)         -> std::expected<void, std::string>;
@@ -59,6 +60,7 @@ class EditableCurve
 
   private:
     void commit(Curve candidate);
+    void replace_with_created_curve(const Definition &definition);
     void commit_refinement(const Definition &definition);
     SingleStepHistory<Curve> history_;
     std::optional<Curve> pole_preview_;

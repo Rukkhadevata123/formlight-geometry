@@ -72,6 +72,60 @@ void check_custom_curve(const fs::path &path)
     }
 }
 
+void check_bezier_preset(const fs::path &path)
+{
+    EditableCurve curve;
+    if (!curve.interpolate_through_poles())
+    {
+        throw std::runtime_error("Could not prepare an interpolated curve for preset replacement");
+    }
+    const auto previous = curve.current();
+    if (!curve.create_cubic_bezier())
+    {
+        throw std::runtime_error("Could not create the cubic Bezier preset");
+    }
+    const auto bezier = curve.current();
+    const auto &definition = bezier.definition;
+    const std::vector<occt_lab::geometry::CurveKnot> knots{{0, 4}, {1, 4}};
+    if (definition.degree != 3 || definition.poles.size() != 4 || definition.weights != std::vector<double>(4, 1.0) ||
+        definition.knots != knots || !bezier.data_points.empty())
+    {
+        throw std::runtime_error("Expected a single cubic Bezier span with four unit weights and no fitting data");
+    }
+    // At u = 1/2 the cubic Bernstein coefficients are (1, 3, 3, 1) / 8.
+    const auto midpoint = bezier.samples[bezier.samples.size() / 2];
+    if (std::hypot(midpoint.x + 1.875, midpoint.y - 26.0, midpoint.z) > 1e-12)
+    {
+        throw std::runtime_error("The sampled Bezier arch has the wrong midpoint");
+    }
+    curve.undo();
+    if (curve.current() != previous)
+    {
+        throw std::runtime_error("Undoing preset creation lost the previous curve or its fitting data");
+    }
+    curve.redo();
+    if (curve.current() != bezier)
+    {
+        throw std::runtime_error("Redoing preset creation changed the Bezier curve");
+    }
+
+    auto edited = definition;
+    edited.weights[1] = 2.0;
+    if (!curve.apply(edited) || curve.current().unit_weight_samples != bezier.samples)
+    {
+        throw std::runtime_error("Editing a preset weight must retain the polynomial Bezier reference");
+    }
+    if (!save_curve_project(path, curve.current(), {}))
+    {
+        throw std::runtime_error("Could not save the edited Bezier preset");
+    }
+    const auto reopened = open_curve_project(path);
+    if (!reopened || reopened->curve != curve.current())
+    {
+        throw std::runtime_error("The weighted Bezier curve changed after reopening");
+    }
+}
+
 void check_invalid_file(const fs::path &path, const std::string &original, const std::string_view part,
                         const std::string_view replacement)
 {
@@ -92,6 +146,7 @@ void check_curve_projects()
 {
     const ProjectTestDirectory directory;
     check_custom_curve(directory.path / "custom.occtlab");
+    check_bezier_preset(directory.path / "bezier.occtlab");
     const auto path = directory.path / u8"曲线.occtlab";
     EditableCurve curve;
     auto definition = curve.current().definition;

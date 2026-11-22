@@ -63,7 +63,7 @@ void CurveEditor::draw(EditableCurve &curve)
     const auto *viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 16.0F, viewport->WorkPos.y + 16.0F},
                             ImGuiCond_FirstUseEver, {1.0F, 0.0F});
-    if (ImGui::Begin("B-spline control points", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("NURBS curve control points", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::BeginDisabled(tracking_pole_);
         draw_project(curve);

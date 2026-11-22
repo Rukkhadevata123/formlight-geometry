@@ -145,21 +145,43 @@ auto EditableCurve::create_line(const LineCurveParameters params) -> std::expect
             const double x = std::lerp(-length_mm / 2, length_mm / 2, static_cast<double>(i) / (count - 1));
             line.poles.push_back({.x = x, .y = 0, .z = 0});
         }
-        auto candidate = sample_curve(line);
-        if (candidate != current())
-        {
-            commit(std::move(candidate));
-        }
-        else
-        {
-            cancel_pole_move();
-        }
+        replace_with_created_curve(line);
         return {};
     }
     catch (const std::exception &error)
     {
         return std::unexpected(std::string{error.what()});
     }
+}
+
+auto EditableCurve::create_cubic_bezier() -> std::expected<void, std::string>
+{
+    constexpr std::array<occt_lab::geometry::Vec3, 4> poles{{
+        {.x = -45, .y = -12, .z = 0},
+        {.x = -20, .y = 42, .z = 0},
+        {.x = 15, .y = 34, .z = 0},
+        {.x = 45, .y = -8, .z = 0},
+    }};
+    try
+    {
+        replace_with_created_curve(occt_lab::geometry::make_uniform_cubic(poles));
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(std::string{error.what()});
+    }
+}
+
+void EditableCurve::replace_with_created_curve(const Definition &definition)
+{
+    auto candidate = sample_curve(definition);
+    if (candidate == current())
+    {
+        cancel_pole_move();
+        return;
+    }
+    commit(std::move(candidate));
 }
 
 std::expected<void, std::string> EditableCurve::apply(const Definition &definition)

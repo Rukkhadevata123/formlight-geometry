@@ -12,7 +12,7 @@ enum class PreviewMode
 {
     box,
     cylinder,
-    bspline,
+    nurbs_curve,
     nurbs_surface,
     compute_pyramid,
 };

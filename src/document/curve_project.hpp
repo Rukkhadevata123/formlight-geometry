@@ -11,7 +11,7 @@ namespace occt_lab::document
 struct CurveProjectSettings
 {
     int object_id = 1;
-    std::string name = "B-spline";
+    std::string name = "NURBS curve";
     int pole_number = 1;
     double knot_parameter = 0.5;
     double fit_tolerance = 1.0;
