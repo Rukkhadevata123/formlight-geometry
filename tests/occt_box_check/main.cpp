@@ -76,6 +76,10 @@ void check_mesh(const TopoDS_Shape &box, const double length, const double width
     {
         for (std::size_t axis = 0; axis < minimum.size(); ++axis)
         {
+            if (!std::isfinite(vertex.position[axis]))
+            {
+                throw std::runtime_error("Non-finite box mesh position");
+            }
             minimum[axis] = std::min(minimum[axis], vertex.position[axis]);
             maximum[axis] = std::max(maximum[axis], vertex.position[axis]);
         }
@@ -107,7 +111,7 @@ void check_mesh(const TopoDS_Shape &box, const double length, const double width
         {
             const auto a = position_at(triangle);
             const auto normal = gp_Vec{a, position_at(triangle + 1)}.Crossed(gp_Vec{a, position_at(triangle + 2)});
-            if (normal.Dot(gp_Vec{center, a}) <= 0.0)
+            if (!(normal.Dot(gp_Vec{center, a}) > 0.0))
             {
                 throw std::runtime_error("Box triangle winding must face outwards");
             }
@@ -115,7 +119,7 @@ void check_mesh(const TopoDS_Shape &box, const double length, const double width
             for (std::size_t corner = 0; corner < 3; ++corner)
             {
                 if (const auto &out = mesh.vertices.at(mesh.indices.at(triangle + corner)).normal;
-                    unit_normal.Dot(gp_Vec{out[0], out[1], out[2]}) < 1.0 - coordinate_tolerance)
+                    !(unit_normal.Dot(gp_Vec{out[0], out[1], out[2]}) >= 1.0 - coordinate_tolerance))
                 {
                     throw std::runtime_error("Box vertex normals must match the face normal");
                 }

@@ -174,8 +174,8 @@ void check_planar_creation()
             {
                 const auto index = static_cast<std::size_t>(v * u_count + u);
                 const auto &[x, y, z] = plane.poles.at(index);
-                if (std::abs(x - (-60 + 120.0 * u / (u_count - 1))) > 1e-10 ||
-                    std::abs(y - (-20 + 40.0 * v / (v_count - 1))) > 1e-10 || z != 0 || plane.weights.at(index) != 1)
+                if (!(std::abs(x - (-60 + 120.0 * u / (u_count - 1))) <= 1e-10) ||
+                    !(std::abs(y - (-20 + 40.0 * v / (v_count - 1))) <= 1e-10) || z != 0 || plane.weights.at(index) != 1)
                 {
                     throw std::runtime_error("Planar control net lost its spacing, row order or unit weights");
                 }

@@ -1,3 +1,4 @@
+#include "../support/near.hpp"
 #include "geometry/surfaces/bezier_patch.hpp"
 #include "geometry/surfaces/bspline_surface.hpp"
 #include "geometry/surfaces/occt_bezier_patch.hpp"
@@ -54,11 +55,7 @@ ControlNet raised_patch()
     return control_points;
 }
 
-bool near(const Vec3 &actual, const Vec3 &expected)
-{
-    constexpr double tolerance = 1e-12;
-    return std::hypot(actual.x - expected.x, actual.y - expected.y, actual.z - expected.z) <= tolerance;
-}
+using occt_lab::test::near;
 
 void check_samples(const CubicBezierPatch &patch, const OcctBezierPatch &reference)
 {

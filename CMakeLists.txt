@@ -192,6 +192,7 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/analytic_surface.hpp
         tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/control_net_creation_checks.cpp
+        tests/bspline_surface_check/evaluation_checks.cpp
         tests/bspline_surface_check/grid_checks.cpp
         tests/bspline_surface_check/gpu_input_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
@@ -208,8 +209,12 @@ if(BUILD_TESTING)
     )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
-        tests/bspline_curve_check/interpolation_creation_checks.cpp
+        tests/bspline_curve_check/creation_checks.cpp
+        tests/bspline_curve_check/editing_checks.cpp
+        tests/bspline_curve_check/fitting_checks.cpp
+        tests/bspline_curve_check/refinement_checks.cpp
         tests/bspline_curve_check/viewport_picking_checks.cpp
+        tests/support/near.hpp
         tests/support/project_test_directory.hpp
         src/application/editable_curve.cpp
         src/application/nurbs_curve_creation.cpp
