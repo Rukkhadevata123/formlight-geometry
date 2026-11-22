@@ -1,7 +1,5 @@
 #include "editable_curve.hpp"
 
-#include <Geom_BSplineCurve.hxx>
-
 #include <algorithm>
 #include <cmath>
 #include <exception>
@@ -36,11 +34,6 @@ double max_sample_deviation(const EditableCurve::Curve::Samples &before, const E
     return maximum;
 }
 } // namespace
-
-int LineCurveParameters::degree_limit(const int pole_count)
-{
-    return pole_count > 1 ? std::min(pole_count - 1, Geom_BSplineCurve::MaxDegree()) : 0;
-}
 
 EditableCurve::EditableCurve() : history_(sample_curve(occt_lab::geometry::make_uniform_cubic(initial_poles)))
 {
@@ -123,29 +116,9 @@ void EditableCurve::commit_refinement(const Definition &definition)
 
 auto EditableCurve::create_line(const LineCurveParameters params) -> std::expected<void, std::string>
 {
-    const auto [count, degree] = params;
-    if (count < LineCurveParameters::min_poles || count > LineCurveParameters::max_poles)
-    {
-        return std::unexpected("Control point count is outside the supported creation range.");
-    }
-    if (degree < 1 || degree > LineCurveParameters::degree_limit(count))
-    {
-        return std::unexpected("Choose a degree supported by OCCT and smaller than the control point count.");
-    }
-
     try
     {
-        constexpr double length_mm = 90.0;
-        Definition line{.degree = degree};
-        line.knots = occt_lab::geometry::make_uniform_clamped_knots(count, degree);
-        line.weights.assign(count, 1.0);
-        line.poles.reserve(count);
-        for (int i = 0; i < count; ++i)
-        {
-            const double x = std::lerp(-length_mm / 2, length_mm / 2, static_cast<double>(i) / (count - 1));
-            line.poles.push_back({.x = x, .y = 0, .z = 0});
-        }
-        replace_with_created_curve(line);
+        replace_with_created_curve(sample_curve(occt_lab::make_line_curve(params)));
         return {};
     }
     catch (const std::exception &error)
@@ -156,15 +129,9 @@ auto EditableCurve::create_line(const LineCurveParameters params) -> std::expect
 
 auto EditableCurve::create_cubic_bezier() -> std::expected<void, std::string>
 {
-    constexpr std::array<occt_lab::geometry::Vec3, 4> poles{{
-        {.x = -45, .y = -12, .z = 0},
-        {.x = -20, .y = 42, .z = 0},
-        {.x = 15, .y = 34, .z = 0},
-        {.x = 45, .y = -8, .z = 0},
-    }};
     try
     {
-        replace_with_created_curve(occt_lab::geometry::make_uniform_cubic(poles));
+        replace_with_created_curve(sample_curve(occt_lab::make_cubic_bezier_curve()));
         return {};
     }
     catch (const std::exception &error)
@@ -173,9 +140,8 @@ auto EditableCurve::create_cubic_bezier() -> std::expected<void, std::string>
     }
 }
 
-void EditableCurve::replace_with_created_curve(const Definition &definition)
+void EditableCurve::replace_with_created_curve(Curve candidate)
 {
-    auto candidate = sample_curve(definition);
     if (candidate == current())
     {
         cancel_pole_move();
@@ -229,9 +195,15 @@ std::expected<void, std::string> EditableCurve::elevate_degree(const int target_
 
 std::expected<void, std::string> EditableCurve::interpolate_through_poles()
 {
+    return create_interpolated_curve(current().definition.poles);
+}
+
+auto EditableCurve::create_interpolated_curve(const std::span<const occt_lab::geometry::Vec3> points)
+    -> std::expected<void, std::string>
+{
     try
     {
-        commit(occt_lab::geometry::interpolate_curve(current().definition.poles));
+        replace_with_created_curve(occt_lab::geometry::interpolate_curve(points));
         return {};
     }
     catch (const std::exception &error)

@@ -11,6 +11,7 @@
 #include <stdexcept>
 
 void check_curve_projects();
+void check_interpolated_curve_creation();
 
 namespace
 {
@@ -551,8 +552,9 @@ int main()
         check_off_grid_residual();
         check_approximation();
         check_curve_projects();
+        check_interpolated_curve_creation();
         std::println("B-spline geometry, custom curve creation, cubic Bezier preset, "
-                     "editing, history and project round trips verified");
+                     "XYZ interpolation, editing, history and project round trips verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

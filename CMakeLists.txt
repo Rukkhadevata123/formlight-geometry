@@ -47,6 +47,8 @@ add_executable(occt_lab
     src/application/bezier_patch_presets.hpp
     src/application/editable_curve.cpp
     src/application/editable_curve.hpp
+    src/application/nurbs_curve_creation.cpp
+    src/application/nurbs_curve_creation.hpp
     src/application/editable_nurbs_surface.cpp
     src/application/editable_nurbs_surface.hpp
     src/application/nurbs_surface_creation.cpp
@@ -204,8 +206,10 @@ if(BUILD_TESTING)
     )
     target_sources(bspline_curve_check PRIVATE
         tests/bspline_curve_check/curve_project_checks.cpp
+        tests/bspline_curve_check/interpolation_creation_checks.cpp
         tests/support/project_test_directory.hpp
         src/application/editable_curve.cpp
+        src/application/nurbs_curve_creation.cpp
         src/document/curve_project.cpp
         src/document/project_io.cpp
     )

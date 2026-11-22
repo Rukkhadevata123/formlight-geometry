@@ -1,20 +1,11 @@
 #pragma once
 
-#include "geometry/curves/bspline_curve.hpp"
+#include "nurbs_curve_creation.hpp"
 #include "single_step_history.hpp"
 
 #include <expected>
 #include <optional>
 #include <string>
-
-struct LineCurveParameters
-{
-    static constexpr int min_poles = 2;
-    static constexpr int max_poles = 64;
-    [[nodiscard]] static int degree_limit(int pole_count);
-    int pole_count = 6;
-    int degree = 3;
-};
 
 class EditableCurve
 {
@@ -41,6 +32,8 @@ class EditableCurve
     [[nodiscard]] auto interpolate_through_poles()               -> std::expected<void, std::string>;
     [[nodiscard]] auto approximate_data_points(double tolerance) -> std::expected<void, std::string>;
     // clang-format on
+    [[nodiscard]] auto create_interpolated_curve(std::span<const occt_lab::geometry::Vec3> points)
+        -> std::expected<void, std::string>;
 
     [[nodiscard]] bool history_changes_knots() const
     {
@@ -60,7 +53,7 @@ class EditableCurve
 
   private:
     void commit(Curve candidate);
-    void replace_with_created_curve(const Definition &definition);
+    void replace_with_created_curve(Curve candidate);
     void commit_refinement(const Definition &definition);
     SingleStepHistory<Curve> history_;
     std::optional<Curve> pole_preview_;

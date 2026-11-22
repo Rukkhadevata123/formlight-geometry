@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <limits>
 #include <stdexcept>
 
@@ -27,7 +28,7 @@ std::vector<CurveDataPoint> parameterize_by_chord_length(const std::span<const V
         const auto &[x, y, z] = point;
         if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
         {
-            throw std::invalid_argument("Data points must have finite coordinates");
+            throw std::invalid_argument(std::format("Point {} must have finite coordinates.", inputs.size() + 1));
         }
         if (!inputs.empty())
         {
@@ -35,7 +36,8 @@ std::vector<CurveDataPoint> parameterize_by_chord_length(const std::span<const V
             const double chord = std::hypot(x - last_x, y - last_y, z - last_z);
             if (chord <= Precision::Confusion())
             {
-                throw std::invalid_argument("Adjacent data points are coincident within OCCT tolerance");
+                throw std::invalid_argument(
+                    std::format("Points {} and {} coincide within OCCT tolerance.", inputs.size(), inputs.size() + 1));
             }
             length += chord;
         }

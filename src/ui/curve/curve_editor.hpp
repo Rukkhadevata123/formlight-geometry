@@ -33,6 +33,7 @@ class CurveEditor
     void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
     LineCurveParameters creation_parameters_;
+    std::vector<occt_lab::geometry::Vec3> creation_points_;
     int creation_preset_ = 0;
     std::string creation_error_;
     occt_lab::document::CurveProjectSettings settings_;
