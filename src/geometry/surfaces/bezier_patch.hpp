@@ -25,6 +25,7 @@ enum class PatchError
     DegenerateNormal,
     InvalidSampling,
     NonFiniteEvaluation,
+    NotPolynomialBicubic,
 };
 
 class CubicBezierPatch
@@ -49,4 +50,9 @@ class CubicBezierPatch
 
 [[nodiscard]] auto sample_patch_isolines(const CubicBezierPatch &patch, PatchSampling sampling = {})
     -> std::expected<PatchIsolines, PatchError>;
+
+struct BSplineSurfaceDefinition;
+// Evaluate a single polynomial bicubic span at parameters in its original knot domain.
+[[nodiscard]] auto evaluate_bernstein_reference(const BSplineSurfaceDefinition &definition, double u, double v)
+    -> std::expected<SurfaceSample, PatchError>;
 } // namespace occt_lab::geometry

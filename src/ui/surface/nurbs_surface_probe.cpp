@@ -1,4 +1,5 @@
 #include "nurbs_pole_inspector.hpp"
+#include "surface_sample_readout.hpp"
 
 #include <imgui.h>
 
@@ -9,12 +10,17 @@
 
 namespace
 {
-bool parameter_control(const char *label, double &value, const double low, const double high)
+bool supports_slider(const double low, const double high)
 {
     // ImGui's double slider requires both endpoints to lie within half the numeric range.
     constexpr double limit = std::numeric_limits<double>::max() / 2.0;
+    return low >= -limit && high <= limit;
+}
+
+bool parameter_control(const char *label, double &value, const double low, const double high)
+{
     double edited = value;
-    if (low >= -limit && high <= limit)
+    if (supports_slider(low, high))
     {
         ImGui::SliderScalar(label, ImGuiDataType_Double, &edited, &low, &high, "%.10g",
                             ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoRoundToFormat);
@@ -57,32 +63,39 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::update_probe(const E
         const bool v_changed = parameter_control("v", probe_v_, bounds.v_min, bounds.v_max);
         parameters_changed = u_changed || v_changed;
         ImGui::PopItemWidth();
+        if (supports_slider(bounds.u_min, bounds.u_max) || supports_slider(bounds.v_min, bounds.v_max))
+        {
+            ImGui::TextUnformatted(parameter_slider_hint);
+        }
     }
     if (surface_changed || parameters_changed)
     {
         probe_ = snapshot.surface->probe(probe_u_, probe_v_);
+        bernstein_sample_ = evaluate_bernstein_reference(snapshot.definition, probe_u_, probe_v_);
         probed_surface_ = snapshot.surface;
-    }
-    if (!probe_)
-    {
-        if (show_controls)
-        {
-            ImGui::TextWrapped("%s", probe_.error().c_str());
-        }
-        return nullptr;
     }
     if (show_controls)
     {
-        const auto &[x, y, z] = probe_->position;
-        ImGui::Text("Position (mm)   (%.8g, %.8g, %.8g)", x, y, z);
-        if (const auto &normal = probe_->normal)
+        ImGui::SeparatorText("OCCT reference");
+        if (!probe_)
         {
-            ImGui::Text("Unit normal   (%.8g, %.8g, %.8g)", normal->x, normal->y, normal->z);
+            ImGui::TextWrapped("%s", probe_.error().c_str());
+        }
+        else if (probe_->normal)
+        {
+            draw_surface_sample({probe_->position, *probe_->normal});
         }
         else
         {
-            ImGui::TextWrapped("Normal unavailable: %s", normal.error().c_str());
+            const auto &[x, y, z] = probe_->position;
+            ImGui::Text("Position (mm)   (%.8g, %.8g, %.8g)", x, y, z);
+            ImGui::TextWrapped("Normal unavailable: %s", probe_->normal.error().c_str());
+        }
+        draw_bernstein_sample(bernstein_sample_);
+        if (bernstein_sample_ && probe_ && probe_->normal)
+        {
+            draw_surface_difference(*bernstein_sample_, {probe_->position, *probe_->normal});
         }
     }
-    return &*probe_;
+    return probe_ ? &*probe_ : nullptr;
 }

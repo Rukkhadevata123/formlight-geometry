@@ -15,13 +15,6 @@ namespace
 static_assert(BSplCLib::MaxDegree() <= 25); // Matches the shader's basis array size.
 static_assert(sizeof(float) == 4);
 
-float unit_parameter(const double x, const double low, const double high)
-{
-    const double span = high - low;
-    const double unit = std::isfinite(span) ? (x - low) / span : (0.5 * x - 0.5 * low) / (0.5 * high - 0.5 * low);
-    return static_cast<float>(unit);
-}
-
 void append_axis(std::vector<float> &words, const geometry::BSplineSurfaceAxis &axis, const std::uint32_t segments)
 {
     const double low = axis.knots.front().value;
@@ -29,7 +22,7 @@ void append_axis(std::vector<float> &words, const geometry::BSplineSurfaceAxis &
     float previous = -1.0F;
     for (const auto &[value, multiplicity] : axis.knots)
     {
-        const float knot = unit_parameter(value, low, high);
+        const float knot = static_cast<float>(geometry::unit_parameter(value, low, high));
         if (knot - previous < std::numeric_limits<float>::min())
         {
             throw std::domain_error("Distinct surface knots are too close for GPU float precision.");
@@ -50,7 +43,7 @@ void append_axis(std::vector<float> &words, const geometry::BSplineSurfaceAxis &
         }
         const auto &knot = axis.knots[knot_index];
         const bool crease = knot_index != 0 && x == knot.value && knot.multiplicity == axis.degree;
-        words.push_back(unit_parameter(x, low, high));
+        words.push_back(static_cast<float>(geometry::unit_parameter(x, low, high)));
         words.push_back(std::bit_cast<float>((span << 1) | static_cast<std::uint32_t>(crease)));
     }
 }

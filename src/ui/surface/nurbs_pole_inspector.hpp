@@ -46,6 +46,7 @@ class NurbsPoleInspector
     double probe_u_ = 0.0;
     double probe_v_ = 0.0;
     std::expected<occt_lab::geometry::SurfaceProbe, std::string> probe_;
+    std::expected<occt_lab::geometry::SurfaceSample, occt_lab::geometry::PatchError> bernstein_sample_;
     occt_lab::PlanarSurfaceParameters creation_parameters_;
     int creation_preset_ = 0;
     std::string creation_error_;

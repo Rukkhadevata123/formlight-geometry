@@ -8,6 +8,13 @@
 
 namespace occt_lab::geometry
 {
+// Map a parameter inside a finite increasing knot interval to [0, 1].
+[[nodiscard]] inline double unit_parameter(const double value, const double low, const double high)
+{
+    const double span = high - low;
+    return std::isfinite(span) ? (value - low) / span : (0.5 * value - 0.5 * low) / (0.5 * high - 0.5 * low);
+}
+
 struct SurfaceDomain
 {
     double u_min, u_max;

@@ -233,7 +233,7 @@ int main()
                      "custom knots verified; NURBS project round trips verified; Bezier import verified; "
                      "NURBS resampling verified; NURBS probe verified; Bezier surface presets verified; "
                      "NURBS reference grid verified; NURBS GPU input verified; NURBS GPU normal comparison verified; "
-                     "NURBS mesh topology and framing verified");
+                     "NURBS mesh topology and framing verified; NURBS Bernstein probe verified");
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

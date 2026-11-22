@@ -1,6 +1,7 @@
 #include "application/bezier_patch_presets.hpp"
 #include "application/editable_nurbs_surface.hpp"
 #include "application/nurbs_surface_creation.hpp"
+#include "geometry/surfaces/occt_bezier_patch.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -10,6 +11,72 @@
 
 namespace
 {
+void check_bernstein_probe()
+{
+    using namespace occt_lab;
+    using namespace geometry;
+    auto definition = make_bezier_nurbs_surface(raised_bezier_net());
+    definition.u.knots = {{-4, 4}, {8, 4}};
+    definition.v.knots = {{2, 4}, {10, 4}};
+    std::ranges::fill(definition.weights, 7.0);
+    EditableNurbsSurface model{definition};
+    for (const auto [u, v] : {std::pair{-4., 2.}, std::pair{-1., 8.}, std::pair{8., 10.}})
+    {
+        const auto bernstein = evaluate_bernstein_reference(definition, u, v).value();
+        const auto probe = model.current().surface->probe(u, v).value();
+        const auto diff = compare_surface_samples(bernstein, {probe.position, probe.normal.value()});
+        if (!(diff.position_distance_mm < 1e-10 && diff.normal_angle_degrees < 1e-10))
+        {
+            throw std::runtime_error("Bernstein and OCCT disagree on the reparameterized bicubic patch");
+        }
+    }
+    auto sample = [](const EditableNurbsSurface &editor)
+    { return evaluate_bernstein_reference(editor.displayed().definition, -1, 8); };
+    const auto original = sample(model).value();
+    if (!(std::abs(original.position.z - 7.31689453125) <= 1e-10))
+    {
+        throw std::runtime_error("Bernstein probe used the wrong knot domain");
+    }
+    auto moved = definition.poles.at(5);
+    moved.z += 10;
+    model.preview_pole_move(5, moved).value();
+    if (!(sample(model).value().position.z > original.position.z))
+    {
+        throw std::runtime_error("Bernstein probe missed the displayed pole preview");
+    }
+    model.discard_preview();
+    auto weights = definition.weights;
+    weights.back() = std::nextafter(weights.back(), 8.0);
+    model.apply(definition.poles, weights).value();
+    if (sample(model) != std::unexpected(PatchError::NotPolynomialBicubic))
+    {
+        throw std::runtime_error("Bernstein probe accepted unequal weights");
+    }
+    model.undo();
+    if (sample(model).value().position != original.position)
+    {
+        throw std::runtime_error("Undo did not restore the polynomial Bernstein probe");
+    }
+    definition.weights.clear();
+    if (!evaluate_bernstein_reference(definition, -1, 8) ||
+        evaluate_bernstein_reference(definition, 9, 8) != std::unexpected(PatchError::ParameterOutOfRange))
+    {
+        throw std::runtime_error("Bernstein probe with implicit weights did not honor the knot bounds");
+    }
+    const auto multispan = make_planar_nurbs_surface({.u_poles = 5}).value();
+    if (evaluate_bernstein_reference(multispan, 0.5, 0.5) != std::unexpected(PatchError::NotPolynomialBicubic) ||
+        evaluate_bernstein_reference(make_saddle_surface(), 0.5, 0.5) !=
+            std::unexpected(PatchError::NotPolynomialBicubic))
+    {
+        throw std::runtime_error("Bernstein probe accepted multiple spans or a non-cubic degree");
+    }
+    std::ranges::fill(definition.poles, Vec3{});
+    if (evaluate_bernstein_reference(definition, -1, 8) != std::unexpected(PatchError::DegenerateNormal))
+    {
+        throw std::runtime_error("Bernstein probe accepted a collapsed patch normal");
+    }
+}
+
 void check_bezier_presets()
 {
     using namespace occt_lab;
@@ -140,6 +207,7 @@ void check_planar_creation()
 
 void check_nurbs_presets()
 {
+    check_bernstein_probe();
     check_bezier_presets();
     check_planar_creation();
     check_independent_degrees();

@@ -1,6 +1,7 @@
 #include "bezier_patch_inspector.hpp"
 #include "isoline_sampling.hpp"
 #include "surface_grid_controls.hpp"
+#include "surface_sample_readout.hpp"
 
 #include "application/editable_patch.hpp"
 #include "document/patch_project.hpp"
@@ -32,12 +33,6 @@ void draw_mesh_controls(PatchMeshControls &mesh, const bool show_report)
     }
 }
 
-void draw_surface_sample(const occt_lab::geometry::SurfaceSample &sample)
-{
-    const auto &[position, normal] = sample;
-    ImGui::Text("Position (mm)   (%.5f, %.5f, %.5f)", position.x, position.y, position.z);
-    ImGui::Text("Unit normal     (%.5f, %.5f, %.5f)", normal.x, normal.y, normal.z);
-}
 } // namespace
 
 BezierPatchInspector::BezierPatchInspector(EditablePatch &model) : model_(model), draft_(model.current().control_net())
@@ -278,28 +273,13 @@ void BezierPatchInspector::draw(PatchMeshControls &mesh, const bool compute_supp
         const bool v_changed = ImGui::SliderScalar("v", ImGuiDataType_Double, &v_, &min_parameter, &max_parameter,
                                                    "%.4f", ImGuiSliderFlags_AlwaysClamp);
         ImGui::PopItemWidth();
+        ImGui::TextUnformatted(parameter_slider_hint);
         if (u_changed || v_changed)
         {
             update_samples();
         }
 
-        ImGui::SeparatorText("Bernstein evaluation");
-        if (sample_)
-        {
-            draw_surface_sample(*sample_);
-        }
-        else if (sample_.error() == occt_lab::geometry::PatchError::DegenerateNormal)
-        {
-            ImGui::TextUnformatted("The surface normal is undefined at this parameter.");
-        }
-        else if (sample_.error() == occt_lab::geometry::PatchError::NonFiniteEvaluation)
-        {
-            ImGui::TextUnformatted("Bernstein evaluation exceeded the finite coordinate range.");
-        }
-        else
-        {
-            ImGui::TextUnformatted("Choose finite u and v values between 0 and 1.");
-        }
+        draw_bernstein_sample(sample_);
         draw_reference();
         draw_sampling_controls();
         if (compute_supported)
@@ -322,9 +302,7 @@ void BezierPatchInspector::draw_reference() const
     draw_surface_sample(*reference_sample_);
     if (sample_)
     {
-        const auto [distance_mm, angle_degrees] = compare_surface_samples(*sample_, *reference_sample_);
-        ImGui::Text("Position distance: %.3g mm", distance_mm);
-        ImGui::Text("Normal angle: %.3g deg", angle_degrees);
+        draw_surface_difference(*sample_, *reference_sample_);
     }
 }
 

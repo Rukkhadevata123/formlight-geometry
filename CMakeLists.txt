@@ -24,6 +24,7 @@ add_library(occt_lab_geometry STATIC
     src/geometry/curves/curve_fitting.cpp
     src/geometry/curves/occt_bspline.hpp
     src/geometry/surfaces/bezier_patch.cpp
+    src/geometry/surfaces/bernstein_reference.cpp
     src/geometry/surfaces/bezier_patch.hpp
     src/geometry/surfaces/bspline_surface.cpp
     src/geometry/surfaces/bspline_surface.hpp
@@ -128,6 +129,8 @@ add_executable(occt_lab
     src/ui/surface/nurbs_surface_session.hpp
     src/ui/surface/surface_grid_controls.cpp
     src/ui/surface/surface_grid_controls.hpp
+    src/ui/surface/surface_sample_readout.cpp
+    src/ui/surface/surface_sample_readout.hpp
 )
 target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
