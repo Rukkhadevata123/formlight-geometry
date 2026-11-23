@@ -585,6 +585,9 @@ public:
         case PreviewMode::cylinder:
             solid = PreviewShape::cylinder;
             break;
+        case PreviewMode::drilled_plate:
+            solid = PreviewShape::drilled_plate;
+            break;
         case PreviewMode::compute_pyramid:
             if (!pyramid_ && pyramid_controls_.error.empty())
             {

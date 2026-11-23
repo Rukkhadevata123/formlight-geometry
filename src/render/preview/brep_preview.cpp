@@ -1,6 +1,7 @@
 #include "brep_preview.hpp"
 
 #include "geometry/brep/brep_mesh.hpp"
+#include "geometry/brep/drilled_plate.hpp"
 #include "render/compute/nurbs_grid_input.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "render/viewport/brep_face_picking.hpp"
@@ -39,6 +40,15 @@ BRepMeshData make_cylinder_mesh()
     BRepPrimAPI_MakeCylinder cylinder{radius, height};
     constexpr gp_Pnt center{0.0, 0.0, 0.5 * height};
     return triangulate_brep(cylinder.Shape(), center, linear_deflection);
+}
+
+BRepMeshData make_drilled_plate_mesh()
+{
+    constexpr BoxDimensions dimensions{.length = 100.0, .width = 80.0, .height = 20.0};
+    constexpr double hole_radius = 20.0;
+    const auto plate = make_drilled_plate(dimensions, hole_radius);
+    constexpr gp_Pnt center{0.5 * dimensions.length, 0.5 * dimensions.width, 0.5 * dimensions.height};
+    return triangulate_brep(plate, center, linear_deflection);
 }
 
 vk::Format choose_depth_format(const vk::raii::PhysicalDevice &physical_device)
@@ -91,7 +101,7 @@ vk::RenderingAttachmentInfo PreviewDepthTarget::attachment() const
 BRepPreview::BRepPreview(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device)
     : device_(device), memory_properties_(physical_device.getMemoryProperties2().memoryProperties),
       depth_format_(choose_depth_format(physical_device)), box_(build_box(BoxDimensions{})),
-      cylinder_(upload_mesh(make_cylinder_mesh()))
+      cylinder_(upload_mesh(make_cylinder_mesh())), drilled_plate_(upload_mesh(make_drilled_plate_mesh()))
 {
     constexpr vk::PushConstantRange mesh_parameters{mesh_stages, 0, sizeof(ClipTransform) + sizeof(uint32_t)};
     vk::PipelineLayoutCreateInfo info;
@@ -184,7 +194,7 @@ void BRepPreview::redo_box()
 
 void BRepPreview::pick_face(const PreviewShape shape, const ClipTransform &transform, const double ndc_x, const double ndc_y)
 {
-    const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
+    const auto &mesh = mesh_for(shape);
     const auto face_index = pick_brep_face(mesh.cpu_mesh, transform, ndc_x, ndc_y);
     if (!face_index)
     {
@@ -192,6 +202,20 @@ void BRepPreview::pick_face(const PreviewShape shape, const ClipTransform &trans
         return;
     }
     selected_face_ = inspect_brep_face(mesh.cpu_mesh, *face_index);
+}
+
+auto BRepPreview::mesh_for(const PreviewShape shape) const -> const MeshBuffer &
+{
+    switch (shape)
+    {
+    case PreviewShape::box:
+        return box_->mesh;
+    case PreviewShape::cylinder:
+        return cylinder_;
+    case PreviewShape::drilled_plate:
+        return drilled_plate_;
+    }
+    throw std::logic_error("Unknown B-Rep preview shape");
 }
 
 auto BRepPreview::upload_mesh(BRepMeshData mesh) const -> MeshBuffer
@@ -358,7 +382,7 @@ void BRepPreview::draw_triangles(const vk::raii::CommandBuffer &commands, const 
 void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Extent2D extent, const PreviewShape shape,
                          const ClipTransform &transform) const
 {
-    const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
+    const auto &mesh = mesh_for(shape);
     bind_mesh_pipeline(commands, extent, transform, *mesh.buffer, *pipeline_);
     commands.bindIndexBuffer(*mesh.buffer, mesh.index_offset, vk::IndexType::eUint32);
     const auto count = static_cast<uint32_t>(mesh.cpu_mesh.indices.size());

@@ -29,6 +29,7 @@ enum class PreviewShape
 {
     box,
     cylinder,
+    drilled_plate,
 };
 
 enum class PreviewVertexLayout { mesh, nurbs_grid };
@@ -84,6 +85,7 @@ class BRepPreview
     // clang-format off
     [[nodiscard]] auto build_box(const BoxDimensions &dimensions) const -> std::unique_ptr<BoxPreview>;
     [[nodiscard]] auto upload_mesh(BRepMeshData mesh) const             -> MeshBuffer;
+    [[nodiscard]] auto mesh_for(PreviewShape shape) const              -> const MeshBuffer &;
     // clang-format on
 
     const vk::raii::Device &device_;
@@ -94,6 +96,7 @@ class BRepPreview
     std::unique_ptr<BoxPreview> undo_box_;
     std::unique_ptr<BoxPreview> redo_box_;
     MeshBuffer cylinder_;
+    MeshBuffer drilled_plate_;
     std::optional<BRepFaceProperties> selected_face_;
     vk::raii::PipelineLayout layout_{nullptr};
     vk::raii::Pipeline pipeline_{nullptr};
