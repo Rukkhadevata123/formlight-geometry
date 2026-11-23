@@ -6,6 +6,39 @@
 #include <imgui.h>
 #include <vulkan/vulkan_core.h>
 
+namespace
+{
+const char *surface_type_name(const GeomAbs_SurfaceType type)
+{
+    switch (type)
+    {
+    case GeomAbs_Plane:
+        return "Plane";
+    case GeomAbs_Cylinder:
+        return "Cylinder";
+    case GeomAbs_Cone:
+        return "Cone";
+    case GeomAbs_Sphere:
+        return "Sphere";
+    case GeomAbs_Torus:
+        return "Torus";
+    case GeomAbs_BezierSurface:
+        return "Bezier surface";
+    case GeomAbs_BSplineSurface:
+        return "B-spline surface";
+    case GeomAbs_SurfaceOfRevolution:
+        return "Surface of revolution";
+    case GeomAbs_SurfaceOfExtrusion:
+        return "Surface of extrusion";
+    case GeomAbs_OffsetSurface:
+        return "Offset surface";
+    case GeomAbs_OtherSurface:
+        return "Other surface";
+    }
+    return "Unknown surface";
+}
+} // namespace
+
 void draw_status_panel(const RendererStatus &status, PreviewMode &mode, ProjectionMode &projection, OrbitCamera &camera,
                        const bool moving_pole, PatchLayers &patch_layers, bool &show_diagnostics,
                        PyramidControls &pyramid, const bool picking_points)
@@ -39,7 +72,8 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         auto mode_index = static_cast<int>(mode);
         constexpr const char *shapes[] = {"Box", "Cylinder", "NURBS curve", "NURBS surface", "Compute pyramid"};
         const int shape_count = status.compute_supported ? IM_ARRAYSIZE(shapes) : IM_ARRAYSIZE(shapes) - 1;
-        if (ImGui::Combo("Shape", &mode_index, shapes, shape_count))
+        const bool shape_changed = ImGui::Combo("Shape", &mode_index, shapes, shape_count);
+        if (shape_changed)
         {
             mode = static_cast<PreviewMode>(mode_index);
         }
@@ -61,9 +95,12 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         if (mode == PreviewMode::box || mode == PreviewMode::cylinder)
         {
             ImGui::TextUnformatted("Left-click a face to select it");
-            if (status.selected_face)
+            if (status.selected_face && !shape_changed)
             {
-                ImGui::Text("Selected face: %zu", *status.selected_face + 1);
+                const auto &[face_index, surface_type, area_mm2] = *status.selected_face;
+                ImGui::Text("Selected face: %zu", face_index + 1);
+                ImGui::Text("Surface: %s", surface_type_name(surface_type));
+                ImGui::Text("Area: %.8g mm\u00b2", area_mm2);
             }
         }
         else if (mode == PreviewMode::nurbs_curve)

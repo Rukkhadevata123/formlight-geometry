@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geometry/brep/box_model.hpp"
+#include "geometry/brep/brep_face_properties.hpp"
 #include "geometry/brep/brep_mesh.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
@@ -50,7 +51,7 @@ class BRepPreview
     void redo_box();
     void pick_face(PreviewShape shape, const ClipTransform &transform, double ndc_x, double ndc_y);
     void clear_selection() { selected_face_.reset(); }
-    [[nodiscard]] std::optional<std::size_t> selected_face() const { return selected_face_; }
+    [[nodiscard]] std::optional<BRepFaceProperties> selected_face() const { return selected_face_; }
 
     void create_pipeline(vk::Format color_format);
     void record(const vk::raii::CommandBuffer &commands, vk::Extent2D extent, PreviewShape shape,
@@ -93,7 +94,7 @@ class BRepPreview
     std::unique_ptr<BoxPreview> undo_box_;
     std::unique_ptr<BoxPreview> redo_box_;
     MeshBuffer cylinder_;
-    std::optional<std::size_t> selected_face_;
+    std::optional<BRepFaceProperties> selected_face_;
     vk::raii::PipelineLayout layout_{nullptr};
     vk::raii::Pipeline pipeline_{nullptr};
     vk::raii::Pipeline nurbs_pipeline_{nullptr};

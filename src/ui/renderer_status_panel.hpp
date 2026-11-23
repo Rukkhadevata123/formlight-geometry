@@ -1,5 +1,7 @@
 #pragma once
 
+#include "geometry/brep/brep_face_properties.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -34,7 +36,7 @@ struct RendererStatus
     std::uint32_t width;
     std::uint32_t height;
     std::size_t image_count;
-    std::optional<std::size_t> selected_face;
+    std::optional<BRepFaceProperties> selected_face;
 };
 
 void draw_status_panel(const RendererStatus &status, PreviewMode &mode, ProjectionMode &projection, OrbitCamera &camera,

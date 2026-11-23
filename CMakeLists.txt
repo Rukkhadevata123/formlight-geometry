@@ -17,6 +17,8 @@ add_library(occt_lab_geometry STATIC
     src/geometry/occt_bspline_knots.hpp
     src/geometry/brep/box_model.cpp
     src/geometry/brep/box_model.hpp
+    src/geometry/brep/brep_face_properties.cpp
+    src/geometry/brep/brep_face_properties.hpp
     src/geometry/brep/brep_mesh.cpp
     src/geometry/brep/brep_mesh.hpp
     src/geometry/curves/bspline_curve.cpp

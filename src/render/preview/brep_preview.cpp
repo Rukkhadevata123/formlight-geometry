@@ -185,7 +185,13 @@ void BRepPreview::redo_box()
 void BRepPreview::pick_face(const PreviewShape shape, const ClipTransform &transform, const double ndc_x, const double ndc_y)
 {
     const auto &mesh = shape == PreviewShape::box ? box_->mesh : cylinder_;
-    selected_face_ = pick_brep_face(mesh.cpu_mesh, transform, ndc_x, ndc_y);
+    const auto face_index = pick_brep_face(mesh.cpu_mesh, transform, ndc_x, ndc_y);
+    if (!face_index)
+    {
+        clear_selection();
+        return;
+    }
+    selected_face_ = inspect_brep_face(mesh.cpu_mesh, *face_index);
 }
 
 auto BRepPreview::upload_mesh(BRepMeshData mesh) const -> MeshBuffer
@@ -361,7 +367,7 @@ void BRepPreview::record(const vk::raii::CommandBuffer &commands, const vk::Exte
         commands.drawIndexed(count, 1, 0, 0, 0);
         return;
     }
-    const auto &face = mesh.cpu_mesh.faces.at(*selected_face_);
+    const auto &face = mesh.cpu_mesh.faces.at(selected_face_->face_index);
     // Each triangle is drawn once, with the normal depth test for all three ranges.
     if (face.first_index > 0)
     {

@@ -1,4 +1,5 @@
 #include "geometry/brep/box_model.hpp"
+#include "geometry/brep/brep_face_properties.hpp"
 #include "geometry/brep/brep_mesh.hpp"
 
 #include <BRepGProp.hxx>
@@ -108,6 +109,21 @@ void check_mesh(const TopoDS_Shape &box, const double length, const double width
         {
             throw std::runtime_error("Expected two triangles in each box face's index range");
         }
+
+        const auto [index, surface_type, area_mm2] = inspect_brep_face(mesh, face_number);
+        if (index != face_number || surface_type != GeomAbs_Plane)
+        {
+            throw std::runtime_error(std::format("Expected a planar box face at index {}", face_number));
+        }
+        const auto &[nx, ny, nz] = mesh.vertices.at(mesh.indices.at(first)).normal;
+        const double expected_area =
+            std::abs(nx) * width * height + std::abs(ny) * length * height + std::abs(nz) * length * width;
+        if (!(std::abs(area_mm2 - expected_area) <= expected_area * 1e-10))
+        {
+            throw std::runtime_error(std::format("Box face {}: expected area {} mm^2, got {} mm^2", face_number + 1,
+                                                 expected_area, area_mm2));
+        }
+
         for (std::size_t triangle = first; triangle < first + count; triangle += 3)
         {
             const auto a = position_at(triangle);

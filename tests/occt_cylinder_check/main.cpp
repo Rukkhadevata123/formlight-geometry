@@ -1,3 +1,4 @@
+#include "geometry/brep/brep_face_properties.hpp"
 #include "geometry/brep/brep_mesh.hpp"
 #include "render/viewport/brep_face_picking.hpp"
 #include "render/viewport/clip_transform.hpp"
@@ -11,6 +12,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <exception>
+#include <format>
+#include <numbers>
 #include <print>
 #include <span>
 #include <stdexcept>
@@ -90,8 +93,9 @@ void check_cylinder_normals()
     }
 
     int side_faces = 0;
-    for (const auto &face : mesh.faces)
+    for (std::size_t face_index = 0; face_index < mesh.faces.size(); ++face_index)
     {
+        const auto &face = mesh.faces[face_index];
         const auto first_index = face.first_index, index_count = face.index_count;
         if (first_index > mesh.indices.size() || index_count == 0 || index_count > mesh.indices.size() - first_index)
         {
@@ -105,6 +109,21 @@ void check_cylinder_normals()
         if (!is_cap)
         {
             ++side_faces;
+        }
+
+        const auto [inspected_index, surface_type, area_mm2] = inspect_brep_face(mesh, face_index);
+        const auto expected_type = is_cap ? GeomAbs_Plane : GeomAbs_Cylinder;
+        if (inspected_index != face_index || surface_type != expected_type)
+        {
+            throw std::runtime_error(std::format("Expected a {} at cylinder face index {}",
+                                                 is_cap ? "plane" : "cylindrical surface", face_index));
+        }
+        const double expected_area =
+            is_cap ? std::numbers::pi * radius * radius : 2.0 * std::numbers::pi * radius * (2.0 * half_height);
+        if (!(std::abs(area_mm2 - expected_area) <= expected_area * 1e-10))
+        {
+            throw std::runtime_error(std::format("Cylinder {} face {}: expected area {} mm^2, got {} mm^2",
+                                                 is_cap ? "cap" : "side", face_index + 1, expected_area, area_mm2));
         }
 
         // The radial check also covers the duplicated vertices along the periodic seam.
