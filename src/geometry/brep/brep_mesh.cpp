@@ -152,7 +152,7 @@ BRepMeshData triangulate_brep(const TopoDS_Shape &shape, const gp_Pnt &origin, c
         throw std::runtime_error(std::format("OCCT B-Rep meshing failed (status 0x{:x})", status));
     }
 
-    BRepMeshData mesh;
+    BRepMeshData mesh{.source_shape = shape};
     for (TopExp_Explorer faces{shape, TopAbs_FACE}; faces.More(); faces.Next())
     {
         try

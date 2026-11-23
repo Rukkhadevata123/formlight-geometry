@@ -10,6 +10,7 @@
 #include "ui/curve/curve_editor.hpp"
 #include "ui/developer_diagnostics.hpp"
 #include "ui/imgui_session.hpp"
+#include "ui/plate_step_panel.hpp"
 #include "ui/renderer_status_panel.hpp"
 #include "ui/surface/nurbs_surface_session.hpp"
 
@@ -552,6 +553,7 @@ public:
         if (preview_mode_ != previous_mode)
         {
             preview_.clear_selection();
+            plate_step_.status.clear();
         }
         if (preview_mode_ != PreviewMode::nurbs_curve)
         {
@@ -586,10 +588,10 @@ public:
             solid = PreviewShape::cylinder;
             break;
         case PreviewMode::plate_with_hole_cut:
-            solid = PreviewShape::plate_with_hole_cut;
-            break;
         case PreviewMode::plate_with_hole_extrusion:
-            solid = PreviewShape::plate_with_hole_extrusion;
+            solid = preview_mode_ == PreviewMode::plate_with_hole_cut ? PreviewShape::plate_with_hole_cut
+                                                                      : PreviewShape::plate_with_hole_extrusion;
+            plate_step_.draw(preview_.source_solid(*solid));
             break;
         case PreviewMode::compute_pyramid:
             if (!pyramid_ && pyramid_controls_.error.empty())
@@ -880,6 +882,7 @@ private:
     std::optional<ComputePyramid> pyramid_;
     PyramidControls pyramid_controls_;
     BoxEditor box_editor_{preview_.box_dimensions()};
+    PlateStepPanel plate_step_;
     EditableCurve curve_;
     CurveEditor curve_editor_{curve_};
     PatchLayers patch_layers_;

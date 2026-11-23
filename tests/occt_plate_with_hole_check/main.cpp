@@ -1,3 +1,5 @@
+#include "../support/project_test_directory.hpp"
+#include "document/plate_step.hpp"
 #include "geometry/brep/brep_face_properties.hpp"
 #include "geometry/brep/brep_mesh.hpp"
 #include "geometry/brep/plate_with_hole.hpp"
@@ -13,6 +15,7 @@
 #include <cstdlib>
 #include <exception>
 #include <format>
+#include <fstream>
 #include <numbers>
 #include <print>
 #include <stdexcept>
@@ -82,11 +85,49 @@ double check_face_picking(const TopoDS_Solid &plate)
     return properties.area_mm2;
 }
 
-void check_plate(const char *method, const TopoDS_Solid &plate)
+void check_plate(const char *method, const TopoDS_Solid &plate, const std::filesystem::path &file)
 {
     const double volume = check_solid(plate);
     const double wall_area = check_face_picking(plate);
     std::println("{}: volume {:.6f} mm^3, selected hole wall {:.6f} mm^2", method, volume, wall_area);
+
+    occt_lab::document::write_plate_step(file, plate);
+    const auto imported = occt_lab::document::read_step_solid(file);
+    const auto measures = occt_lab::document::verify_plate_step(plate, imported);
+    check_solid(imported);
+    check_face_picking(imported);
+    std::println("{} STEP: volume {:.6f} mm^3, cylindrical wall {:.6f} mm^2", method, measures.volume_mm3,
+                 measures.hole_wall_area_mm2);
+}
+
+void check_step_failures(const std::filesystem::path &file)
+{
+    const auto imported = occt_lab::document::read_step_solid(file);
+    const auto smaller_hole = cut_plate_with_hole(dimensions, 0.5 * radius);
+    bool mismatch_detected = false;
+    try
+    {
+        (void)occt_lab::document::verify_plate_step(smaller_hole, imported);
+    }
+    catch (const std::runtime_error &)
+    {
+        mismatch_detected = true;
+    }
+    if (!mismatch_detected)
+    {
+        throw std::runtime_error("STEP verification accepted a different hole radius");
+    }
+
+    std::ofstream(file) << "invalid STEP";
+    try
+    {
+        (void)occt_lab::document::read_step_solid(file);
+    }
+    catch (const std::runtime_error &)
+    {
+        return;
+    }
+    throw std::runtime_error("STEP reader accepted a malformed file");
 }
 } // namespace
 
@@ -94,8 +135,11 @@ int main()
 {
     try
     {
-        check_plate("Boolean cut", cut_plate_with_hole(dimensions, radius));
-        check_plate("Profile extrusion", extrude_plate_with_hole(dimensions, radius));
+        const ProjectTestDirectory directory;
+        const auto file = directory.path / u8"带孔板.step";
+        check_plate("Boolean cut", cut_plate_with_hole(dimensions, radius), file);
+        check_plate("Profile extrusion", extrude_plate_with_hole(dimensions, radius), file);
+        check_step_failures(file);
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)

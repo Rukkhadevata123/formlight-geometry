@@ -1,12 +1,12 @@
 #pragma once
 
 #include <TopoDS_Face.hxx>
+#include <TopoDS_Shape.hxx>
 
 #include <array>
 #include <cstdint>
 #include <vector>
 
-class TopoDS_Shape;
 class gp_Pnt;
 
 struct MeshVertex
@@ -24,6 +24,7 @@ struct FaceIndexRange
 
 struct BRepMeshData
 {
+    TopoDS_Shape source_shape;
     std::vector<MeshVertex> vertices;
     std::vector<std::uint32_t> indices;
     // Face ranges follow the traversal order of the source shape.

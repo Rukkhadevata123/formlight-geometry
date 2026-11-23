@@ -4,6 +4,7 @@
 #include "geometry/brep/brep_face_properties.hpp"
 #include "geometry/brep/brep_mesh.hpp"
 
+#include <TopoDS_Solid.hxx>
 #include <vulkan/vulkan_raii.hpp>
 
 #include <expected>
@@ -43,6 +44,7 @@ class BRepPreview
     [[nodiscard]] vk::Format depth_format() const;
     [[nodiscard]] PreviewDepthTarget create_depth_target(vk::Extent2D extent) const;
     [[nodiscard]] BoxDimensions box_dimensions() const;
+    [[nodiscard]] const TopoDS_Solid &source_solid(PreviewShape shape) const;
     [[nodiscard]] double view_scale(PreviewShape shape) const;
     [[nodiscard]] bool can_undo_box() const;
     [[nodiscard]] bool can_redo_box() const;

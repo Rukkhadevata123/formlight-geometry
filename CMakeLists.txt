@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.23)
 project(occt_lab LANGUAGES C CXX)
 
-find_package(OpenCASCADE CONFIG REQUIRED COMPONENTS FoundationClasses ModelingData ModelingAlgorithms)
-find_package(SDL3 CONFIG REQUIRED)
+find_package(OpenCASCADE 8.0.1 CONFIG REQUIRED COMPONENTS
+    FoundationClasses ModelingData ModelingAlgorithms Visualization ApplicationFramework DataExchange)
+find_package(SDL3 3.4.20 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(slang CONFIG REQUIRED)
+find_package(Vulkan 1.4.363 REQUIRED)
+find_package(slang 2026.22 CONFIG REQUIRED)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -62,6 +63,7 @@ add_executable(occt_lab
     src/document/curve_project.hpp
     src/document/nurbs_surface_project.cpp
     src/document/nurbs_surface_project.hpp
+    src/document/plate_step.cpp
     src/document/project_io.cpp
     src/document/project_io.hpp
     src/vulkan_window.cpp
@@ -112,6 +114,7 @@ add_executable(occt_lab
     src/ui/imgui_session.cpp
     src/ui/imgui_session.hpp
     src/ui/pole_drag.hpp
+    src/ui/plate_step_panel.cpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp
@@ -131,7 +134,7 @@ add_executable(occt_lab
     src/ui/surface/surface_sample_readout.cpp
     src/ui/surface/surface_sample_readout.hpp
 )
-target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
+target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
 
 set(triangle_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.slang")
@@ -193,7 +196,12 @@ if(BUILD_TESTING)
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_sources(occt_cylinder_check PRIVATE src/render/viewport/brep_face_picking.cpp)
-    target_sources(occt_plate_with_hole_check PRIVATE src/render/viewport/brep_face_picking.cpp)
+    target_link_libraries(occt_plate_with_hole_check PRIVATE TKDESTEP TKXSBase)
+    target_sources(occt_plate_with_hole_check PRIVATE
+        src/render/viewport/brep_face_picking.cpp
+        src/document/plate_step.cpp
+        src/document/project_io.cpp
+    )
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp

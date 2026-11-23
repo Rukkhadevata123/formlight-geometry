@@ -8,6 +8,7 @@
 #include "render/vulkan_resources.hpp"
 
 #include <BRepPrimAPI_MakeCylinder.hxx>
+#include <TopoDS.hxx>
 #include <gp_Pnt.hxx>
 
 #include <algorithm>
@@ -132,6 +133,11 @@ auto BRepPreview::build_box(const BoxDimensions &dimensions) const -> std::uniqu
 BoxDimensions BRepPreview::box_dimensions() const
 {
     return box_->model.dimensions;
+}
+
+const TopoDS_Solid &BRepPreview::source_solid(const PreviewShape shape) const
+{
+    return TopoDS::Solid(mesh_for(shape).cpu_mesh.source_shape);
 }
 
 double BRepPreview::view_scale(const PreviewShape shape) const
