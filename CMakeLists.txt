@@ -17,8 +17,8 @@ add_library(occt_lab_geometry STATIC
     src/geometry/occt_bspline_knots.hpp
     src/geometry/brep/box_model.cpp
     src/geometry/brep/box_model.hpp
-    src/geometry/brep/drilled_plate.cpp
-    src/geometry/brep/drilled_plate.hpp
+    src/geometry/brep/plate_with_hole.cpp
+    src/geometry/brep/plate_with_hole.hpp
     src/geometry/brep/brep_face_properties.cpp
     src/geometry/brep/brep_face_properties.hpp
     src/geometry/brep/brep_mesh.cpp
@@ -185,7 +185,7 @@ add_dependencies(occt_lab occt_lab_shaders)
 
 include(CTest)
 if(BUILD_TESTING)
-    foreach(check IN ITEMS occt_box_check occt_cylinder_check occt_drilled_plate_check bezier_patch_check bspline_curve_check bspline_surface_check)
+    foreach(check IN ITEMS occt_box_check occt_cylinder_check occt_plate_with_hole_check bezier_patch_check bspline_curve_check bspline_surface_check)
         add_executable(${check} tests/${check}/main.cpp)
         target_link_libraries(${check} PRIVATE occt_lab_geometry)
         add_test(NAME ${check} COMMAND ${check})
@@ -193,7 +193,7 @@ if(BUILD_TESTING)
     target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
     target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
     target_sources(occt_cylinder_check PRIVATE src/render/viewport/brep_face_picking.cpp)
-    target_sources(occt_drilled_plate_check PRIVATE src/render/viewport/brep_face_picking.cpp)
+    target_sources(occt_plate_with_hole_check PRIVATE src/render/viewport/brep_face_picking.cpp)
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp

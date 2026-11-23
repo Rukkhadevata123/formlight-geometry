@@ -68,10 +68,12 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         ImGui::SeparatorText("Preview");
         ImGui::BeginDisabled(moving_pole);
         const float combo_width = 9.0F * ImGui::GetFontSize();
-        ImGui::SetNextItemWidth(combo_width);
         auto mode_index = static_cast<int>(mode);
-        constexpr const char *shapes[] = {"Box", "Cylinder", "Drilled plate", "NURBS curve", "NURBS surface",
-                                          "Compute pyramid"};
+        constexpr const char *shapes[] = {"Box", "Cylinder", "Plate with hole (cut)", "Plate with hole (extrusion)",
+                                          "NURBS curve", "NURBS surface", "Compute pyramid"};
+        constexpr auto longest_label = shapes[static_cast<int>(PreviewMode::plate_with_hole_extrusion)];
+        ImGui::SetNextItemWidth(ImGui::CalcTextSize(longest_label).x + ImGui::GetFrameHeight() +
+                                2.0F * ImGui::GetStyle().FramePadding.x);
         const int shape_count = status.compute_supported ? IM_ARRAYSIZE(shapes) : IM_ARRAYSIZE(shapes) - 1;
         const bool shape_changed = ImGui::Combo("Shape", &mode_index, shapes, shape_count);
         if (shape_changed)
@@ -93,7 +95,8 @@ void draw_status_panel(const RendererStatus &status, PreviewMode &mode, Projecti
         ImGui::EndDisabled();
         ImGui::TextUnformatted("Middle-drag to orbit, Shift + middle-drag to pan");
         ImGui::TextUnformatted("Mouse wheel to zoom");
-        if (mode == PreviewMode::box || mode == PreviewMode::cylinder || mode == PreviewMode::drilled_plate)
+        if (mode == PreviewMode::box || mode == PreviewMode::cylinder || mode == PreviewMode::plate_with_hole_cut ||
+            mode == PreviewMode::plate_with_hole_extrusion)
         {
             ImGui::TextUnformatted("Left-click a face to select it");
             if (status.selected_face && !shape_changed)

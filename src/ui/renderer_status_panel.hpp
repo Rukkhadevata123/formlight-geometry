@@ -15,7 +15,8 @@ enum class PreviewMode
 {
     box,
     cylinder,
-    drilled_plate,
+    plate_with_hole_cut,
+    plate_with_hole_extrusion,
     nurbs_curve,
     nurbs_surface,
     compute_pyramid,

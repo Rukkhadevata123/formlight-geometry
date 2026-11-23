@@ -1,7 +1,7 @@
 #include "brep_preview.hpp"
 
 #include "geometry/brep/brep_mesh.hpp"
-#include "geometry/brep/drilled_plate.hpp"
+#include "geometry/brep/plate_with_hole.hpp"
 #include "render/compute/nurbs_grid_input.hpp"
 #include "render/viewport/orbit_camera.hpp"
 #include "render/viewport/brep_face_picking.hpp"
@@ -28,6 +28,8 @@ using occt_lab::render::load_shader;
 constexpr vk::ImageSubresourceRange depth_range{vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1};
 constexpr auto depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 constexpr double linear_deflection = 0.1;
+constexpr BoxDimensions plate_dimensions{.length = 100.0, .width = 80.0, .height = 20.0};
+constexpr double plate_hole_radius = 20.0;
 constexpr auto mesh_stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
 static_assert(sizeof(ClipTransform) == 64 && offsetof(ClipTransform, w) == 48);
@@ -42,12 +44,9 @@ BRepMeshData make_cylinder_mesh()
     return triangulate_brep(cylinder.Shape(), center, linear_deflection);
 }
 
-BRepMeshData make_drilled_plate_mesh()
+BRepMeshData make_plate_mesh(const TopoDS_Solid &plate)
 {
-    constexpr BoxDimensions dimensions{.length = 100.0, .width = 80.0, .height = 20.0};
-    constexpr double hole_radius = 20.0;
-    const auto plate = make_drilled_plate(dimensions, hole_radius);
-    constexpr gp_Pnt center{0.5 * dimensions.length, 0.5 * dimensions.width, 0.5 * dimensions.height};
+    constexpr gp_Pnt center{0.5 * plate_dimensions.length, 0.5 * plate_dimensions.width, 0.5 * plate_dimensions.height};
     return triangulate_brep(plate, center, linear_deflection);
 }
 
@@ -101,7 +100,9 @@ vk::RenderingAttachmentInfo PreviewDepthTarget::attachment() const
 BRepPreview::BRepPreview(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device)
     : device_(device), memory_properties_(physical_device.getMemoryProperties2().memoryProperties),
       depth_format_(choose_depth_format(physical_device)), box_(build_box(BoxDimensions{})),
-      cylinder_(upload_mesh(make_cylinder_mesh())), drilled_plate_(upload_mesh(make_drilled_plate_mesh()))
+      cylinder_(upload_mesh(make_cylinder_mesh())),
+      plate_with_hole_cut_(upload_mesh(make_plate_mesh(cut_plate_with_hole(plate_dimensions, plate_hole_radius)))),
+      plate_with_hole_extrusion_(upload_mesh(make_plate_mesh(extrude_plate_with_hole(plate_dimensions, plate_hole_radius))))
 {
     constexpr vk::PushConstantRange mesh_parameters{mesh_stages, 0, sizeof(ClipTransform) + sizeof(uint32_t)};
     vk::PipelineLayoutCreateInfo info;
@@ -212,8 +213,10 @@ auto BRepPreview::mesh_for(const PreviewShape shape) const -> const MeshBuffer &
         return box_->mesh;
     case PreviewShape::cylinder:
         return cylinder_;
-    case PreviewShape::drilled_plate:
-        return drilled_plate_;
+    case PreviewShape::plate_with_hole_cut:
+        return plate_with_hole_cut_;
+    case PreviewShape::plate_with_hole_extrusion:
+        return plate_with_hole_extrusion_;
     }
     throw std::logic_error("Unknown B-Rep preview shape");
 }

@@ -29,7 +29,8 @@ enum class PreviewShape
 {
     box,
     cylinder,
-    drilled_plate,
+    plate_with_hole_cut,
+    plate_with_hole_extrusion,
 };
 
 enum class PreviewVertexLayout { mesh, nurbs_grid };
@@ -96,7 +97,8 @@ class BRepPreview
     std::unique_ptr<BoxPreview> undo_box_;
     std::unique_ptr<BoxPreview> redo_box_;
     MeshBuffer cylinder_;
-    MeshBuffer drilled_plate_;
+    MeshBuffer plate_with_hole_cut_;
+    MeshBuffer plate_with_hole_extrusion_;
     std::optional<BRepFaceProperties> selected_face_;
     vk::raii::PipelineLayout layout_{nullptr};
     vk::raii::Pipeline pipeline_{nullptr};

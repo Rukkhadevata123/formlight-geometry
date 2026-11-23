@@ -8,6 +8,7 @@ struct BoxDimensions
     double width = 80.0;
     double height = 20.0;
 
+    void validate() const;
     bool operator==(const BoxDimensions &) const = default;
 };
 

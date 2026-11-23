@@ -1,6 +1,6 @@
 #include "geometry/brep/brep_face_properties.hpp"
 #include "geometry/brep/brep_mesh.hpp"
-#include "geometry/brep/drilled_plate.hpp"
+#include "geometry/brep/plate_with_hole.hpp"
 #include "render/viewport/brep_face_picking.hpp"
 #include "render/viewport/clip_transform.hpp"
 
@@ -22,11 +22,11 @@ namespace
 constexpr BoxDimensions dimensions{.length = 100.0, .width = 80.0, .height = 20.0};
 constexpr double radius = 20.0;
 
-void check_solid(const TopoDS_Solid &plate)
+double check_solid(const TopoDS_Solid &plate)
 {
     if (plate.IsNull() || !BRepCheck_Analyzer{plate}.IsValid())
     {
-        throw std::runtime_error("The drilled plate must be a valid OCCT solid");
+        throw std::runtime_error("The plate with a hole must be a valid OCCT solid");
     }
 
     GProp_GProps properties;
@@ -37,9 +37,15 @@ void check_solid(const TopoDS_Solid &plate)
     {
         throw std::runtime_error(std::format("Expected plate volume {} mm^3, got {}", expected, properties.Mass()));
     }
+    const gp_Pnt expected_center{0.5 * dimensions.length, 0.5 * dimensions.width, 0.5 * dimensions.height};
+    if (!(properties.CentreOfMass().Distance(expected_center) <= 1e-8))
+    {
+        throw std::runtime_error("Plate center of mass must be halfway between the base and top faces");
+    }
+    return properties.Mass();
 }
 
-void check_face_picking(const TopoDS_Solid &plate)
+double check_face_picking(const TopoDS_Solid &plate)
 {
     const gp_Pnt center{0.5 * dimensions.length, 0.5 * dimensions.width, 0.5 * dimensions.height};
     const auto mesh = triangulate_brep(plate, center, 0.1);
@@ -73,6 +79,14 @@ void check_face_picking(const TopoDS_Solid &plate)
     {
         throw std::runtime_error("The selected face must cover the whole cylindrical hole wall");
     }
+    return properties.area_mm2;
+}
+
+void check_plate(const char *method, const TopoDS_Solid &plate)
+{
+    const double volume = check_solid(plate);
+    const double wall_area = check_face_picking(plate);
+    std::println("{}: volume {:.6f} mm^3, selected hole wall {:.6f} mm^2", method, volume, wall_area);
 }
 } // namespace
 
@@ -80,15 +94,13 @@ int main()
 {
     try
     {
-        const auto plate = make_drilled_plate(dimensions, radius);
-        check_solid(plate);
-        check_face_picking(plate);
-        std::println("Drilled plate validity, volume and hole picking verified");
+        check_plate("Boolean cut", cut_plate_with_hole(dimensions, radius));
+        check_plate("Profile extrusion", extrude_plate_with_hole(dimensions, radius));
         return EXIT_SUCCESS;
     }
     catch (const std::exception &error)
     {
-        std::println(stderr, "occt_drilled_plate_check: {}", error.what());
+        std::println(stderr, "occt_plate_with_hole_check: {}", error.what());
         return EXIT_FAILURE;
     }
 }

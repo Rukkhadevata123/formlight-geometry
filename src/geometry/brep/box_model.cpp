@@ -20,14 +20,17 @@ void validate_dimension(const double dimension, const std::string_view name)
 }
 } // namespace
 
-BoxModel make_box(const BoxDimensions &dimensions)
+void BoxDimensions::validate() const
 {
-    const auto [length, width, height] = dimensions;
     validate_dimension(length, "Length");
     validate_dimension(width, "Width");
     validate_dimension(height, "Height");
+}
 
-    BRepPrimAPI_MakeBox builder{length, width, height};
+BoxModel make_box(const BoxDimensions &dimensions)
+{
+    dimensions.validate();
+    BRepPrimAPI_MakeBox builder{dimensions.length, dimensions.width, dimensions.height};
     builder.Build();
     if (!builder.IsDone())
     {
