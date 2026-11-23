@@ -1,9 +1,12 @@
 {
   "name": "occt-lab",
   "version-string": "0.1.0",
-  "builtin-baseline": "4702e381dbbd9b54d3f7e1eb565cd8981c1814cd",
+  "builtin-baseline": "277978ad2eddc3b05ecf288dcd33071968cd2f79",
   "dependencies": [
-    "opencascade",
+    {
+      "name": "opencascade",
+      "default-features": false
+    },
     {
       "name": "sdl3",
       "features": ["vulkan"]

@@ -21,7 +21,7 @@ occt-lab 是一个用 C++23 编写的交互式计算机辅助几何设计（CAGD
 
 ## 构建与测试
 
-当前预设面向 Windows x64，使用 Visual Studio Build Tools、clang-cl、Ninja 和 vcpkg。运行需要支持 Vulkan 1.3 的驱动。预设中写有本机 Build Tools 的安装路径，若安装位置不同，请先核对编译器、Ninja 和 vcpkg 工具链路径。[CMake 预设](CMakePresets.json)
+Windows x64 的 Release 预设使用 Ninja，项目和 vcpkg 依赖都从 PATH 查找 `clang-cl.exe`。请将 `VCPKG_ROOT` 指向 vcpkg 安装目录。运行需要支持 Vulkan 1.3 的驱动。[CMake 预设](CMakePresets.json)
 
 以下命令在仓库根目录的 x64 VS 开发者 PowerShell 中运行。
 
