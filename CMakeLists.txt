@@ -64,6 +64,7 @@ add_executable(occt_lab
     src/document/nurbs_surface_project.cpp
     src/document/nurbs_surface_project.hpp
     src/document/plate_step.cpp
+    src/document/plate_step.hpp
     src/document/project_io.cpp
     src/document/project_io.hpp
     src/vulkan_window.cpp
@@ -115,6 +116,7 @@ add_executable(occt_lab
     src/ui/imgui_session.hpp
     src/ui/pole_drag.hpp
     src/ui/plate_step_panel.cpp
+    src/ui/plate_step_panel.hpp
     src/ui/project_file_controls.cpp
     src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp
