@@ -12,30 +12,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(occt_lab_geometry STATIC
     src/geometry/bspline_knot.cpp
-    src/geometry/bspline_knot.hpp
     src/geometry/bspline_weights.hpp
     src/geometry/occt_bspline_knots.cpp
-    src/geometry/occt_bspline_knots.hpp
     src/geometry/brep/box_model.cpp
-    src/geometry/brep/box_model.hpp
     src/geometry/brep/plate_with_hole.cpp
-    src/geometry/brep/plate_with_hole.hpp
     src/geometry/brep/brep_face_properties.cpp
-    src/geometry/brep/brep_face_properties.hpp
     src/geometry/brep/brep_mesh.cpp
-    src/geometry/brep/brep_mesh.hpp
     src/geometry/curves/bspline_curve.cpp
-    src/geometry/curves/bspline_curve.hpp
     src/geometry/curves/curve_fitting.cpp
     src/geometry/curves/occt_bspline.hpp
     src/geometry/surfaces/bezier_patch.cpp
     src/geometry/surfaces/bernstein_reference.cpp
-    src/geometry/surfaces/bezier_patch.hpp
     src/geometry/surfaces/bspline_surface.cpp
-    src/geometry/surfaces/bspline_surface.hpp
     src/geometry/surfaces/occt_bezier_patch.cpp
-    src/geometry/surfaces/occt_bezier_patch.hpp
-    src/geometry/surfaces/patch_grid.hpp
     src/geometry/surfaces/patch_grid.cpp
     src/geometry/surfaces/surface_isolines.hpp
     src/geometry/vec3.hpp
@@ -51,90 +40,53 @@ add_executable(occt_lab
     src/main.cpp
     src/application/bezier_patch_presets.hpp
     src/application/editable_curve.cpp
-    src/application/editable_curve.hpp
     src/application/nurbs_curve_creation.cpp
-    src/application/nurbs_curve_creation.hpp
     src/application/editable_nurbs_surface.cpp
-    src/application/editable_nurbs_surface.hpp
     src/application/nurbs_surface_creation.cpp
-    src/application/nurbs_surface_creation.hpp
     src/application/single_step_history.hpp
     src/document/curve_project.cpp
-    src/document/curve_project.hpp
     src/document/nurbs_surface_project.cpp
-    src/document/nurbs_surface_project.hpp
     src/document/plate_step.cpp
-    src/document/plate_step.hpp
     src/document/project_io.cpp
-    src/document/project_io.hpp
     src/vulkan_window.cpp
-    src/vulkan_window.hpp
     src/render/compute/compute_buffer_check.cpp
-    src/render/compute/compute_buffer_check.hpp
     src/render/compute/compute_pyramid.cpp
-    src/render/compute/compute_pyramid.hpp
     src/render/compute/nurbs_grid_mesh.cpp
-    src/render/compute/nurbs_grid_mesh.hpp
     src/render/compute/nurbs_grid_input.cpp
-    src/render/compute/nurbs_grid_input.hpp
     src/render/compute/nurbs_grid_report.cpp
-    src/render/compute/nurbs_grid_report.hpp
     src/render/compute/storage_buffer_kernel.cpp
-    src/render/compute/storage_buffer_kernel.hpp
     src/render/preview/brep_preview.cpp
-    src/render/preview/brep_preview.hpp
     src/render/preview/curve_colors.hpp
     src/render/preview/curve_preview.cpp
-    src/render/preview/curve_preview.hpp
     src/render/preview/surface/nurbs_surface_preview.cpp
-    src/render/preview/surface/nurbs_surface_preview.hpp
     src/render/preview/surface/surface_probe_marker.cpp
-    src/render/preview/surface/surface_probe_marker.hpp
     src/render/preview/surface/surface_wireframe.cpp
-    src/render/preview/surface/surface_wireframe.hpp
     src/render/viewport/orbit_camera.cpp
     src/render/viewport/clip_transform.hpp
-    src/render/viewport/orbit_camera.hpp
     src/render/viewport/viewport_projection.cpp
     src/render/viewport/brep_face_picking.cpp
-    src/render/viewport/brep_face_picking.hpp
-    src/render/viewport/viewport_projection.hpp
     src/render/vulkan_resources.cpp
-    src/render/vulkan_resources.hpp
     src/ui/box_editor.cpp
-    src/ui/box_editor.hpp
     src/ui/curve/curve_creation_dialog.cpp
     src/ui/curve/curve_editor.cpp
-    src/ui/curve/curve_editor.hpp
     src/ui/curve/curve_point_picker.cpp
     src/ui/curve/curve_project_panel.cpp
     src/ui/curve/fit_residuals.cpp
-    src/ui/curve/fit_residuals.hpp
     src/ui/developer_diagnostics.cpp
-    src/ui/developer_diagnostics.hpp
     src/ui/imgui_session.cpp
-    src/ui/imgui_session.hpp
     src/ui/pole_drag.hpp
     src/ui/plate_step_panel.cpp
-    src/ui/plate_step_panel.hpp
     src/ui/project_file_controls.cpp
-    src/ui/project_file_controls.hpp
     src/ui/renderer_status_panel.cpp
-    src/ui/renderer_status_panel.hpp
     src/ui/surface/isoline_sampling.cpp
-    src/ui/surface/isoline_sampling.hpp
     src/ui/surface/nurbs_pole_inspector.cpp
-    src/ui/surface/nurbs_pole_inspector.hpp
     src/ui/surface/nurbs_surface_creation_dialog.cpp
     src/ui/surface/nurbs_surface_probe.cpp
     src/ui/surface/nurbs_surface_project_panel.cpp
     src/ui/surface/nurbs_surface_session.cpp
-    src/ui/surface/nurbs_surface_session.hpp
     src/ui/surface/surface_control_net_input.cpp
     src/ui/surface/surface_grid_controls.cpp
-    src/ui/surface/surface_grid_controls.hpp
     src/ui/surface/surface_sample_readout.cpp
-    src/ui/surface/surface_sample_readout.hpp
 )
 target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
@@ -207,7 +159,6 @@ if(BUILD_TESTING)
     target_link_libraries(bspline_surface_check PRIVATE TKMath)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/analytic_surface.cpp
-        tests/bspline_surface_check/analytic_surface.hpp
         tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/control_net_creation_checks.cpp
         tests/bspline_surface_check/evaluation_checks.cpp
