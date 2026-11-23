@@ -67,6 +67,7 @@ add_executable(occt_lab
     src/render/viewport/brep_face_picking.cpp
     src/render/vulkan_resources.cpp
     src/ui/box_editor.cpp
+    src/ui/clamped_knot_editor.cpp
     src/ui/curve/curve_creation_dialog.cpp
     src/ui/curve/curve_editor.cpp
     src/ui/curve/curve_point_picker.cpp

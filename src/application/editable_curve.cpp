@@ -114,7 +114,7 @@ void EditableCurve::commit_refinement(const Definition &definition)
     commit(std::move(candidate));
 }
 
-auto EditableCurve::create_line(const LineCurveParameters params) -> std::expected<void, std::string>
+auto EditableCurve::create_line(const LineCurveParameters &params) -> std::expected<void, std::string>
 {
     try
     {

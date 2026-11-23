@@ -1,5 +1,7 @@
 #include "../support/near.hpp"
+#include "../support/project_test_directory.hpp"
 #include "application/editable_curve.hpp"
+#include "document/curve_project.hpp"
 
 #include <algorithm>
 #include <array>
@@ -201,6 +203,61 @@ void check_interpolated_curve_creation()
         throw std::runtime_error("Picking two points must preserve the view and interpolate both endpoints");
     }
 }
+
+void check_custom_curve_knots()
+{
+    using namespace occt_lab::geometry;
+    using namespace occt_lab::document;
+    const std::vector<BSplineKnot> knots{{-2, 4}, {-1, 3}, {2, 4}};
+    const std::array<Vec3, 7> poles{{{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {3, 1, 0}, {3, 2, 0}, {3, 3, 0}}};
+    const auto uniform = sample_curve(make_uniform_clamped_curve(poles, 3));
+    auto corner = sample_curve(make_clamped_curve(poles, 3, knots));
+    const auto intervals = corner.samples.size() - 1;
+    const auto joint = intervals / 4;
+    // The triple interior knot joins two straight cubic Bezier spans at a right angle.
+    if (!near(corner.samples[joint], poles[3]) || near(uniform.samples[joint], poles[3]) ||
+        !near(corner.samples[joint - 1], {3.0 - 3.0 / static_cast<double>(joint), 0, 0}) ||
+        !near(corner.samples[joint + 1], {3, 3.0 / static_cast<double>(intervals - joint), 0}))
+    {
+        throw std::runtime_error("Custom multiplicities must change the one-sided tangents of this control polygon");
+    }
+
+    EditableCurve editor;
+    editor.create_line({.pole_count = 7, .degree = 3, .knots = knots}).value();
+    const auto line = editor.current();
+    if (line.definition.knots != knots)
+    {
+        throw std::runtime_error("Creating a custom line lost its knot domain or multiplicities");
+    }
+    editor.replace_with_created_curve(std::move(corner));
+    const auto created = editor.current();
+    editor.undo();
+    if (editor.current() != line)
+    {
+        throw std::runtime_error("Undo did not restore the custom line");
+    }
+    for (const auto &invalid : {std::vector<BSplineKnot>{}, std::vector<BSplineKnot>{{-2, 4}, {0, 2}, {2, 4}},
+                                std::vector<BSplineKnot>{{-2, 4}, {-2, 3}, {2, 4}}})
+    {
+        if (editor.create_line({.pole_count = 7, .degree = 3, .knots = invalid}) || editor.current() != line ||
+            !editor.can_redo())
+        {
+            throw std::runtime_error("An invalid custom knot table changed the curve or redo history");
+        }
+    }
+    editor.redo();
+    if (editor.current() != created)
+    {
+        throw std::runtime_error("Redo did not restore the repeated-knot curve");
+    }
+    const ProjectTestDirectory directory;
+    const auto path = directory.path / "custom-knots.occtlab";
+    save_curve_project(path, editor.current(), {}).value();
+    if (open_curve_project(path).value().curve != created)
+    {
+        throw std::runtime_error("Custom curve knots or samples changed after reopening");
+    }
+}
 } // namespace
 
 void check_curve_creation()
@@ -208,5 +265,6 @@ void check_curve_creation()
     check_custom_curve();
     check_bezier_preset();
     check_control_point_curve();
+    check_custom_curve_knots();
     check_interpolated_curve_creation();
 }

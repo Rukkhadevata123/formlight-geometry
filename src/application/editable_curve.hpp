@@ -29,7 +29,7 @@ class EditableCurve
     void cancel_pole_move();
 
     // clang-format off
-    [[nodiscard]] auto create_line(LineCurveParameters params)   -> std::expected<void, std::string>;
+    [[nodiscard]] auto create_line(const LineCurveParameters &params) -> std::expected<void, std::string>;
     [[nodiscard]] auto create_cubic_bezier()                     -> std::expected<void, std::string>;
     [[nodiscard]] auto apply(const Definition &definition)       -> std::expected<void, std::string>;
     [[nodiscard]] auto insert_knot(double parameter)             -> std::expected<void, std::string>;

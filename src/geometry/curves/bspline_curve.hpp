@@ -58,6 +58,9 @@ struct SampledCurve
 };
 
 [[nodiscard]] int curve_degree_limit(std::size_t pole_count);
+[[nodiscard]] CurveDefinition make_clamped_curve(std::span<const Vec3> poles, int degree,
+                                                 const std::optional<std::vector<BSplineKnot>> &custom_knots,
+                                                 std::span<const double> weights = {});
 [[nodiscard]] CurveDefinition make_uniform_clamped_curve(std::span<const Vec3> poles, int degree,
                                                          std::span<const double> weights = {});
 [[nodiscard]] SampledCurve sample_curve(const CurveDefinition &definition,

@@ -56,7 +56,7 @@ void CurveEditor::draw_point_picker(EditableCurve &curve)
     ImGui::TextUnformatted(creation_preset_ == control_points ? "Click control points on XY (Z = 0 mm)."
                                                               : "Click points in order on the XY plane (Z = 0 mm).");
     ImGui::Text("Points: %zu", creation_points_.size());
-    if (creation_preset_ == control_points && draw_control_degree())
+    if (creation_preset_ == control_points && draw_control_parameters())
     {
         refresh_control_preview(curve);
     }

@@ -5,9 +5,9 @@
 
 namespace occt_lab
 {
-geometry::CurveDefinition make_line_curve(const LineCurveParameters parameters)
+geometry::CurveDefinition make_line_curve(const LineCurveParameters &parameters)
 {
-    const auto [count, degree] = parameters;
+    const auto &[count, degree, knots] = parameters;
     if (count < LineCurveParameters::min_poles || count > LineCurveParameters::max_poles)
     {
         throw std::invalid_argument("Control point count is outside the supported creation range.");
@@ -20,7 +20,7 @@ geometry::CurveDefinition make_line_curve(const LineCurveParameters parameters)
         const double x = std::lerp(-length_mm / 2, length_mm / 2, static_cast<double>(i) / (count - 1));
         poles.push_back({.x = x, .y = 0, .z = 0});
     }
-    return geometry::make_uniform_clamped_curve(poles, degree);
+    return geometry::make_clamped_curve(poles, degree, knots);
 }
 
 geometry::CurveDefinition make_cubic_bezier_curve()

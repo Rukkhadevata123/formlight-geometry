@@ -1,4 +1,5 @@
 #include "curve_editor.hpp"
+#include "ui/clamped_knot_editor.hpp"
 
 #include <imgui.h>
 
@@ -10,7 +11,7 @@ namespace
 {
 bool draw_line_parameters(LineCurveParameters &parameters)
 {
-    auto &[count, degree] = parameters;
+    auto &[count, degree, knots] = parameters;
     ImGui::TextUnformatted("Start with evenly spaced control points along X (90 mm).");
     constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
     const bool count_changed =
@@ -20,7 +21,8 @@ bool draw_line_parameters(LineCurveParameters &parameters)
     ImGui::BeginDisabled(limit == 1);
     const bool degree_changed = ImGui::SliderInt("Degree", &degree, 1, limit, "%d", flags);
     ImGui::EndDisabled();
-    return count_changed || degree_changed;
+    const bool knots_changed = draw_custom_knots("Custom knots", count, degree, knots);
+    return count_changed || degree_changed || knots_changed;
 }
 
 bool draw_point_table(std::vector<occt_lab::geometry::Vec3> &points)
@@ -86,22 +88,35 @@ bool draw_point_table(std::vector<occt_lab::geometry::Vec3> &points)
 
 } // namespace
 
-bool CurveEditor::draw_control_degree()
+bool CurveEditor::draw_control_parameters()
 {
     const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
     if (limit < 1)
     {
         return false;
     }
+    // Picking starts with an empty polygon. Keep the configured knots until enough poles are back.
+    if (picking_points_ && control_knots_ && limit < control_degree_)
+    {
+        ImGui::Text("Degree %d requires at least %d control points.", control_degree_, control_degree_ + 1);
+        if (ImGui::Button("Use uniform knots"))
+        {
+            control_knots_.reset();
+            return true;
+        }
+        return false;
+    }
     int degree = std::min(control_degree_, limit);
     ImGui::BeginDisabled(limit == 1);
     const bool changed = ImGui::SliderInt("Degree", &degree, 1, limit, "%d", ImGuiSliderFlags_AlwaysClamp);
     ImGui::EndDisabled();
-    if (changed)
+    const bool knots_changed =
+        draw_custom_knots("Custom knots", static_cast<int>(creation_points_.size()), degree, control_knots_);
+    if (changed || control_knots_)
     {
         control_degree_ = degree;
     }
-    return changed;
+    return changed || knots_changed;
 }
 
 void CurveEditor::refresh_control_preview(const EditableCurve &curve)
@@ -114,8 +129,14 @@ void CurveEditor::refresh_control_preview(const EditableCurve &curve)
     }
     try
     {
-        const int degree = std::min(control_degree_, occt_lab::geometry::curve_degree_limit(creation_points_.size()));
-        control_preview_ = sample_curve(occt_lab::geometry::make_uniform_clamped_curve(creation_points_, degree));
+        const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
+        if (picking_points_ && control_knots_ && control_degree_ > limit)
+        {
+            return;
+        }
+        const int degree = std::min(control_degree_, limit);
+        control_preview_ =
+            sample_curve(occt_lab::geometry::make_clamped_curve(creation_points_, degree, control_knots_));
         if (picking_points_)
         {
             control_preview_->framing_extent = curve.current().framing_extent;
@@ -158,6 +179,7 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     {
         creation_parameters_ = {};
         control_degree_ = 3;
+        control_knots_.reset();
         control_preview_.reset();
         creation_points_ = {{-45, -10, 0}, {-20, 28, 8}, {18, -18, 16}, {45, 12, 0}};
         creation_preset_ = custom_line;
@@ -187,7 +209,7 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
                                    ? "Rows form the control polygon in order."
                                    : "The curve passes through these points in row order.");
         parameters_changed = draw_point_table(creation_points_);
-        if (creation_preset_ == control_points && draw_control_degree())
+        if (creation_preset_ == control_points && draw_control_parameters())
         {
             parameters_changed = true;
         }
@@ -208,7 +230,18 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
         refresh_control_preview(curve);
     }
 
-    ImGui::BeginDisabled(creation_preset_ == control_points && !control_preview_);
+    bool can_create = creation_preset_ != control_points || control_preview_.has_value();
+    if (creation_preset_ == custom_line && creation_parameters_.knots)
+    {
+        const auto valid = occt_lab::geometry::validate_clamped_knots(
+            *creation_parameters_.knots, creation_parameters_.degree, creation_parameters_.pole_count);
+        if (!valid)
+        {
+            creation_error_ = valid.error();
+            can_create = false;
+        }
+    }
+    ImGui::BeginDisabled(!can_create);
     if (ImGui::Button("Create"))
     {
         const auto result = create_from_draft(curve, EditableCurve::Framing::fit_curve);

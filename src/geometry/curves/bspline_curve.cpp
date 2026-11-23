@@ -113,8 +113,28 @@ int curve_degree_limit(const std::size_t pole_count)
 CurveDefinition make_uniform_clamped_curve(const std::span<const Vec3> poles, const int degree,
                                            const std::span<const double> weights)
 {
+    return make_clamped_curve(poles, degree, std::nullopt, weights);
+}
+
+CurveDefinition make_clamped_curve(const std::span<const Vec3> poles, const int degree,
+                                   const std::optional<std::vector<BSplineKnot>> &custom_knots,
+                                   const std::span<const double> weights)
+{
     const int pole_count = checked_pole_count(poles.size(), degree);
     CurveDefinition definition{.degree = degree};
+    if (custom_knots)
+    {
+        if (const auto valid = validate_clamped_knots(*custom_knots, degree, pole_count); !valid)
+        {
+            throw std::invalid_argument(valid.error());
+        }
+        definition.knots = *custom_knots;
+    }
+    else
+    {
+        definition.knots = make_uniform_clamped_knots(pole_count, degree);
+    }
+
     definition.poles.assign(poles.begin(), poles.end());
     if (weights.empty())
     {
@@ -124,7 +144,6 @@ CurveDefinition make_uniform_clamped_curve(const std::span<const Vec3> poles, co
     {
         definition.weights.assign(weights.begin(), weights.end());
     }
-    definition.knots = make_uniform_clamped_knots(pole_count, degree);
     return definition;
 }
 

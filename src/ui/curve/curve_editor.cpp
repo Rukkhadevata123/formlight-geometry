@@ -230,9 +230,19 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
     ImGui::Text("%zu distinct knots", current.definition.knots.size());
     if (ImGui::TreeNode("Knots and multiplicities"))
     {
-        for (const auto &[value, multiplicity] : current.definition.knots)
+        const auto &knots = current.definition.knots;
+        for (std::size_t i = 0; i < knots.size(); ++i)
         {
-            ImGui::Text("%.12g  (x%d)", value, multiplicity);
+            const auto [value, multiplicity] = knots[i];
+            if (i == 0 || i + 1 == knots.size())
+            {
+                ImGui::Text("%.12g  (x%d, endpoint)", value, multiplicity);
+            }
+            else
+            {
+                ImGui::Text("%.12g  (x%d, at least C%d)", value, multiplicity,
+                            current.definition.degree - multiplicity);
+            }
         }
         ImGui::TreePop();
     }

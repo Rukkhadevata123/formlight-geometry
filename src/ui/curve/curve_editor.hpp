@@ -47,7 +47,7 @@ class CurveEditor
     void draw_project(EditableCurve &curve);
     void draw_creation_dialog(EditableCurve &curve);
     auto create_from_draft(EditableCurve &curve, EditableCurve::Framing framing) -> std::expected<void, std::string>;
-    bool draw_control_degree();
+    bool draw_control_parameters();
     void refresh_control_preview(const EditableCurve &curve);
     void draw_point_picker(EditableCurve &curve);
     void preview_point_picking(const EditableCurve &curve, const ClipTransform &transform, bool scene_click);
@@ -61,6 +61,7 @@ class CurveEditor
     bool picking_points_ = false;
     int creation_preset_ = custom_line;
     int control_degree_ = 3;
+    std::optional<std::vector<occt_lab::geometry::BSplineKnot>> control_knots_;
     std::optional<EditableCurve::Curve> control_preview_;
     std::string creation_error_;
     occt_lab::document::CurveProjectSettings settings_;
