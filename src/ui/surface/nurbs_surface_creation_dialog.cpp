@@ -210,7 +210,7 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     if (data_points && net_preview_)
     {
         const auto &preview = model.displayed();
-        ImGui::Text("Max point error: %.4g mm", preview.max_data_point_error_mm.value());
+        draw_max_grid_deviation(preview.max_grid_deviation.value());
         ImGui::Text("Control net: %d x %d", preview.definition.u.pole_count, preview.definition.v.pole_count);
     }
     ImGui::BeginDisabled(uses_grid && !net_preview_);

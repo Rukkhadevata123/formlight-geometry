@@ -16,6 +16,13 @@ import occt_lab.ui.project_file_controls;
 import occt_lab.ui.surface.isoline_sampling;
 import occt_lab.ui.surface.surface_grid_controls;
 
+void draw_max_grid_deviation(const occt_lab::geometry::SurfaceGridDeviation &deviation)
+{
+    ImGui::Text("Max point error: %.4g mm at U %d, V %d", deviation.distance_mm, deviation.u_index + 1,
+                deviation.v_index + 1);
+    ImGui::TextUnformatted("Magenta ring: data point   Dot: surface");
+}
+
 export class NurbsPoleInspector
 {
   public:
@@ -255,9 +262,9 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         draw_creation_dialog(model);
         ImGui::EndDisabled();
         ImGui::EndDisabled();
-        if (const auto error = model.displayed().max_data_point_error_mm)
+        if (const auto &deviation = model.displayed().max_grid_deviation)
         {
-            ImGui::Text("Data points (pink rings): max error %.4g mm", *error);
+            draw_max_grid_deviation(*deviation);
             const auto &definition = model.displayed().definition;
             if (const auto tolerance = definition.data_grid->fit_tolerance_mm)
             {

@@ -30,7 +30,7 @@ export class EditableNurbsSurface
         std::shared_ptr<const occt_lab::geometry::BSplineSurface> surface;
         occt_lab::geometry::PatchIsolines isolines;
         Framing framing;
-        std::optional<double> max_data_point_error_mm;
+        std::optional<occt_lab::geometry::SurfaceGridDeviation> max_grid_deviation;
     };
 
     explicit EditableNurbsSurface(Definition definition, occt_lab::geometry::PatchSampling sampling = {});
@@ -126,7 +126,7 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
         }
     }
     auto surface = std::make_shared<const occt_lab::geometry::BSplineSurface>(definition);
-    const auto max_error =
+    const auto deviation =
         definition.data_grid.transform([&](const auto &grid) { return surface->max_grid_deviation(grid); });
     auto lines = sample_isolines(*surface, sampling);
     if (!framing)
@@ -134,7 +134,7 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
         framing = frame_control_net(definition.poles);
     }
     return {.definition = std::move(definition), .surface = std::move(surface), .isolines = std::move(lines),
-            .framing = *framing, .max_data_point_error_mm = max_error};
+            .framing = *framing, .max_grid_deviation = deviation};
 }
 } // namespace
 

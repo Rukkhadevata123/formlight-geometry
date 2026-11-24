@@ -45,6 +45,15 @@ void check_point_grid_interpolation()
 {
     using namespace occt_lab;
     check_grid(2, 2);
+    SurfacePoleRows plane;
+    resize_surface_net(plane, 2, 2);
+    const EditableNurbsSurface planar{interpolate_surface_grid(plane).value()};
+    const auto &first = planar.current().max_grid_deviation.value();
+    if (first.distance_mm != 0 || first.u_index != 0 || first.v_index != 0 ||
+        first.data_point != plane.front().front().position || first.surface_point != first.data_point)
+    {
+        throw std::runtime_error("An exact fit must identify the first sample when all deviations tie");
+    }
     check_grid(2, 8);
     check_grid(7, 5);
     check_grid(SurfaceCreationParameters::max_poles, 3);
@@ -56,18 +65,18 @@ void check_point_grid_interpolation()
     }
     EditableNurbsSurface model{make_saddle_surface()};
     model.preview_replacement(def).value();
-    if (!(model.displayed().max_data_point_error_mm.value() < 1e-9) || model.can_undo())
+    if (!(model.displayed().max_grid_deviation.value().distance_mm < 1e-9) || model.can_undo())
     {
         throw std::runtime_error("Bad point-grid preview or interpolation error");
     }
     model.discard_preview();
-    if (model.displayed().max_data_point_error_mm)
+    if (model.displayed().max_grid_deviation)
     {
         throw std::runtime_error("Cancelled interpolation left a stale point grid");
     }
     model.replace(def).value();
     model.undo();
-    if (model.current().max_data_point_error_mm)
+    if (model.current().max_grid_deviation)
     {
         throw std::runtime_error("Undo did not restore the original surface");
     }
@@ -75,7 +84,7 @@ void check_point_grid_interpolation()
     auto poles = model.current().definition.poles;
     poles.front().z += 4;
     model.apply(poles, model.current().definition.weights).value();
-    if (std::abs(model.current().max_data_point_error_mm.value() - 4) > 1e-9)
+    if (std::abs(model.current().max_grid_deviation.value().distance_mm - 4) > 1e-9)
     {
         throw std::runtime_error("Editing a pole did not update the deviation from the original grid");
     }
@@ -84,7 +93,7 @@ void check_point_grid_interpolation()
     document::save_nurbs_surface_project(path, model).value();
     const auto loaded = document::open_nurbs_surface_project(path).value();
     if (loaded.current().definition != model.current().definition ||
-        loaded.current().max_data_point_error_mm != model.current().max_data_point_error_mm)
+        loaded.current().max_grid_deviation != model.current().max_grid_deviation)
     {
         throw std::runtime_error("Reopening lost the interpolation grid or changed its deviation");
     }

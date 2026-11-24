@@ -125,7 +125,7 @@ auto approximate_surface_grid(const SurfacePoleRows &rows, const double toleranc
                 candidate.poles = fit_rows(along_u, grid->rows, nu, candidate.v);
             }
 
-            const double error = geometry::BSplineSurface{candidate}.max_grid_deviation(*grid);
+            const double error = geometry::BSplineSurface{candidate}.max_grid_deviation(*grid).distance_mm;
             if (error <= tolerance_mm)
             {
                 candidate.data_grid = std::move(*grid);

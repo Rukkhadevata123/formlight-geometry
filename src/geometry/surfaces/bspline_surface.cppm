@@ -49,6 +49,16 @@ export struct SurfaceD1
     Vec3 dv;
 };
 
+export struct SurfaceGridDeviation
+{
+    int u_index;
+    int v_index;
+    Vec3 data_point;
+    Vec3 surface_point;
+    double distance_mm;
+    bool operator==(const SurfaceGridDeviation &) const = default;
+};
+
 export struct SurfaceProbe
 {
     Vec3 position;
@@ -61,7 +71,7 @@ export class BSplineSurface
   public:
     explicit BSplineSurface(const BSplineSurfaceDefinition &definition);
     [[nodiscard]] SurfaceDomain domain() const;
-    [[nodiscard]] double max_grid_deviation(const SurfacePointGrid &grid) const;
+    [[nodiscard]] SurfaceGridDeviation max_grid_deviation(const SurfacePointGrid &grid) const;
     [[nodiscard]] auto position(double u, double v) const -> std::expected<Vec3, std::string>;
     [[nodiscard]] auto isolines(PatchSampling sampling = {}) const -> std::expected<PatchIsolines, std::string>;
     // Endpoints use the interior derivative. An interior knot with only C0 continuity is rejected.
@@ -179,14 +189,14 @@ BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : sur
 {
 }
 
-double BSplineSurface::max_grid_deviation(const SurfacePointGrid &grid) const
+SurfaceGridDeviation BSplineSurface::max_grid_deviation(const SurfacePointGrid &grid) const
 {
     if (grid.columns < 2 || grid.rows < 2 || grid.points.size() != static_cast<std::uint64_t>(grid.columns) * grid.rows)
     {
         throw std::invalid_argument("The data grid dimensions do not match its sample count.");
     }
     const auto bounds = domain();
-    double max_error = 0;
+    std::optional<SurfaceGridDeviation> largest;
     for (int v = 0; v < grid.rows; ++v)
     {
         const double pv = std::lerp(bounds.v_min, bounds.v_max, static_cast<double>(v) / (grid.rows - 1));
@@ -204,10 +214,14 @@ double BSplineSurface::max_grid_deviation(const SurfacePointGrid &grid) const
             {
                 throw std::invalid_argument("The data-point deviation exceeds the finite coordinate range.");
             }
-            max_error = std::max(max_error, distance);
+            if (!largest || distance > largest->distance_mm)
+            {
+                largest = SurfaceGridDeviation{.u_index = u, .v_index = v, .data_point = q,
+                                               .surface_point = *p, .distance_mm = distance};
+            }
         }
     }
-    return max_error;
+    return largest.value();
 }
 
 SurfaceDomain BSplineSurface::domain() const

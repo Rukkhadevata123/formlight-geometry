@@ -85,20 +85,32 @@ void check_point_grid_approximation()
 
     EditableNurbsSurface model(make_saddle_surface());
     model.preview_replacement(loose).value();
-    if (model.can_undo() || std::abs(model.displayed().max_data_point_error_mm.value() - deviation) > 1e-12)
+    const auto peak = model.displayed().max_grid_deviation.value();
+    if (model.can_undo() || std::abs(peak.distance_mm - deviation) > 1e-12)
     {
         throw std::runtime_error("Preview did not measure all 12 original data points");
     }
+    if (peak.u_index != 2 || peak.v_index != 1 || peak.data_point != grid[1][2].position ||
+        std::abs(peak.distance_mm - 0.45) > 1e-12 || std::abs(peak.surface_point.z - 0.05) > 1e-12 ||
+        std::hypot(peak.surface_point.x - peak.data_point.x, peak.surface_point.y - peak.data_point.y) > 1e-12)
+    {
+        throw std::runtime_error("The maximum deviation must connect the raised U3/V2 sample to its fitted position");
+    }
     model.commit_preview();
     model.preview_pole_move(0, {100, 100, 100}).value();
+    const auto edited = model.displayed().max_grid_deviation.value();
+    if (edited.u_index != 0 || edited.v_index != 0 || edited.data_point != grid.front().front().position ||
+        edited.surface_point != geometry::Vec3{100, 100, 100} || model.current().max_grid_deviation != peak)
+    {
+        throw std::runtime_error("Dragging a corner must move only the preview marker to U1/V1");
+    }
     model.commit_preview();
-    const double edited_error = model.current().max_data_point_error_mm.value();
-    if (edited_error < 1.0)
+    if (model.current().max_grid_deviation != edited || edited.distance_mm < 1.0)
     {
         throw std::runtime_error("Editing the fitted surface did not update its deviation");
     }
     model.undo();
-    if (std::abs(model.current().max_data_point_error_mm.value() - deviation) > 1e-12)
+    if (model.current().max_grid_deviation != peak)
     {
         throw std::runtime_error("Undo lost the original fit");
     }
@@ -110,7 +122,7 @@ void check_point_grid_approximation()
     const auto &saved_grid = reopened.current().definition.data_grid.value();
     if (saved_grid.columns != 4 || saved_grid.rows != 3 || saved_grid.points.size() != 12 ||
         saved_grid.fit_tolerance_mm != 1.0 || reopened.current().definition != model.current().definition ||
-        reopened.current().max_data_point_error_mm != edited_error)
+        reopened.current().max_grid_deviation != edited)
     {
         throw std::runtime_error("Save/reopen lost the fitted surface, its source grid or its target tolerance");
     }

@@ -37,6 +37,19 @@ export void draw_nurbs_surface_preview(const EditableNurbsSurface::Snapshot &sur
             }
         }
     }
+    if (const auto &deviation = surface.max_grid_deviation)
+    {
+        constexpr ImU32 highlight = IM_COL32(255, 78, 184, 255);
+        project.draw_polyline(draw_list, std::array{deviation->data_point, deviation->surface_point}, highlight, 2.0F);
+        if (const auto data = project.visible_point(deviation->data_point))
+        {
+            draw_list.AddCircle(*data, 9.0F, highlight, 0, 2.5F);
+        }
+        if (const auto fitted = project.visible_point(deviation->surface_point))
+        {
+            draw_list.AddCircleFilled(*fitted, 3.0F, highlight);
+        }
+    }
     if (probe)
     {
         const auto normal = probe->normal ? std::optional{*probe->normal} : std::nullopt;
