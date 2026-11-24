@@ -1,11 +1,11 @@
 module;
 
 #include <SDL3/SDL.h>
-#include <vulkan/vulkan_raii.hpp>
 
 export module occt_lab.render.vulkan_resources;
 
 import std;
+import vulkan;
 
 namespace occt_lab::render
 {

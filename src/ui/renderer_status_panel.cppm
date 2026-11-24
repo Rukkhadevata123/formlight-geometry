@@ -30,14 +30,14 @@ export struct PyramidControls
 
 export struct RendererStatus
 {
-    const char *device_name;
-    std::uint32_t api_version;
-    std::uint32_t graphics_family;
-    std::uint32_t present_family;
-    bool compute_supported;
-    std::uint32_t width;
-    std::uint32_t height;
-    std::size_t image_count;
+    const char *device_name = "";
+    std::uint32_t api_version = 0;
+    std::uint32_t graphics_family = 0;
+    std::uint32_t present_family = 0;
+    bool compute_supported = false;
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+    std::size_t image_count = 0;
     std::optional<BRepFaceProperties> selected_face;
 };
 

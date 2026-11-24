@@ -98,6 +98,11 @@ target_sources(occt_lab PRIVATE
         src/ui/surface/surface_sample_readout.cppm
         src/vulkan_window.cppm
 )
+target_sources(occt_lab PRIVATE
+    FILE_SET vulkan_hpp TYPE CXX_MODULES
+    BASE_DIRS "${Vulkan_INCLUDE_DIR}"
+    FILES "${Vulkan_INCLUDE_DIR}/vulkan/vulkan.cppm"
+)
 target_link_libraries(occt_lab PRIVATE occt_lab_model TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
 

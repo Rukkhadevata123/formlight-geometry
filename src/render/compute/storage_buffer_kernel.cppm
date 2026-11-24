@@ -1,10 +1,7 @@
-module;
-
-#include <vulkan/vulkan_raii.hpp>
-
 export module occt_lab.render.compute.storage_buffer_kernel;
 
 import std;
+import vulkan;
 import occt_lab.render.vulkan_resources;
 
 // The kernels share a single storage buffer binding and a small push-constant block.

@@ -170,7 +170,7 @@ BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : sur
 
 SurfaceDomain BSplineSurface::domain() const
 {
-    SurfaceDomain bounds;
+    SurfaceDomain bounds{};
     surface_.Bounds(bounds.u_min, bounds.u_max, bounds.v_min, bounds.v_max);
     return bounds;
 }

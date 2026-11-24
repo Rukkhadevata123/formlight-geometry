@@ -1,10 +1,11 @@
 module;
 
-#include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_core.h>
 
 export module occt_lab.render.compute.nurbs_grid_mesh;
 
 import std;
+import vulkan;
 import occt_lab.application.editable_nurbs_surface;
 import occt_lab.geometry.surfaces.bspline_surface;
 import occt_lab.render.compute.nurbs_grid_input;

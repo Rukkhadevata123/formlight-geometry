@@ -5,11 +5,12 @@ module;
 #include <TopoDS_Solid.hxx>
 #include <cstddef>
 #include <gp_Pnt.hxx>
-#include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_core.h>
 
 export module occt_lab.render.preview.brep_preview;
 
 import std;
+import vulkan;
 import occt_lab.geometry.brep.box_model;
 import occt_lab.geometry.brep.brep_face_properties;
 import occt_lab.geometry.brep.brep_mesh;

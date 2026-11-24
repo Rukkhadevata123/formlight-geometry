@@ -144,7 +144,7 @@ void check_independent_degrees()
     {
         throw std::runtime_error("The supported OCCT degree limit should produce an evaluable plane");
     }
-    for (const auto invalid :
+    for (const auto &invalid :
          {SurfaceCreationParameters{.u_degree = 0}, SurfaceCreationParameters{.v_degree = -1},
           SurfaceCreationParameters{.u_poles = 4, .u_degree = 4}, SurfaceCreationParameters{.v_poles = 2, .v_degree = 2},
           SurfaceCreationParameters{.v_poles = SurfaceCreationParameters::max_poles, .v_degree = occt_limit + 1}})
@@ -192,10 +192,10 @@ void check_planar_creation()
         }
     }
 
-    for (const auto invalid : {SurfaceCreationParameters{1, 4, 120, 40}, SurfaceCreationParameters{4, 65, 120, 40},
-                               SurfaceCreationParameters{4, 4, 0, 40}, SurfaceCreationParameters{4, 4, 120, -1},
-                               SurfaceCreationParameters{4, 4, std::numeric_limits<double>::quiet_NaN(), 40},
-                               SurfaceCreationParameters{4, 4, 120, std::numeric_limits<double>::infinity()}})
+    for (const auto &invalid : {SurfaceCreationParameters{1, 4, 120, 40}, SurfaceCreationParameters{4, 65, 120, 40},
+                                SurfaceCreationParameters{4, 4, 0, 40}, SurfaceCreationParameters{4, 4, 120, -1},
+                                SurfaceCreationParameters{4, 4, std::numeric_limits<double>::quiet_NaN(), 40},
+                                SurfaceCreationParameters{4, 4, 120, std::numeric_limits<double>::infinity()}})
     {
         if (occt_lab::make_planar_nurbs_surface(invalid))
         {

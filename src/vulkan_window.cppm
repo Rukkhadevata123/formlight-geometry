@@ -6,11 +6,12 @@ module;
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_vulkan.h>
-#include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vulkan_core.h>
 
 export module occt_lab.vulkan_window;
 
 import std;
+import vulkan;
 import occt_lab.application.editable_curve;
 import occt_lab.render.compute.compute_buffer_check;
 import occt_lab.render.compute.compute_pyramid;

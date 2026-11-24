@@ -1,11 +1,11 @@
 module;
 
 #include <cstddef>
-#include <vulkan/vulkan_raii.hpp>
 
 export module occt_lab.render.compute.compute_pyramid;
 
 import std;
+import vulkan;
 import occt_lab.geometry.brep.brep_mesh;
 import occt_lab.render.compute.storage_buffer_kernel;
 
