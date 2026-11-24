@@ -183,6 +183,7 @@ if(BUILD_TESTING)
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/control_net_creation_checks.cpp
         tests/bspline_surface_check/custom_knot_checks.cpp
+        tests/bspline_surface_check/degree_elevation_checks.cpp
         tests/bspline_surface_check/evaluation_checks.cpp
         tests/bspline_surface_check/gpu_input_checks.cpp
         tests/bspline_surface_check/grid_checks.cpp

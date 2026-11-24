@@ -36,20 +36,7 @@ void check_weighted_insertion(const SurfaceKnotDirection direction)
     {
         throw std::runtime_error("Insertion lost the new knot or the original weight scale");
     }
-    for (int row = 0; row <= 32; ++row)
-    {
-        for (int column = 0; column <= 48; ++column)
-        {
-            const double u = std::lerp(2.0, 5.0, column / 48.0);
-            const double v = std::lerp(-2.0, 2.0, row / 32.0);
-            const auto a = before.surface->position(u, v).value();
-            const auto b = after.surface->position(u, v).value();
-            if (std::hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 1e-11)
-            {
-                throw std::runtime_error("Knot insertion changed the rational surface at the same UV");
-            }
-        }
-    }
+    test::check_refined_positions(*before.surface, *after.surface);
     model.undo();
     for (const double invalid : {2.0, -5.0, std::numeric_limits<double>::quiet_NaN()})
     {

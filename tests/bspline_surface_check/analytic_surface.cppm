@@ -28,4 +28,23 @@ export [[nodiscard]] geometry::BSplineSurfaceDefinition make_analytic_surface()
     definition.weights[6] = 7.0; // Third pole in the second row.
     return definition;
 }
+
+export void check_refined_positions(const geometry::BSplineSurface &before, const geometry::BSplineSurface &after)
+{
+    const auto bounds = before.domain();
+    for (int row = 0; row <= 32; ++row)
+    {
+        for (int column = 0; column <= 48; ++column)
+        {
+            const double u = std::lerp(bounds.u_min, bounds.u_max, column / 48.0);
+            const double v = std::lerp(bounds.v_min, bounds.v_max, row / 32.0);
+            const auto a = before.position(u, v).value();
+            const auto b = after.position(u, v).value();
+            if (std::hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 1e-11)
+            {
+                throw std::runtime_error(std::format("Refinement changed the rational surface at u={}, v={}", u, v));
+            }
+        }
+    }
+}
 } // namespace occt_lab::test

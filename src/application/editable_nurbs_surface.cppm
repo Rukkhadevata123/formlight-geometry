@@ -39,7 +39,9 @@ export class EditableNurbsSurface
         return sampling_;
     }
     [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
-    [[nodiscard]] auto insert_knot(occt_lab::geometry::SurfaceKnotDirection direction, double parameter)
+    [[nodiscard]] auto insert_knot(occt_lab::geometry::SurfaceDirection direction, double parameter)
+        -> std::expected<void, std::string>;
+    [[nodiscard]] auto elevate_degree(occt_lab::geometry::SurfaceDirection direction)
         -> std::expected<void, std::string>;
     [[nodiscard]] auto preview_replacement(Definition definition, std::optional<Framing> framing = {})
         -> std::expected<void, std::string>;
@@ -143,13 +145,28 @@ auto EditableNurbsSurface::replace(Definition definition) -> std::expected<void,
     return preview_replacement(std::move(definition)).transform([this] { commit_preview(); });
 }
 
-auto EditableNurbsSurface::insert_knot(const occt_lab::geometry::SurfaceKnotDirection direction, const double parameter)
+auto EditableNurbsSurface::insert_knot(const occt_lab::geometry::SurfaceDirection direction, const double parameter)
     -> std::expected<void, std::string>
 {
     try
     {
         auto refined = insert_surface_knot(current().definition, direction, parameter);
         commit(sample_surface(std::move(refined), sampling_, current().framing));
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(error.what());
+    }
+}
+
+auto EditableNurbsSurface::elevate_degree(const occt_lab::geometry::SurfaceDirection direction)
+    -> std::expected<void, std::string>
+{
+    try
+    {
+        auto elevated = elevate_surface_degree(current().definition, direction);
+        commit(sample_surface(std::move(elevated), sampling_, current().framing));
         return {};
     }
     catch (const std::exception &error)

@@ -22,7 +22,18 @@ export struct BSplineSurfaceAxis
     bool operator==(const BSplineSurfaceAxis &) const = default;
 };
 
-export enum class SurfaceKnotDirection { u, v };
+export enum class SurfaceDirection
+{
+    u,
+    v
+};
+
+export using SurfaceKnotDirection = SurfaceDirection;
+
+export [[nodiscard]] int max_surface_degree()
+{
+    return Geom_BSplineSurface::MaxDegree();
+}
 
 export struct SurfacePointGrid
 {
@@ -117,7 +128,7 @@ gp_Vec tangent_direction(const Vec3 &tangent)
 
 OcctKnotArrays axis_knots(const BSplineSurfaceAxis &axis)
 {
-    if (axis.degree < 1 || axis.degree > Geom_BSplineSurface::MaxDegree() || axis.pole_count <= axis.degree)
+    if (axis.degree < 1 || axis.degree > max_surface_degree() || axis.pole_count <= axis.degree)
     {
         throw std::invalid_argument("A surface axis needs a supported degree and more poles than its degree");
     }
@@ -185,42 +196,14 @@ int derivative_span(const double parameter, const NCollection_Array1<double> &kn
     }
     return first;
 }
-} // namespace
 
-BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : surface_(make_surface(definition))
+BSplineSurfaceDefinition read_refined_surface(const Geom_BSplineSurface &surface,
+                                              const BSplineSurfaceDefinition &definition, const bool along_u)
 {
-}
-
-export [[nodiscard]] BSplineSurfaceDefinition insert_surface_knot(const BSplineSurfaceDefinition &definition,
-                                                                 const SurfaceKnotDirection direction,
-                                                                 const double parameter)
-{
-    auto surface = make_surface(definition);
-    const bool along_u = direction == SurfaceKnotDirection::u;
-    const auto &axis = along_u ? definition.u : definition.v;
-    constexpr double tolerance = Precision::PConfusion();
-    if (!std::isfinite(parameter) || parameter - axis.knots.front().value <= tolerance ||
-        axis.knots.back().value - parameter <= tolerance)
-    {
-        throw std::invalid_argument("Choose an interior knot parameter away from the clamped endpoints");
-    }
-    if (along_u)
-    {
-        surface.InsertUKnot(parameter, 1, tolerance, true);
-    }
-    else
-    {
-        surface.InsertVKnot(parameter, 1, tolerance, true);
-    }
-    const int count = along_u ? surface.NbUPoles() : surface.NbVPoles();
-    if (count == axis.pole_count)
-    {
-        throw std::invalid_argument("This knot's multiplicity already equals the degree in this direction");
-    }
-
     BSplineSurfaceDefinition result{.u = definition.u, .v = definition.v, .data_grid = definition.data_grid};
     auto &changed = along_u ? result.u : result.v;
-    changed.pole_count = count;
+    changed.degree = along_u ? surface.UDegree() : surface.VDegree();
+    changed.pole_count = along_u ? surface.NbUPoles() : surface.NbVPoles();
     changed.knots.clear();
     const auto &knots = along_u ? surface.UKnots() : surface.VKnots();
     const auto &multiplicities = along_u ? surface.UMultiplicities() : surface.VMultiplicities();
@@ -244,6 +227,55 @@ export [[nodiscard]] BSplineSurfaceDefinition insert_surface_knot(const BSplineS
         }
     }
     return result;
+}
+} // namespace
+
+BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : surface_(make_surface(definition))
+{
+}
+
+export [[nodiscard]] BSplineSurfaceDefinition insert_surface_knot(const BSplineSurfaceDefinition &definition,
+                                                                  const SurfaceDirection direction,
+                                                                  const double parameter)
+{
+    auto surface = make_surface(definition);
+    const bool along_u = direction == SurfaceDirection::u;
+    const auto &axis = along_u ? definition.u : definition.v;
+    constexpr double tolerance = Precision::PConfusion();
+    if (!std::isfinite(parameter) || parameter - axis.knots.front().value <= tolerance ||
+        axis.knots.back().value - parameter <= tolerance)
+    {
+        throw std::invalid_argument("Choose an interior knot parameter away from the clamped endpoints");
+    }
+    if (along_u)
+    {
+        surface.InsertUKnot(parameter, 1, tolerance, true);
+    }
+    else
+    {
+        surface.InsertVKnot(parameter, 1, tolerance, true);
+    }
+    const int count = along_u ? surface.NbUPoles() : surface.NbVPoles();
+    if (count == axis.pole_count)
+    {
+        throw std::invalid_argument("This knot's multiplicity already equals the degree in this direction");
+    }
+
+    return read_refined_surface(surface, definition, along_u);
+}
+
+export [[nodiscard]] BSplineSurfaceDefinition elevate_surface_degree(const BSplineSurfaceDefinition &definition,
+                                                                     const SurfaceDirection direction)
+{
+    const bool along_u = direction == SurfaceDirection::u;
+    const int degree = along_u ? definition.u.degree : definition.v.degree;
+    if (degree >= max_surface_degree())
+    {
+        throw std::invalid_argument("The surface is already at the maximum degree in this direction");
+    }
+    auto surface = make_surface(definition);
+    surface.IncreaseDegree(surface.UDegree() + (along_u ? 1 : 0), surface.VDegree() + (along_u ? 0 : 1));
+    return read_refined_surface(surface, definition, along_u);
 }
 
 SurfaceGridDeviation BSplineSurface::max_grid_deviation(const SurfacePointGrid &grid) const

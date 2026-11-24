@@ -193,8 +193,31 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         draw_project(model);
         ImGui::EndDisabled();
         const auto &surface = model.current().definition;
-        const auto columns = static_cast<std::size_t>(surface.u.pole_count);
         ImGui::Text("Surface degree   U %d   V %d", surface.u.degree, surface.v.degree);
+        const int degree_limit = occt_lab::geometry::max_surface_degree();
+        ImGui::BeginDisabled(tracking_pole_ || has_edits(surface) || net_preview_);
+        ImGui::BeginDisabled(surface.u.degree >= degree_limit);
+        const bool elevate_u = ImGui::Button("Elevate U degree (+1)");
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(surface.v.degree >= degree_limit);
+        const bool elevate_v = ImGui::Button("Elevate V degree (+1)");
+        ImGui::EndDisabled();
+        ImGui::EndDisabled();
+        if (elevate_u || elevate_v)
+        {
+            using enum occt_lab::geometry::SurfaceDirection;
+            const auto result = model.elevate_degree(elevate_u ? u : v);
+            if (result)
+            {
+                reset_draft(model);
+            }
+            else
+            {
+                error_ = result.error();
+            }
+        }
+        const auto columns = static_cast<std::size_t>(surface.u.pole_count);
         ImGui::Text("Control net: %d x %d", surface.u.pole_count, surface.v.pole_count);
         ImGui::Text("U [%.8g, %.8g]   V [%.8g, %.8g]", surface.u.knots.front().value, surface.u.knots.back().value,
                     surface.v.knots.front().value, surface.v.knots.back().value);
@@ -326,7 +349,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         ImGui::EndDisabled();
         if (insert_u || insert_v)
         {
-            using enum occt_lab::geometry::SurfaceKnotDirection;
+            using enum occt_lab::geometry::SurfaceDirection;
             const auto result = model.insert_knot(insert_u ? u : v, insert_u ? probe_u_ : probe_v_);
             if (result)
             {
