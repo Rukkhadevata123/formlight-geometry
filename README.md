@@ -1,31 +1,57 @@
 # occt-lab
 
-occt-lab 是一个用 C++23 编写的交互式计算机辅助几何设计（CAGD）工作台。你可以从一组点创建 NURBS 曲线，或从一张控制网创建曲面，拖动控制点、改变权重，观察形状如何变化。曲面既可以用 Open CASCADE Technology（OCCT）在 CPU 上求值，也可以用 Slang 计算着色器在 GPU 上求值，并逐点比较位置和法向。
+occt-lab 是一个用 C++23 编写的交互式计算机辅助几何设计（CAGD）工作台。你可以拖动 NURBS 控制点、调整权重，观察曲线和曲面的变化，也可以比较 Open CASCADE Technology（OCCT）在 CPU 上与 Slang 计算着色器在 GPU 上的求值结果。
 
-![NURBS 曲面编辑器中的鞍形曲面、控制网、等参线和法向探针](docs/images/nurbs-surface.png)
+![青色鞍形曲面及其控制网，右侧展开了 U/V 节点表和曲面探针](docs/images/nurbs-surface.png)
 
-图中的青色曲面是 GPU 生成的网格，浅蓝色折线连接控制点，金色和绿色曲线分别对应固定 U 和固定 V 的等参线。
-
-## 主要功能
-
-- 创建**曲线**时，可以在 XYZ 表格中输入坐标，或在 XY 平面上依次点选。`From control points` 使用这些点构造控制多边形。`Interpolate through points` 让曲线依次经过数据点，切到 `Approximate points` 可对同一组点按容差拟合。预览显示控制点数和弦长参数处的最大残差，金色拟合曲线可与紫色插值曲线对照。自定义直线和控制点曲线都可以勾选 `Custom knots` 编辑节点值与重数，创建后在 `Knots and multiplicities` 查看内部节点保证的连续阶数。还可以查看逐点残差、插入节点或升阶。
-- 创建**曲面**时，可以从平面、双三次 Bézier 预设或自定义 U/V 控制网开始。选 `Interpolate through point grid` 可输入规则点网，让曲面穿过每个数据点。选 `Approximate point grid` 可指定容差（mm），比较同一组点在不同容差下的控制网尺寸和实测误差。粉色圆环标出原始点，面板显示最大误差（mm）和对应的 U/V 点号。视图中的亮粉色大圆环标出这个数据点，连线另一端的实心点是曲面在对应参数处的位置。自定义控制网支持分别设置两轴的次数和节点。创建后可以展开 `U knots and multiplicities` 或 `V knots and multiplicities`，查看各节点的值、重数和该方向内部节点保证的连续阶数。曲面创建后可编辑控制点的 XYZ 与权重，用探针读取位置和法向。在 `Surface probe` 里调好 u 或 v，点 `Insert U knot at u` 或 `Insert V knot at v` 可增加一列或一行控制点，并保持曲面形状。`Elevate U degree (+1)` 和 `Elevate V degree (+1)` 可单独提高一个方向的次数，保留曲面形状和原始点网。曲线与曲面都支持单步撤销／重做，并可保存为 `.occtlab` 项目文件。
-- **实体预览**使用 OCCT 构造方块、圆柱和带孔板，将实体三角化后交给 Vulkan 绘制。点击一张面即可高亮整面，查看曲面类型和面积。
-- **带孔板**可以用圆柱从板上切出通孔，也可以从带圆孔的平面轮廓拉伸得到。在 `Plate STEP` 面板导出并重读 STEP 文件，可核对实体的有效性、体积和孔壁面积。
+图中是 U、V 均为二次的鞍形曲面。浅蓝色折线连接 3×3 个控制点，青色网格由 GPU 生成。金色和绿色曲线分别是固定 u 和固定 v 的等参线，中央箭头表示探针位置的法向。
 
 ## 试一张曲面
 
-在左侧 `Shape` 中选择 `NURBS surface`，展开右侧 `GPU surface mesh`，勾选 `Show GPU mesh` 即可看到图中的鞍形曲面。用左键拖动一个蓝色控制点，再点 `Compare positions and normals with OCCT`，查看 GPU 与 OCCT 在同一批参数点上的位置误差（mm）和法向夹角（度）。
+1. 在左侧 `Shape` 选择 `NURBS surface`。展开右侧 `GPU surface mesh`，勾选 `Show GPU mesh`。
+2. 用左键拖动蓝色控制点，观察曲面如何变形。中键拖动旋转视图，按住 Shift 并用中键拖动可平移，滚轮缩放。
+3. 在 `Surface probe` 调整 u、v，读取该位置的坐标和单位法向。按住 Ctrl 单击滑块可输入精确值，按 Enter 确认。
+4. 点击 `Compare positions and normals with OCCT`，查看 GPU 与 OCCT 在相同参数点上的位置误差（mm）和法向夹角（度）。
 
-中键拖动旋转视图，`Shift + 中键` 拖动平移，滚轮缩放。在 `Surface probe` 中可以 `Ctrl + 单击` 参数滑块输入精确的 U、V 值，按 Enter 确认。
+## 创建曲线和曲面
+
+曲线使用一列有序点，曲面使用按 U/V 排列的矩形点网。可以在 XYZ 表格中输入坐标，也可以在 XY 平面上依次点选。
+
+| 创建方式 | 曲线 | 曲面 |
+| --- | --- | --- |
+| 用控制点定义形状 | `From control points` | `From control net` |
+| 插值，经过每个数据点 | `Interpolate through points` | `Interpolate through point grid` |
+| 按指定容差逼近数据点 | `Approximate points` | `Approximate point grid` |
+
+曲面也可以从平面或双三次 Bézier 预设开始。曲线和曲面都支持编辑控制点的 XYZ 与权重、单步撤销和重做，以及保存和重开 `.occtlab` 项目。
+
+### 查看拟合误差
+
+- **曲线**的金色拟合曲线和紫色插值曲线使用同一组输入点。预览显示控制点数和最大残差，创建后可以逐点查看弦长参数和对应的残差。
+- **曲面**用粉色圆环标出原始数据点。亮粉色大圆环标出偏差最大的点，连线另一端是曲面在对应参数处的位置。调整容差，可以比较控制网尺寸、最大偏差（mm）和该点的 U/V 编号。
+
+### 节点与升阶
+
+自定义直线和控制点曲线可在 `Custom knots` 中设置节点值与重数。自定义曲面控制网可以分别设置 U、V 两个方向的次数和节点。
+
+- **查看节点**　曲线展开 `Knots and multiplicities`。曲面分别展开 `U knots and multiplicities` 和 `V knots and multiplicities`。表中列出节点值、重数和内部节点保证的连续阶数。
+- **插入节点**　曲线可以在指定参数处插入节点。曲面在 `Surface probe` 选好参数后，点击 `Insert U knot at u` 增加一列控制点，或点击 `Insert V knot at v` 增加一行。曲面的形状保持不变。
+- **升阶**　曲线可直接升阶。曲面的 `Elevate U degree (+1)` 和 `Elevate V degree (+1)` 每次将所选方向的次数提高一级，同时保留曲面形状和原始数据点网。
+
+## 实体与 STEP
+
+OCCT 构造方块、圆柱和带孔板，并将实体三角化后交给 Vulkan 绘制。点击一个面可以高亮它，查看曲面类型和面积。
+
+创建带孔板时，可以用圆柱从板上切出通孔，也可以拉伸带圆孔的平面轮廓。在 `Plate STEP` 面板导出并重读 STEP 文件，可以核对实体的有效性、体积和孔壁面积。
 
 ## 构建与测试
 
-项目使用 C++23 命名模块。`.cppm` 文件用 `export` 标出对外接口，曲线拟合等较长的实现保存在同一模块的独立 `.cpp` 中。[曲线模块](src/geometry/curves/bspline_curve.cppm) · [拟合实现](src/geometry/curves/curve_fitting.cpp)
+Windows x64 的 Release 预设使用 CMake 4.5 或更高版本、Ninja 和 clang-cl。[CMake 预设](CMakePresets.json)
 
-Windows x64 的 Release 预设使用 CMake 4.5 或更高版本和 Ninja。项目通过 `import std;` 使用 C++23 标准库，需要 MSVC 工具集中的标准库模块文件。项目和 vcpkg 依赖都从 PATH 查找 `clang-cl.exe`。请将 `VCPKG_ROOT` 指向 vcpkg 安装目录。运行需要支持 Vulkan 1.3 的驱动。[CMake 预设](CMakePresets.json)
+- 项目和 vcpkg 依赖都从 `PATH` 查找 `clang-cl.exe`。将 `VCPKG_ROOT` 指向 vcpkg 安装目录。
+- `import std;` 需要 MSVC 工具集中的 C++23 标准库模块文件。运行程序需要支持 Vulkan 1.3 的驱动。
 
-以下命令在仓库根目录的 x64 VS 开发者 PowerShell 中运行。
+在 x64 VS 开发者 PowerShell 中进入仓库根目录，运行以下命令。
 
 ```powershell
 cmake --preset release
@@ -34,6 +60,8 @@ cmake --build --preset release
 ctest --test-dir build-release --output-on-failure
 ```
 
-窗口和输入使用 SDL3，编辑面板使用 Dear ImGui；渲染使用 Vulkan-Hpp、动态渲染和 Synchronization2。CMake 负责编译 Slang 着色器，vcpkg 管理依赖。[依赖清单](vcpkg.json)
+项目使用 C++23 命名模块。`.cppm` 文件用 `export` 标出对外接口，曲线拟合等较长的实现放在同一模块的独立 `.cpp` 文件中。[曲线模块](src/geometry/curves/bspline_curve.cppm) · [拟合实现](src/geometry/curves/curve_fitting.cpp)
+
+SDL3 处理窗口和输入，Dear ImGui 绘制编辑面板。渲染使用 Vulkan-Hpp、动态渲染和 Synchronization2。CMake 编译 Slang 着色器，vcpkg 管理依赖。[依赖清单](vcpkg.json)
 
 项目采用 [MIT License](LICENSE)。
