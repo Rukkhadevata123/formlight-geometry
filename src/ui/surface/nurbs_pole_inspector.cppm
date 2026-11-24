@@ -11,6 +11,7 @@ import occt_lab.geometry.surfaces.bezier_patch;
 import occt_lab.geometry.surfaces.bspline_surface;
 import occt_lab.render.viewport.clip_transform;
 import occt_lab.render.viewport.viewport_projection;
+import occt_lab.ui.clamped_knot_editor;
 import occt_lab.ui.pole_drag;
 import occt_lab.ui.project_file_controls;
 import occt_lab.ui.surface.isoline_sampling;
@@ -221,6 +222,8 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         ImGui::Text("Control net: %d x %d", surface.u.pole_count, surface.v.pole_count);
         ImGui::Text("U [%.8g, %.8g]   V [%.8g, %.8g]", surface.u.knots.front().value, surface.u.knots.back().value,
                     surface.v.knots.front().value, surface.v.knots.back().value);
+        draw_knot_inspector("U knots and multiplicities", surface.u.knots, surface.u.degree);
+        draw_knot_inspector("V knots and multiplicities", surface.v.knots, surface.v.degree);
         ImGui::BeginDisabled(tracking_pole_);
         ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());
         int pole_u = static_cast<int>(selected_pole_ % columns) + 1;

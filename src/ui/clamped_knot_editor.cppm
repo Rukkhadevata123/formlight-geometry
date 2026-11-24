@@ -84,6 +84,54 @@ bool draw_knot_table(KnotList &knots, const int poles, const int degree)
 }
 } // namespace
 
+export void draw_knot_inspector(const char *label, const std::span<const occt_lab::geometry::BSplineKnot> knots,
+                                const int degree)
+{
+    if (!ImGui::TreeNode(label))
+    {
+        return;
+    }
+    constexpr int visible_rows = 6;
+    const int count = static_cast<int>(knots.size());
+    const bool scroll = count > visible_rows;
+    const float row_height = ImGui::GetTextLineHeight() + 2.0F * ImGui::GetStyle().CellPadding.y;
+    const ImVec2 size{23.0F * ImGui::GetFontSize(), scroll ? (1 + visible_rows) * row_height : 0.0F};
+    const auto flags = ImGuiTableFlags_RowBg | (scroll ? ImGuiTableFlags_ScrollY : ImGuiTableFlags_None);
+    if (ImGui::BeginTable("##knots", 3, flags, size))
+    {
+        ImGui::TableSetupColumn("Knot");
+        ImGui::TableSetupColumn("Multiplicity");
+        ImGui::TableSetupColumn("Continuity");
+        ImGui::TableSetupScrollFreeze(0, 1);
+        ImGui::TableHeadersRow();
+        ImGuiListClipper clipper;
+        clipper.Begin(count);
+        while (clipper.Step())
+        {
+            for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i)
+            {
+                const auto [value, multiplicity] = knots[i];
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%.12g", value);
+                ImGui::TableNextColumn();
+                ImGui::Text("%d", multiplicity);
+                ImGui::TableNextColumn();
+                if (i == 0 || i + 1 == count)
+                {
+                    ImGui::TextUnformatted("Endpoint");
+                }
+                else
+                {
+                    ImGui::Text("At least C%d", degree - multiplicity);
+                }
+            }
+        }
+        ImGui::EndTable();
+    }
+    ImGui::TreePop();
+}
+
 // Returns true when the custom table or the choice of knot mode changes.
 export bool draw_custom_knots(const char *label, const int poles, const int degree, std::optional<KnotList> &knots)
 {

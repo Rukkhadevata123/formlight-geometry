@@ -12,6 +12,7 @@ import occt_lab.geometry.bspline_knot;
 import occt_lab.geometry.vec3;
 import occt_lab.render.preview.curve_preview;
 import occt_lab.render.viewport.clip_transform;
+import occt_lab.ui.clamped_knot_editor;
 import occt_lab.ui.curve.fit_residuals;
 import occt_lab.ui.pole_drag;
 import occt_lab.ui.project_file_controls;
@@ -307,24 +308,7 @@ void CurveEditor::draw_refinement(EditableCurve &curve)
         ImGui::Text("Degree %d    Poles %zu", current.definition.degree, current.definition.poles.size());
     }
     ImGui::Text("%zu distinct knots", current.definition.knots.size());
-    if (ImGui::TreeNode("Knots and multiplicities"))
-    {
-        const auto &knots = current.definition.knots;
-        for (std::size_t i = 0; i < knots.size(); ++i)
-        {
-            const auto [value, multiplicity] = knots[i];
-            if (i == 0 || i + 1 == knots.size())
-            {
-                ImGui::Text("%.12g  (x%d, endpoint)", value, multiplicity);
-            }
-            else
-            {
-                ImGui::Text("%.12g  (x%d, at least C%d)", value, multiplicity,
-                            current.definition.degree - multiplicity);
-            }
-        }
-        ImGui::TreePop();
-    }
+    draw_knot_inspector("Knots and multiplicities", current.definition.knots, current.definition.degree);
 }
 
 void CurveEditor::finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result)
