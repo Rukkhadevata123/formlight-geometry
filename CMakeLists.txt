@@ -186,6 +186,7 @@ if(BUILD_TESTING)
         tests/bspline_surface_check/evaluation_checks.cpp
         tests/bspline_surface_check/gpu_input_checks.cpp
         tests/bspline_surface_check/grid_checks.cpp
+        tests/bspline_surface_check/knot_insertion_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/point_grid_approximation_checks.cpp
         tests/bspline_surface_check/point_grid_interpolation_checks.cpp

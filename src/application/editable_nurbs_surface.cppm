@@ -39,6 +39,8 @@ export class EditableNurbsSurface
         return sampling_;
     }
     [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
+    [[nodiscard]] auto insert_knot(occt_lab::geometry::SurfaceKnotDirection direction, double parameter)
+        -> std::expected<void, std::string>;
     [[nodiscard]] auto preview_replacement(Definition definition, std::optional<Framing> framing = {})
         -> std::expected<void, std::string>;
     [[nodiscard]] auto resample(occt_lab::geometry::PatchSampling sampling) -> std::expected<void, std::string>;
@@ -111,18 +113,11 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
     {
         definition.weights.assign(definition.poles.size(), 1.0);
     }
-    if (const auto &grid = definition.data_grid)
+    if (const auto &grid = definition.data_grid; grid && grid->fit_tolerance_mm)
     {
-        if (grid->fit_tolerance_mm)
+        if (!std::isfinite(*grid->fit_tolerance_mm) || *grid->fit_tolerance_mm <= 0)
         {
-            if (!std::isfinite(*grid->fit_tolerance_mm) || *grid->fit_tolerance_mm <= 0)
-            {
-                throw std::invalid_argument("A fitting tolerance must be finite and positive.");
-            }
-        }
-        else if (grid->columns != definition.u.pole_count || grid->rows != definition.v.pole_count)
-        {
-            throw std::invalid_argument("The interpolation grid dimensions do not match the control net.");
+            throw std::invalid_argument("A fitting tolerance must be finite and positive.");
         }
     }
     auto surface = std::make_shared<const occt_lab::geometry::BSplineSurface>(definition);
@@ -146,6 +141,21 @@ EditableNurbsSurface::EditableNurbsSurface(Definition definition, const occt_lab
 auto EditableNurbsSurface::replace(Definition definition) -> std::expected<void, std::string>
 {
     return preview_replacement(std::move(definition)).transform([this] { commit_preview(); });
+}
+
+auto EditableNurbsSurface::insert_knot(const occt_lab::geometry::SurfaceKnotDirection direction, const double parameter)
+    -> std::expected<void, std::string>
+{
+    try
+    {
+        auto refined = insert_surface_knot(current().definition, direction, parameter);
+        commit(sample_surface(std::move(refined), sampling_, current().framing));
+        return {};
+    }
+    catch (const std::exception &error)
+    {
+        return std::unexpected(error.what());
+    }
 }
 
 auto EditableNurbsSurface::preview_replacement(Definition definition, std::optional<Framing> framing)

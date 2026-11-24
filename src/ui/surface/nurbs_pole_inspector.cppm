@@ -195,6 +195,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         const auto &surface = model.current().definition;
         const auto columns = static_cast<std::size_t>(surface.u.pole_count);
         ImGui::Text("Surface degree   U %d   V %d", surface.u.degree, surface.v.degree);
+        ImGui::Text("Control net: %d x %d", surface.u.pole_count, surface.v.pole_count);
         ImGui::Text("U [%.8g, %.8g]   V [%.8g, %.8g]", surface.u.knots.front().value, surface.u.knots.back().value,
                     surface.v.knots.front().value, surface.v.knots.back().value);
         ImGui::BeginDisabled(tracking_pole_);
@@ -268,8 +269,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
             const auto &definition = model.displayed().definition;
             if (const auto tolerance = definition.data_grid->fit_tolerance_mm)
             {
-                ImGui::Text("Fit target %.4g mm   Control net %d x %d", *tolerance, definition.u.pole_count,
-                            definition.v.pole_count);
+                ImGui::Text("Fit target %.4g mm", *tolerance);
             }
         }
         const auto &point = surface.poles.at(selected_pole_);
@@ -315,8 +315,30 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
             }
         }
     }
-    const auto *probe = update_probe(
-        model.displayed(), visible && ImGui::CollapsingHeader("Surface probe", ImGuiTreeNodeFlags_DefaultOpen));
+    const bool show_probe = visible && ImGui::CollapsingHeader("Surface probe", ImGuiTreeNodeFlags_DefaultOpen);
+    const auto *probe = update_probe(model.displayed(), show_probe);
+    if (show_probe)
+    {
+        ImGui::BeginDisabled(tracking_pole_ || has_edits(model.current().definition) || net_preview_);
+        const bool insert_u = ImGui::Button("Insert U knot at u");
+        ImGui::SameLine();
+        const bool insert_v = ImGui::Button("Insert V knot at v");
+        ImGui::EndDisabled();
+        if (insert_u || insert_v)
+        {
+            using enum occt_lab::geometry::SurfaceKnotDirection;
+            const auto result = model.insert_knot(insert_u ? u : v, insert_u ? probe_u_ : probe_v_);
+            if (result)
+            {
+                reset_draft(model);
+                probe = update_probe(model.displayed(), false);
+            }
+            else
+            {
+                error_ = result.error();
+            }
+        }
+    }
     ImGui::End();
     return probe;
 }

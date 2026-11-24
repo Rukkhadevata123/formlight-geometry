@@ -22,6 +22,8 @@ export struct BSplineSurfaceAxis
     bool operator==(const BSplineSurfaceAxis &) const = default;
 };
 
+export enum class SurfaceKnotDirection { u, v };
+
 export struct SurfacePointGrid
 {
     int columns;
@@ -187,6 +189,61 @@ int derivative_span(const double parameter, const NCollection_Array1<double> &kn
 
 BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : surface_(make_surface(definition))
 {
+}
+
+export [[nodiscard]] BSplineSurfaceDefinition insert_surface_knot(const BSplineSurfaceDefinition &definition,
+                                                                 const SurfaceKnotDirection direction,
+                                                                 const double parameter)
+{
+    auto surface = make_surface(definition);
+    const bool along_u = direction == SurfaceKnotDirection::u;
+    const auto &axis = along_u ? definition.u : definition.v;
+    constexpr double tolerance = Precision::PConfusion();
+    if (!std::isfinite(parameter) || parameter - axis.knots.front().value <= tolerance ||
+        axis.knots.back().value - parameter <= tolerance)
+    {
+        throw std::invalid_argument("Choose an interior knot parameter away from the clamped endpoints");
+    }
+    if (along_u)
+    {
+        surface.InsertUKnot(parameter, 1, tolerance, true);
+    }
+    else
+    {
+        surface.InsertVKnot(parameter, 1, tolerance, true);
+    }
+    const int count = along_u ? surface.NbUPoles() : surface.NbVPoles();
+    if (count == axis.pole_count)
+    {
+        throw std::invalid_argument("This knot's multiplicity already equals the degree in this direction");
+    }
+
+    BSplineSurfaceDefinition result{.u = definition.u, .v = definition.v, .data_grid = definition.data_grid};
+    auto &changed = along_u ? result.u : result.v;
+    changed.pole_count = count;
+    changed.knots.clear();
+    const auto &knots = along_u ? surface.UKnots() : surface.VKnots();
+    const auto &multiplicities = along_u ? surface.UMultiplicities() : surface.VMultiplicities();
+    for (int i = knots.Lower(); i <= knots.Upper(); ++i)
+    {
+        changed.knots.push_back({knots(i), multiplicities(i)});
+    }
+
+    // OCCT received normalized weights. Restore their common scale for subsequent edits.
+    const double weight_scale = definition.weights.empty() ? 1.0 : std::ranges::max(definition.weights);
+    const auto size = result.control_net_size();
+    result.poles.reserve(size);
+    result.weights.reserve(size);
+    for (int v = 1; v <= surface.NbVPoles(); ++v)
+    {
+        for (int u = 1; u <= surface.NbUPoles(); ++u)
+        {
+            const auto &point = surface.Pole(u, v);
+            result.poles.push_back({point.X(), point.Y(), point.Z()});
+            result.weights.push_back(surface.Weight(u, v) * weight_scale);
+        }
+    }
+    return result;
 }
 
 SurfaceGridDeviation BSplineSurface::max_grid_deviation(const SurfacePointGrid &grid) const

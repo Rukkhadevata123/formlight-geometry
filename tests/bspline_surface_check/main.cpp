@@ -11,6 +11,7 @@ void check_control_net_creation();
 void check_point_grid_interpolation();
 void check_point_grid_approximation();
 void check_custom_surface_knots();
+void check_surface_knot_insertion();
 void check_nurbs_surface_projects();
 void check_nurbs_resampling();
 void check_nurbs_reference_grid();
@@ -30,6 +31,7 @@ int main()
         check_point_grid_interpolation();
         check_point_grid_approximation();
         check_custom_surface_knots();
+        check_surface_knot_insertion();
         check_nurbs_surface_projects();
         check_nurbs_resampling();
         check_nurbs_reference_grid();

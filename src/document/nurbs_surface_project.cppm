@@ -67,9 +67,15 @@ export [[nodiscard]] auto save_nurbs_surface_project(const std::filesystem::path
         const auto &definition = model.current().definition;
         const auto &grid = definition.data_grid;
         int version = 2;
-        if (grid)
+        if (grid && grid->fit_tolerance_mm)
         {
-            version = grid->fit_tolerance_mm ? 4 : 3;
+            version = 4;
+        }
+        else if (grid)
+        {
+            // In v3 the original interpolation grid dimensions are implicit in the control net.
+            const bool same_size = grid->columns == definition.u.pole_count && grid->rows == definition.v.pole_count;
+            version = same_size ? 3 : 5;
         }
         out << "occt-lab-nurbs-surface " << version << "\nunits mm\n";
         const auto sampling = model.sampling();
@@ -92,7 +98,12 @@ export [[nodiscard]] auto save_nurbs_surface_project(const std::filesystem::path
             }
             else
             {
-                out << "interpolation_grid\n";
+                out << "interpolation_grid";
+                if (version == 5)
+                {
+                    out << ' ' << grid->columns << ' ' << grid->rows;
+                }
+                out << '\n';
             }
             for (const auto &[x, y, z] : grid->points)
             {
@@ -112,7 +123,7 @@ export [[nodiscard]] auto open_nurbs_surface_project(const std::filesystem::path
         auto in = io::open_input(path);
         io::expect_token(in, "occt-lab-nurbs-surface");
         const int version = io::read_number<int>(in, "format version");
-        if (version < 2 || version > 4)
+        if (version < 2 || version > 5)
         {
             return std::unexpected("Unsupported NURBS surface project version");
         }
@@ -130,23 +141,25 @@ export [[nodiscard]] auto open_nurbs_surface_project(const std::filesystem::path
         if (version >= 3)
         {
             auto &grid = definition.data_grid.emplace();
+            io::expect_token(in, version == 4 ? "approximation_grid" : "interpolation_grid");
             if (version == 3)
             {
-                io::expect_token(in, "interpolation_grid");
                 grid.columns = definition.u.pole_count;
                 grid.rows = definition.v.pole_count;
             }
             else
             {
-                io::expect_token(in, "approximation_grid");
                 grid.columns = io::read_number<int>(in, "U data points");
                 grid.rows = io::read_number<int>(in, "V data points");
+                if (grid.columns < 2 || grid.rows < 2)
+                {
+                    throw std::runtime_error("Invalid surface data grid dimensions");
+                }
+            }
+            if (version == 4)
+            {
                 io::expect_token(in, "tolerance_mm");
                 grid.fit_tolerance_mm = io::read_number<double>(in, "fitting tolerance");
-                if (grid.columns < 2 || grid.rows < 2 || *grid.fit_tolerance_mm <= 0)
-                {
-                    throw std::runtime_error("Invalid approximation grid dimensions or tolerance");
-                }
             }
             const auto samples = static_cast<std::uint64_t>(grid.columns) * grid.rows;
             for (std::uint64_t i = 0; i < samples; ++i)
