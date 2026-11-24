@@ -76,8 +76,7 @@ geometry::BSplineSurfaceAxis interpolate_axis(std::vector<geometry::Vec3> &point
 }
 } // namespace
 
-auto interpolate_surface_grid(const SurfacePoleRows &rows)
-    -> std::expected<geometry::BSplineSurfaceDefinition, std::string>
+auto read_surface_point_grid(const SurfacePoleRows &rows) -> std::expected<geometry::SurfacePointGrid, std::string>
 {
     const auto valid_count = [](std::size_t n)
     { return n >= SurfaceCreationParameters::min_poles && n <= SurfaceCreationParameters::max_poles; };
@@ -87,8 +86,8 @@ auto interpolate_surface_grid(const SurfacePoleRows &rows)
     }
     const int nu = static_cast<int>(rows.front().size());
     const int nv = static_cast<int>(rows.size());
-    geometry::BSplineSurfaceDefinition result{};
-    result.interpolation_points.reserve(nu * nv);
+    geometry::SurfacePointGrid grid{.columns = nu, .rows = nv};
+    grid.points.reserve(nu * nv);
     for (const auto &row : rows)
     {
         if (row.size() != rows.front().size())
@@ -100,18 +99,36 @@ auto interpolate_surface_grid(const SurfacePoleRows &rows)
             const auto &[x, y, z] = cell.position;
             if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z))
             {
-                const auto i = result.interpolation_points.size();
+                const auto i = grid.points.size();
                 return std::unexpected(
                     std::format("U {}, V {}: enter finite XYZ coordinates.", i % nu + 1, i / nu + 1));
             }
-            result.interpolation_points.push_back(cell.position);
+            grid.points.push_back(cell.position);
         }
+    }
+    return grid;
+}
+
+geometry::BSplineSurfaceDefinition interpolate_grid_points(const geometry::SurfacePointGrid &grid)
+{
+    geometry::BSplineSurfaceDefinition result{.poles = grid.points};
+    result.u = interpolate_axis(result.poles, grid.columns, grid.rows, grid.columns, 1);
+    result.v = interpolate_axis(result.poles, grid.rows, grid.columns, 1, grid.columns);
+    return result;
+}
+
+auto interpolate_surface_grid(const SurfacePoleRows &rows)
+    -> std::expected<geometry::BSplineSurfaceDefinition, std::string>
+{
+    auto grid = read_surface_point_grid(rows);
+    if (!grid)
+    {
+        return std::unexpected(grid.error());
     }
     try
     {
-        result.poles = result.interpolation_points;
-        result.u = interpolate_axis(result.poles, nu, nv, nu, 1);
-        result.v = interpolate_axis(result.poles, nv, nu, 1, nu);
+        auto result = interpolate_grid_points(*grid);
+        result.data_grid = std::move(*grid);
         return result;
     }
     catch (const std::exception &error)

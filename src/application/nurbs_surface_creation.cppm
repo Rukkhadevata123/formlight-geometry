@@ -42,6 +42,12 @@ export using SurfacePoleRows = std::vector<std::vector<WeightedSurfacePole>>;
 export [[nodiscard]] auto interpolate_surface_grid(const SurfacePoleRows &rows)
     -> std::expected<geometry::BSplineSurfaceDefinition, std::string>;
 
+export [[nodiscard]] auto approximate_surface_grid(const SurfacePoleRows &rows, double tolerance_mm)
+    -> std::expected<geometry::BSplineSurfaceDefinition, std::string>;
+
+auto read_surface_point_grid(const SurfacePoleRows &rows) -> std::expected<geometry::SurfacePointGrid, std::string>;
+geometry::BSplineSurfaceDefinition interpolate_grid_points(const geometry::SurfacePointGrid &grid);
+
 using geometry::BSplineSurfaceDefinition;
 
 int SurfaceCreationParameters::degree_limit(const int pole_count)

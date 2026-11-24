@@ -27,11 +27,14 @@ export void draw_nurbs_surface_preview(const EditableNurbsSurface::Snapshot &sur
     auto &draw_list = *ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
     draw_surface_wireframe(draw_list, project, surface.definition.poles, surface.definition.u.pole_count,
                            surface.isolines, layers, selected_point);
-    for (const auto &point : surface.definition.interpolation_points)
+    if (const auto &grid = surface.definition.data_grid)
     {
-        if (const auto pixel = project.visible_point(point))
+        for (const auto &point : grid->points)
         {
-            draw_list.AddCircle(*pixel, 5.0F, IM_COL32(233, 140, 235, 255), 0, 1.5F);
+            if (const auto pixel = project.visible_point(point))
+            {
+                draw_list.AddCircle(*pixel, 5.0F, IM_COL32(233, 140, 235, 255), 0, 1.5F);
+            }
         }
     }
     if (probe)

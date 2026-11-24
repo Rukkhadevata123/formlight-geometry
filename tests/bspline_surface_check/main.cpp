@@ -9,6 +9,7 @@ void check_nurbs_pole_drag();
 void check_nurbs_presets();
 void check_control_net_creation();
 void check_point_grid_interpolation();
+void check_point_grid_approximation();
 void check_custom_surface_knots();
 void check_nurbs_surface_projects();
 void check_nurbs_resampling();
@@ -27,6 +28,7 @@ int main()
         check_nurbs_presets();
         check_control_net_creation();
         check_point_grid_interpolation();
+        check_point_grid_approximation();
         check_custom_surface_knots();
         check_nurbs_surface_projects();
         check_nurbs_resampling();

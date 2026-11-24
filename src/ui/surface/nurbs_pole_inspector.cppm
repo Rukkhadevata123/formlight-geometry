@@ -29,9 +29,9 @@ export class NurbsPoleInspector
     }
     [[nodiscard]] const occt_lab::geometry::Vec3 &selected_point(const EditableNurbsSurface::Definition &definition) const
     {
-        if (net_preview_ && !definition.interpolation_points.empty())
+        if (net_preview_ && definition.data_grid)
         {
-            return definition.interpolation_points.at(net_selected_);
+            return definition.data_grid->points.at(net_selected_);
         }
         return definition.poles.at(net_preview_ ? net_selected_ : selected_pole_);
     }
@@ -67,6 +67,7 @@ export class NurbsPoleInspector
     occt_lab::SurfaceCreationParameters creation_parameters_;
     occt_lab::SurfaceCreationParameters net_parameters_{.v_poles = 3};
     occt_lab::SurfacePoleRows creation_net_;
+    double fit_tolerance_mm_ = 0.1;
     struct NetPicking
     {
         EditableNurbsSurface::Framing framing;
@@ -257,6 +258,12 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         if (const auto error = model.displayed().max_data_point_error_mm)
         {
             ImGui::Text("Data points (pink rings): max error %.4g mm", *error);
+            const auto &definition = model.displayed().definition;
+            if (const auto tolerance = definition.data_grid->fit_tolerance_mm)
+            {
+                ImGui::Text("Fit target %.4g mm   Control net %d x %d", *tolerance, definition.u.pole_count,
+                            definition.v.pole_count);
+            }
         }
         const auto &point = surface.poles.at(selected_pole_);
         ImGui::Text("Applied (mm)   (%.8g, %.8g, %.8g)", point.x, point.y, point.z);

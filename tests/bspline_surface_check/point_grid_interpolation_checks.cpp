@@ -50,7 +50,7 @@ void check_point_grid_interpolation()
     check_grid(SurfaceCreationParameters::max_poles, 3);
     auto grid = check_grid(4, 3);
     const auto def = interpolate_surface_grid(grid).value();
-    if (def.poles == def.interpolation_points)
+    if (def.poles == def.data_grid->points)
     {
         throw std::runtime_error("The curved 4x3 data grid was treated as a control net");
     }

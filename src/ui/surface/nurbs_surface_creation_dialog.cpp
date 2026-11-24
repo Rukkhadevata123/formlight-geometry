@@ -63,8 +63,26 @@ enum CreationPreset
     bezier_plane,
     raised_bezier,
     from_control_net,
-    interpolate_grid
+    interpolate_grid,
+    approximate_grid
 };
+
+auto create_from_grid(const int preset, const occt_lab::SurfaceCreationParameters &parameters,
+                      const occt_lab::SurfacePoleRows &grid, const double tolerance_mm)
+    -> std::expected<EditableNurbsSurface::Definition, std::string>
+{
+    switch (preset)
+    {
+    case from_control_net:
+        return occt_lab::make_control_net_surface(parameters, grid);
+    case interpolate_grid:
+        return occt_lab::interpolate_surface_grid(grid);
+    case approximate_grid:
+        return occt_lab::approximate_surface_grid(grid, tolerance_mm);
+    default:
+        return std::unexpected("Unknown point-grid preset.");
+    }
+}
 
 auto create_definition(const int preset, const occt_lab::SurfaceCreationParameters &parameters)
     -> std::expected<EditableNurbsSurface::Definition, std::string>
@@ -103,6 +121,7 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
         creation_parameters_ = {};
         net_parameters_ = {.v_poles = 3};
         creation_net_.clear();
+        fit_tolerance_mm_ = 0.1;
         net_selected_ = 0;
         net_frame_.reset();
         creation_preset_ = custom_plane;
@@ -121,20 +140,27 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
     const bool preset_changed = ImGui::Combo("Preset", &creation_preset_,
                                              "Custom plane\0Bezier plane\0Raised Bezier patch\0From control net\0"
-                                             "Interpolate through point grid\0");
-    const bool interpolate = creation_preset_ == interpolate_grid;
-    const bool uses_grid = creation_preset_ == from_control_net || interpolate;
+                                             "Interpolate through point grid\0Approximate point grid\0");
+    const bool data_points = creation_preset_ == interpolate_grid || creation_preset_ == approximate_grid;
+    const bool uses_grid = creation_preset_ == from_control_net || data_points;
     bool parameters_changed = creation_preset_ == custom_plane && draw_plane_parameters(creation_parameters_);
     if (uses_grid)
     {
-        if (interpolate)
+        if (data_points)
         {
             using Params = occt_lab::SurfaceCreationParameters;
-            const bool u_changed =
-                ImGui::SliderInt("U points", &net_parameters_.u_poles, Params::min_poles, Params::max_poles);
-            const bool v_changed =
-                ImGui::SliderInt("V points", &net_parameters_.v_poles, Params::min_poles, Params::max_poles);
+            const bool u_changed = ImGui::SliderInt("U points", &net_parameters_.u_poles, Params::min_poles,
+                                                    Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
+            const bool v_changed = ImGui::SliderInt("V points", &net_parameters_.v_poles, Params::min_poles,
+                                                    Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
             parameters_changed = u_changed || v_changed;
+            if (creation_preset_ == approximate_grid)
+            {
+                ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
+                const bool tolerance_changed = ImGui::InputDouble("Tolerance (mm)", &fit_tolerance_mm_, 0, 0, "%.8g");
+                ImGui::PopItemFlag();
+                parameters_changed |= tolerance_changed;
+            }
         }
         else
         {
@@ -147,11 +173,11 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
             occt_lab::resize_surface_net(creation_net_, columns, rows);
             net_selected_ = 0;
         }
-        if (draw_net_table(!interpolate))
+        if (draw_net_table(!data_points))
         {
             parameters_changed = true;
         }
-        if (ImGui::Button(interpolate ? "Pick data points on XY plane..." : "Pick net on XY plane..."))
+        if (ImGui::Button(data_points ? "Pick data points on XY plane..." : "Pick net on XY plane..."))
         {
             const auto frame = model.displayed().framing;
             cancel_creation(model);
@@ -166,8 +192,7 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
         creation_error_.clear();
         if (uses_grid)
         {
-            auto definition = interpolate ? occt_lab::interpolate_surface_grid(creation_net_)
-                                          : occt_lab::make_control_net_surface(net_parameters_, creation_net_);
+            auto definition = create_from_grid(creation_preset_, net_parameters_, creation_net_, fit_tolerance_mm_);
             auto preview = std::move(definition).and_then([&](EditableNurbsSurface::Definition &&def)
                                                          { return model.preview_replacement(std::move(def), net_frame_); });
             net_preview_ = preview.has_value();
@@ -182,9 +207,11 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
             cancel_creation(model);
         }
     }
-    if (interpolate && net_preview_)
+    if (data_points && net_preview_)
     {
-        ImGui::Text("Max point error: %.4g mm", model.displayed().max_data_point_error_mm.value());
+        const auto &preview = model.displayed();
+        ImGui::Text("Max point error: %.4g mm", preview.max_data_point_error_mm.value());
+        ImGui::Text("Control net: %d x %d", preview.definition.u.pole_count, preview.definition.v.pole_count);
     }
     ImGui::BeginDisabled(uses_grid && !net_preview_);
     if (ImGui::Button("Create"))

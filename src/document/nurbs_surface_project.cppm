@@ -65,8 +65,13 @@ export [[nodiscard]] auto save_nurbs_surface_project(const std::filesystem::path
     const auto write = [&](std::ostream &out)
     {
         const auto &definition = model.current().definition;
-        const bool has_grid = !definition.interpolation_points.empty();
-        out << "occt-lab-nurbs-surface " << (has_grid ? 3 : 2) << "\nunits mm\n";
+        const auto &grid = definition.data_grid;
+        int version = 2;
+        if (grid)
+        {
+            version = grid->fit_tolerance_mm ? 4 : 3;
+        }
+        out << "occt-lab-nurbs-surface " << version << "\nunits mm\n";
         const auto sampling = model.sampling();
         out << "isolines " << sampling.constant_u_lines << ' ' << sampling.constant_v_lines << ' '
             << sampling.samples_per_line << '\n';
@@ -78,10 +83,18 @@ export [[nodiscard]] auto save_nurbs_surface_project(const std::filesystem::path
             const auto &[x, y, z] = definition.poles[i];
             out << x << ' ' << y << ' ' << z << ' ' << definition.weights.at(i) << '\n';
         }
-        if (has_grid)
+        if (grid)
         {
-            out << "interpolation_grid\n";
-            for (const auto &[x, y, z] : definition.interpolation_points)
+            if (grid->fit_tolerance_mm)
+            {
+                out << "approximation_grid " << grid->columns << ' ' << grid->rows << " tolerance_mm "
+                    << *grid->fit_tolerance_mm << '\n';
+            }
+            else
+            {
+                out << "interpolation_grid\n";
+            }
+            for (const auto &[x, y, z] : grid->points)
             {
                 out << x << ' ' << y << ' ' << z << '\n';
             }
@@ -99,7 +112,7 @@ export [[nodiscard]] auto open_nurbs_surface_project(const std::filesystem::path
         auto in = io::open_input(path);
         io::expect_token(in, "occt-lab-nurbs-surface");
         const int version = io::read_number<int>(in, "format version");
-        if (version != 2 && version != 3)
+        if (version < 2 || version > 4)
         {
             return std::unexpected("Unsupported NURBS surface project version");
         }
@@ -114,12 +127,31 @@ export [[nodiscard]] auto open_nurbs_surface_project(const std::filesystem::path
             definition.poles.push_back(io::read_position(in));
             definition.weights.push_back(io::read_number<double>(in, "pole weight"));
         }
-        if (version == 3)
+        if (version >= 3)
         {
-            io::expect_token(in, "interpolation_grid");
-            for (std::size_t i = 0; i < count; ++i)
+            auto &grid = definition.data_grid.emplace();
+            if (version == 3)
             {
-                definition.interpolation_points.push_back(io::read_position(in));
+                io::expect_token(in, "interpolation_grid");
+                grid.columns = definition.u.pole_count;
+                grid.rows = definition.v.pole_count;
+            }
+            else
+            {
+                io::expect_token(in, "approximation_grid");
+                grid.columns = io::read_number<int>(in, "U data points");
+                grid.rows = io::read_number<int>(in, "V data points");
+                io::expect_token(in, "tolerance_mm");
+                grid.fit_tolerance_mm = io::read_number<double>(in, "fitting tolerance");
+                if (grid.columns < 2 || grid.rows < 2 || *grid.fit_tolerance_mm <= 0)
+                {
+                    throw std::runtime_error("Invalid approximation grid dimensions or tolerance");
+                }
+            }
+            const auto samples = static_cast<std::uint64_t>(grid.columns) * grid.rows;
+            for (std::uint64_t i = 0; i < samples; ++i)
+            {
+                grid.points.push_back(io::read_position(in));
             }
         }
         io::expect_end(in);

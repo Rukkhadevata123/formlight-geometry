@@ -22,14 +22,22 @@ export struct BSplineSurfaceAxis
     bool operator==(const BSplineSurfaceAxis &) const = default;
 };
 
+export struct SurfacePointGrid
+{
+    int columns;
+    int rows;
+    std::vector<Vec3> points; // Uniformly spaced parameters, with U varying fastest.
+    std::optional<double> fit_tolerance_mm;
+    bool operator==(const SurfacePointGrid &) const = default;
+};
+
 export struct BSplineSurfaceDefinition
 {
     BSplineSurfaceAxis u;
     BSplineSurfaceAxis v;
     std::vector<Vec3> poles;     // v rows, with u varying fastest.
     std::vector<double> weights; // Same order as poles. An empty array assigns unit weights.
-    // Original samples at uniformly spaced parameters, in the same V-row/U-column order as poles.
-    std::vector<Vec3> interpolation_points;
+    std::optional<SurfacePointGrid> data_grid;
     [[nodiscard]] std::size_t control_net_size() const;
     bool operator==(const BSplineSurfaceDefinition &) const = default;
 };
@@ -53,6 +61,7 @@ export class BSplineSurface
   public:
     explicit BSplineSurface(const BSplineSurfaceDefinition &definition);
     [[nodiscard]] SurfaceDomain domain() const;
+    [[nodiscard]] double max_grid_deviation(const SurfacePointGrid &grid) const;
     [[nodiscard]] auto position(double u, double v) const -> std::expected<Vec3, std::string>;
     [[nodiscard]] auto isolines(PatchSampling sampling = {}) const -> std::expected<PatchIsolines, std::string>;
     // Endpoints use the interior derivative. An interior knot with only C0 continuity is rejected.
@@ -168,6 +177,37 @@ int derivative_span(const double parameter, const NCollection_Array1<double> &kn
 
 BSplineSurface::BSplineSurface(const BSplineSurfaceDefinition &definition) : surface_(make_surface(definition))
 {
+}
+
+double BSplineSurface::max_grid_deviation(const SurfacePointGrid &grid) const
+{
+    if (grid.columns < 2 || grid.rows < 2 || grid.points.size() != static_cast<std::uint64_t>(grid.columns) * grid.rows)
+    {
+        throw std::invalid_argument("The data grid dimensions do not match its sample count.");
+    }
+    const auto bounds = domain();
+    double max_error = 0;
+    for (int v = 0; v < grid.rows; ++v)
+    {
+        const double pv = std::lerp(bounds.v_min, bounds.v_max, static_cast<double>(v) / (grid.rows - 1));
+        for (int u = 0; u < grid.columns; ++u)
+        {
+            const double pu = std::lerp(bounds.u_min, bounds.u_max, static_cast<double>(u) / (grid.columns - 1));
+            const auto p = position(pu, pv);
+            if (!p)
+            {
+                throw std::runtime_error(p.error());
+            }
+            const auto &q = grid.points[static_cast<std::size_t>(v) * grid.columns + u];
+            const double distance = std::hypot(p->x - q.x, p->y - q.y, p->z - q.z);
+            if (!std::isfinite(distance))
+            {
+                throw std::invalid_argument("The data-point deviation exceeds the finite coordinate range.");
+            }
+            max_error = std::max(max_error, distance);
+        }
+    }
+    return max_error;
 }
 
 SurfaceDomain BSplineSurface::domain() const
