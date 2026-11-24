@@ -62,7 +62,8 @@ enum CreationPreset
     custom_plane,
     bezier_plane,
     raised_bezier,
-    from_control_net
+    from_control_net,
+    interpolate_grid
 };
 
 auto create_definition(const int preset, const occt_lab::SurfaceCreationParameters &parameters)
@@ -119,12 +120,26 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     }
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
     const bool preset_changed = ImGui::Combo("Preset", &creation_preset_,
-                                             "Custom plane\0Bezier plane\0Raised Bezier patch\0From control net\0");
-    const bool custom_net = creation_preset_ == from_control_net;
+                                             "Custom plane\0Bezier plane\0Raised Bezier patch\0From control net\0"
+                                             "Interpolate through point grid\0");
+    const bool interpolate = creation_preset_ == interpolate_grid;
+    const bool uses_grid = creation_preset_ == from_control_net || interpolate;
     bool parameters_changed = creation_preset_ == custom_plane && draw_plane_parameters(creation_parameters_);
-    if (custom_net)
+    if (uses_grid)
     {
-        parameters_changed = draw_axes(net_parameters_);
+        if (interpolate)
+        {
+            using Params = occt_lab::SurfaceCreationParameters;
+            const bool u_changed =
+                ImGui::SliderInt("U points", &net_parameters_.u_poles, Params::min_poles, Params::max_poles);
+            const bool v_changed =
+                ImGui::SliderInt("V points", &net_parameters_.v_poles, Params::min_poles, Params::max_poles);
+            parameters_changed = u_changed || v_changed;
+        }
+        else
+        {
+            parameters_changed = draw_axes(net_parameters_);
+        }
         const auto columns = net_parameters_.u_poles, rows = net_parameters_.v_poles;
         if (creation_net_.size() != static_cast<std::size_t>(rows) ||
             creation_net_.front().size() != static_cast<std::size_t>(columns))
@@ -132,11 +147,11 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
             occt_lab::resize_surface_net(creation_net_, columns, rows);
             net_selected_ = 0;
         }
-        if (draw_net_table())
+        if (draw_net_table(!interpolate))
         {
             parameters_changed = true;
         }
-        if (ImGui::Button("Pick net on XY plane..."))
+        if (ImGui::Button(interpolate ? "Pick data points on XY plane..." : "Pick net on XY plane..."))
         {
             const auto frame = model.displayed().framing;
             cancel_creation(model);
@@ -149,11 +164,12 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     if (!picking_net() && (preset_changed || parameters_changed || reopen))
     {
         creation_error_.clear();
-        if (custom_net)
+        if (uses_grid)
         {
-            auto preview = occt_lab::make_control_net_surface(net_parameters_, creation_net_)
-                               .and_then([&](EditableNurbsSurface::Definition &&def)
-                                         { return model.preview_replacement(std::move(def), net_frame_); });
+            auto definition = interpolate ? occt_lab::interpolate_surface_grid(creation_net_)
+                                          : occt_lab::make_control_net_surface(net_parameters_, creation_net_);
+            auto preview = std::move(definition).and_then([&](EditableNurbsSurface::Definition &&def)
+                                                         { return model.preview_replacement(std::move(def), net_frame_); });
             net_preview_ = preview.has_value();
             if (!preview)
             {
@@ -166,11 +182,15 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
             cancel_creation(model);
         }
     }
-    ImGui::BeginDisabled(custom_net && !net_preview_);
+    if (interpolate && net_preview_)
+    {
+        ImGui::Text("Max point error: %.4g mm", model.displayed().max_data_point_error_mm.value());
+    }
+    ImGui::BeginDisabled(uses_grid && !net_preview_);
     if (ImGui::Button("Create"))
     {
         std::expected<void, std::string> result;
-        if (custom_net)
+        if (uses_grid)
         {
             model.commit_preview();
             net_preview_ = false;

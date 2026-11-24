@@ -9,20 +9,25 @@ import occt_lab.geometry.vec3;
 import occt_lab.render.preview.surface.nurbs_surface_preview;
 import occt_lab.render.viewport.clip_transform;
 
-bool NurbsPoleInspector::draw_net_table()
+bool NurbsPoleInspector::draw_net_table(const bool show_weights)
 {
     const int columns = net_parameters_.u_poles;
     const float em = ImGui::GetFontSize();
     const float height = 7 * ImGui::GetFrameHeightWithSpacing();
     bool changed = false;
-    if (ImGui::BeginTable("Control net", 6, ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, {36 * em, height}))
+    if (ImGui::BeginTable(show_weights ? "Control net" : "Data points", show_weights ? 6 : 5,
+                          ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY, {36 * em, height}))
     {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("U", ImGuiTableColumnFlags_WidthFixed, 2 * em);
         ImGui::TableSetupColumn("V", ImGuiTableColumnFlags_WidthFixed, 2 * em);
-        for (const char *label : {"X (mm)", "Y (mm)", "Z (mm)", "Weight"})
+        for (const char *label : {"X (mm)", "Y (mm)", "Z (mm)"})
         {
             ImGui::TableSetupColumn(label, ImGuiTableColumnFlags_WidthStretch);
+        }
+        if (show_weights)
+        {
+            ImGui::TableSetupColumn("Weight", ImGuiTableColumnFlags_WidthStretch);
         }
         ImGui::TableHeadersRow();
         ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
@@ -41,7 +46,8 @@ bool NurbsPoleInspector::draw_net_table()
                 ImGui::Text("%d", u + 1);
                 ImGui::TableNextColumn();
                 ImGui::Text("%d", v + 1);
-                for (double *value : {&position.x, &position.y, &position.z, &weight})
+                const std::array fields{&position.x, &position.y, &position.z, &weight};
+                for (double *value : std::span{fields}.first(show_weights ? 4 : 3))
                 {
                     ImGui::TableNextColumn();
                     ImGui::PushID(ImGui::TableGetColumnIndex());
@@ -118,7 +124,7 @@ void NurbsPoleInspector::draw_net_picker(const ClipTransform &transform, const b
         ImGui::Text("XY plane (Z = 0 mm)    %zu / %zu", points.size(), count);
         if (points.size() < count)
         {
-            ImGui::Text("Next pole: U %zu   V %zu", points.size() % columns + 1, points.size() / columns + 1);
+            ImGui::Text("Next point: U %zu   V %zu", points.size() % columns + 1, points.size() / columns + 1);
         }
         ImGui::BeginDisabled(points.empty());
         if (ImGui::Button("Remove last"))

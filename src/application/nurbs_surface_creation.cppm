@@ -39,6 +39,9 @@ export struct WeightedSurfacePole
 // Outer rows follow V; columns within each row follow U.
 export using SurfacePoleRows = std::vector<std::vector<WeightedSurfacePole>>;
 
+export [[nodiscard]] auto interpolate_surface_grid(const SurfacePoleRows &rows)
+    -> std::expected<geometry::BSplineSurfaceDefinition, std::string>;
+
 using geometry::BSplineSurfaceDefinition;
 
 int SurfaceCreationParameters::degree_limit(const int pole_count)

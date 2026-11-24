@@ -46,14 +46,15 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::update_probe(const E
 {
     const bool surface_changed = snapshot.surface != probed_surface_;
     const auto bounds = snapshot.surface->domain();
-    if (surface_changed)
+    const bool center_requested = show_controls && ImGui::Button("Center UV probe");
+    if (surface_changed || center_requested)
     {
         const auto old = probed_surface_ ? probed_surface_->domain() : occt_lab::geometry::SurfaceDomain{};
-        if (old.u_min != bounds.u_min || old.u_max != bounds.u_max)
+        if (center_requested || old.u_min != bounds.u_min || old.u_max != bounds.u_max)
         {
             probe_u_ = std::midpoint(bounds.u_min, bounds.u_max);
         }
-        if (old.v_min != bounds.v_min || old.v_max != bounds.v_max)
+        if (center_requested || old.v_min != bounds.v_min || old.v_max != bounds.v_max)
         {
             probe_v_ = std::midpoint(bounds.v_min, bounds.v_max);
         }
@@ -71,7 +72,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::update_probe(const E
             ImGui::TextUnformatted(parameter_slider_hint);
         }
     }
-    if (surface_changed || parameters_changed)
+    if (surface_changed || center_requested || parameters_changed)
     {
         probe_ = snapshot.surface->probe(probe_u_, probe_v_);
         bernstein_sample_ = evaluate_bernstein_reference(snapshot.definition, probe_u_, probe_v_);

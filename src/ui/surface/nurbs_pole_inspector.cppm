@@ -27,9 +27,13 @@ export class NurbsPoleInspector
     {
         return tracking_pole_;
     }
-    [[nodiscard]] std::size_t selected_pole() const
+    [[nodiscard]] const occt_lab::geometry::Vec3 &selected_point(const EditableNurbsSurface::Definition &definition) const
     {
-        return net_preview_ ? net_selected_ : selected_pole_;
+        if (net_preview_ && !definition.interpolation_points.empty())
+        {
+            return definition.interpolation_points.at(net_selected_);
+        }
+        return definition.poles.at(net_preview_ ? net_selected_ : selected_pole_);
     }
     [[nodiscard]] bool picking_net() const
     {
@@ -42,7 +46,7 @@ export class NurbsPoleInspector
   private:
     [[nodiscard]] bool begin_inspector_window() const;
     void draw_creation_dialog(EditableNurbsSurface &model);
-    bool draw_net_table();
+    bool draw_net_table(bool show_weights);
     void draw_project(EditableNurbsSurface &model);
     const occt_lab::geometry::SurfaceProbe *update_probe(const EditableNurbsSurface::Snapshot &snapshot,
                                                          bool show_controls);
@@ -250,6 +254,10 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         draw_creation_dialog(model);
         ImGui::EndDisabled();
         ImGui::EndDisabled();
+        if (const auto error = model.displayed().max_data_point_error_mm)
+        {
+            ImGui::Text("Data points (pink rings): max error %.4g mm", *error);
+        }
         const auto &point = surface.poles.at(selected_pole_);
         ImGui::Text("Applied (mm)   (%.8g, %.8g, %.8g)", point.x, point.y, point.z);
         ImGui::Text("Applied weight   %.8g", surface.weights.at(selected_pole_));

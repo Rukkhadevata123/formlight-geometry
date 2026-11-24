@@ -75,7 +75,10 @@ export [[nodiscard]] NurbsGridInput pack_nurbs_grid(const geometry::BSplineSurfa
     {
         throw std::invalid_argument("Invalid GPU grid subdivisions.");
     }
-    const auto &[u, v, poles, weights] = definition;
+    const auto &u = definition.u;
+    const auto &v = definition.v;
+    const auto &poles = definition.poles;
+    const auto &weights = definition.weights;
     const auto knot_words = std::uint64_t(u.pole_count) + v.pole_count + u.degree + v.degree + 2;
     const auto parameter_words = 2ULL * (grid.u_segments + grid.v_segments + 2);
     const auto output_words = grid.vertex_count() * (sizeof(NurbsGridVertex) / sizeof(float));

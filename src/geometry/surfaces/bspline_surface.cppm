@@ -28,6 +28,8 @@ export struct BSplineSurfaceDefinition
     BSplineSurfaceAxis v;
     std::vector<Vec3> poles;     // v rows, with u varying fastest.
     std::vector<double> weights; // Same order as poles. An empty array assigns unit weights.
+    // Original samples at uniformly spaced parameters, in the same V-row/U-column order as poles.
+    std::vector<Vec3> interpolation_points;
     [[nodiscard]] std::size_t control_net_size() const;
     bool operator==(const BSplineSurfaceDefinition &) const = default;
 };

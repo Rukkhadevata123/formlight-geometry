@@ -20,13 +20,20 @@ export [[nodiscard]] occt_lab::render::ViewportProjection nurbs_surface_projecti
 }
 
 export void draw_nurbs_surface_preview(const EditableNurbsSurface::Snapshot &surface, const ClipTransform &transform,
-                                       const PatchLayers &layers, const std::size_t selected_pole,
+                                       const PatchLayers &layers, const occt_lab::geometry::Vec3 &selected_point,
                                        const occt_lab::geometry::SurfaceProbe *probe)
 {
     const auto project = nurbs_surface_projection(transform, surface.framing);
     auto &draw_list = *ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
     draw_surface_wireframe(draw_list, project, surface.definition.poles, surface.definition.u.pole_count,
-                           surface.isolines, layers, selected_pole);
+                           surface.isolines, layers, selected_point);
+    for (const auto &point : surface.definition.interpolation_points)
+    {
+        if (const auto pixel = project.visible_point(point))
+        {
+            draw_list.AddCircle(*pixel, 5.0F, IM_COL32(233, 140, 235, 255), 0, 1.5F);
+        }
+    }
     if (probe)
     {
         const auto normal = probe->normal ? std::optional{*probe->normal} : std::nullopt;

@@ -66,7 +66,8 @@ const EditableNurbsSurface::Snapshot &NurbsSurfaceSession::draw(const ClipTransf
     const auto *probe = inspector_.draw(model_, mesh);
     if (!inspector_.picking_net())
     {
-        draw_nurbs_surface_preview(model_.displayed(), transform, layers, inspector_.selected_pole(), probe);
+        const auto &snapshot = model_.displayed();
+        draw_nurbs_surface_preview(snapshot, transform, layers, inspector_.selected_point(snapshot.definition), probe);
     }
     return model_.displayed();
 }
