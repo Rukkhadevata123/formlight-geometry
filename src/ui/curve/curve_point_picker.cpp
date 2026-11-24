@@ -27,7 +27,7 @@ void CurveEditor::preview_point_picking(const EditableCurve &curve, const ClipTr
             if (scene_click)
             {
                 creation_points_.push_back(*hit);
-                refresh_control_preview(curve);
+                refresh_creation_preview(curve);
             }
             else if (!creation_points_.empty())
             {
@@ -40,7 +40,7 @@ void CurveEditor::preview_point_picking(const EditableCurve &curve, const ClipTr
             creation_error_ = "No visible XY intersection here. Orbit or reset the view.";
         }
     }
-    if (control_preview_)
+    if (creation_preview_)
     {
         return; // draw_preview renders the sampled curve together with its control polygon.
     }
@@ -59,18 +59,19 @@ void CurveEditor::draw_point_picker(EditableCurve &curve)
     ImGui::TextUnformatted(creation_preset_ == control_points ? "Click control points on XY (Z = 0 mm)."
                                                               : "Click points in order on the XY plane (Z = 0 mm).");
     ImGui::Text("Points: %zu", creation_points_.size());
-    if (creation_preset_ == control_points && draw_control_parameters())
+    if (draw_point_parameters())
     {
-        refresh_control_preview(curve);
+        refresh_creation_preview(curve);
     }
     ImGui::BeginDisabled(creation_points_.empty());
     if (ImGui::Button("Remove last"))
     {
         creation_points_.pop_back();
-        refresh_control_preview(curve);
+        refresh_creation_preview(curve);
     }
     ImGui::EndDisabled();
-    ImGui::BeginDisabled(creation_points_.size() < 2 || (creation_preset_ == control_points && !control_preview_));
+    draw_creation_fit_summary();
+    ImGui::BeginDisabled(!creation_preview_);
     if (ImGui::Button("Create"))
     {
         const auto result = create_from_draft(curve, EditableCurve::Framing::keep_view);

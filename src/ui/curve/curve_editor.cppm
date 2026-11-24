@@ -29,7 +29,7 @@ export class CurveEditor
     void cancel_point_picking()
     {
         picking_points_ = false;
-        control_preview_.reset();
+        creation_preview_.reset();
     }
     [[nodiscard]] bool picking_points() const
     {
@@ -46,7 +46,8 @@ export class CurveEditor
         custom_line,
         cubic_bezier,
         interpolate_points,
-        control_points
+        control_points,
+        approximate_points
     };
 
     [[nodiscard]] std::size_t selected_index() const
@@ -58,7 +59,9 @@ export class CurveEditor
     void draw_creation_dialog(EditableCurve &curve);
     auto create_from_draft(EditableCurve &curve, EditableCurve::Framing framing) -> std::expected<void, std::string>;
     bool draw_control_parameters();
-    void refresh_control_preview(const EditableCurve &curve);
+    bool draw_point_parameters();
+    void draw_creation_fit_summary() const;
+    void refresh_creation_preview(const EditableCurve &curve);
     void draw_point_picker(EditableCurve &curve);
     void preview_point_picking(const EditableCurve &curve, const ClipTransform &transform, bool scene_click);
     void draw_history(EditableCurve &curve);
@@ -72,7 +75,8 @@ export class CurveEditor
     int creation_preset_ = custom_line;
     int control_degree_ = 3;
     std::optional<std::vector<occt_lab::geometry::BSplineKnot>> control_knots_;
-    std::optional<EditableCurve::Curve> control_preview_;
+    std::optional<EditableCurve::Curve> creation_preview_;
+    double creation_tolerance_ = 1.0;
     std::string creation_error_;
     occt_lab::document::CurveProjectSettings settings_;
     ProjectFileControls project_file_{.path = "curve.occtlab"};
@@ -147,9 +151,9 @@ void CurveEditor::handle_viewport_input(EditableCurve &curve, const ClipTransfor
 
 void CurveEditor::draw_preview(const EditableCurve &curve, const ClipTransform &transform) const
 {
-    if (control_preview_)
+    if (creation_preview_)
     {
-        draw_curve_preview(*control_preview_, transform);
+        draw_curve_preview(*creation_preview_, transform);
     }
     else if (!picking_points_)
     {

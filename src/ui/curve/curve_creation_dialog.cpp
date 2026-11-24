@@ -122,27 +122,73 @@ bool CurveEditor::draw_control_parameters()
     return changed || knots_changed;
 }
 
-void CurveEditor::refresh_control_preview(const EditableCurve &curve)
+bool CurveEditor::draw_point_parameters()
 {
-    control_preview_.reset();
+    if (creation_preset_ == control_points)
+    {
+        return draw_control_parameters();
+    }
+    if (creation_preset_ == approximate_points)
+    {
+        ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
+        const bool changed = ImGui::InputDouble("Target tolerance (mm)", &creation_tolerance_, 0, 0, "%.8g");
+        ImGui::PopItemFlag();
+        return changed;
+    }
+    return false;
+}
+
+void CurveEditor::draw_creation_fit_summary() const
+{
+    if (creation_preview_ && !creation_preview_->data_points.empty())
+    {
+        const auto largest =
+            std::ranges::max_element(creation_preview_->data_points, {}, &occt_lab::geometry::CurveDataPoint::residual);
+        ImGui::Text("Control points: %zu   Max point residual: %.4g mm", creation_preview_->definition.poles.size(),
+                    largest->residual);
+        if (creation_preview_->approximation)
+        {
+            ImGui::TextUnformatted("Gold: fit   Purple: interpolant");
+        }
+    }
+}
+
+void CurveEditor::refresh_creation_preview(const EditableCurve &curve)
+{
+    creation_preview_.reset();
     creation_error_.clear();
-    if (creation_preset_ != control_points || creation_points_.size() < 2)
+    if (creation_points_.size() < 2)
     {
         return;
     }
     try
     {
-        const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
-        if (picking_points_ && control_knots_ && control_degree_ > limit)
+        switch (creation_preset_)
         {
+        case approximate_points:
+            creation_preview_ = occt_lab::geometry::approximate_curve(creation_points_, creation_tolerance_);
+            break;
+        case interpolate_points:
+            creation_preview_ = occt_lab::geometry::interpolate_curve(creation_points_);
+            break;
+        case control_points:
+        {
+            const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
+            if (picking_points_ && control_knots_ && control_degree_ > limit)
+            {
+                return;
+            }
+            const int degree = std::min(control_degree_, limit);
+            creation_preview_ =
+                sample_curve(occt_lab::geometry::make_clamped_curve(creation_points_, degree, control_knots_));
+            break;
+        }
+        default:
             return;
         }
-        const int degree = std::min(control_degree_, limit);
-        control_preview_ =
-            sample_curve(occt_lab::geometry::make_clamped_curve(creation_points_, degree, control_knots_));
         if (picking_points_)
         {
-            control_preview_->framing_extent = curve.current().framing_extent;
+            creation_preview_->framing_extent = curve.current().framing_extent;
         }
     }
     catch (const std::exception &error)
@@ -161,14 +207,18 @@ auto CurveEditor::create_from_draft(EditableCurve &curve, const EditableCurve::F
     case cubic_bezier:
         return curve.create_cubic_bezier();
     case interpolate_points:
-        return curve.create_interpolated_curve(creation_points_, framing);
+    case approximate_points:
     case control_points:
-        if (!control_preview_)
+        if (!creation_preview_)
         {
-            return std::unexpected("A valid control polygon is required.");
+            return std::unexpected("A valid point preview is required.");
         }
-        curve.replace_with_created_curve(std::move(*control_preview_), framing);
-        control_preview_.reset();
+        curve.replace_with_created_curve(std::move(*creation_preview_), framing);
+        creation_preview_.reset();
+        if (creation_preset_ == approximate_points)
+        {
+            settings_.fit_tolerance = creation_tolerance_;
+        }
         return {};
     default:
         return std::unexpected("Unknown curve preset.");
@@ -181,9 +231,10 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     if (ImGui::Button("New curve..."))
     {
         creation_parameters_ = {};
+        creation_tolerance_ = settings_.fit_tolerance;
         control_degree_ = 3;
         control_knots_.reset();
-        control_preview_.reset();
+        creation_preview_.reset();
         creation_points_ = {{-45, -10, 0}, {-20, 28, 8}, {18, -18, 16}, {45, 12, 0}};
         creation_preset_ = custom_line;
         creation_error_.clear();
@@ -191,12 +242,14 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     }
     if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        control_preview_.reset();
+        creation_preview_.reset();
         return;
     }
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
-    const bool preset_changed = ImGui::Combo(
-        "Preset", &creation_preset_, "Custom line\0Cubic Bezier\0Interpolate through points\0From control points\0");
+    const bool preset_changed =
+        ImGui::Combo("Preset", &creation_preset_,
+                     "Custom line\0Cubic Bezier\0Interpolate through points\0From control points\0"
+                     "Approximate points\0");
     bool parameters_changed = false;
     switch (creation_preset_)
     {
@@ -207,12 +260,18 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
         ImGui::TextUnformatted("Four control points form a cubic arc in the XY plane.");
         break;
     case interpolate_points:
+    case approximate_points:
     case control_points:
-        ImGui::TextUnformatted(creation_preset_ == control_points
-                                   ? "Rows form the control polygon in order."
-                                   : "The curve passes through these points in row order.");
+        if (creation_preset_ == control_points)
+        {
+            ImGui::TextUnformatted("Rows form the control polygon in order.");
+        }
+        else if (creation_preset_ == interpolate_points)
+        {
+            ImGui::TextUnformatted("The curve passes through these points in row order.");
+        }
         parameters_changed = draw_point_table(creation_points_);
-        if (creation_preset_ == control_points && draw_control_parameters())
+        if (draw_point_parameters())
         {
             parameters_changed = true;
         }
@@ -220,7 +279,7 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
         {
             creation_points_.clear();
             creation_error_.clear();
-            control_preview_.reset();
+            creation_preview_.reset();
             picking_points_ = true;
             ImGui::CloseCurrentPopup();
         }
@@ -230,10 +289,11 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     ImGui::PopItemWidth();
     if (preset_changed || parameters_changed)
     {
-        refresh_control_preview(curve);
+        refresh_creation_preview(curve);
     }
 
-    bool can_create = creation_preset_ != control_points || control_preview_.has_value();
+    draw_creation_fit_summary();
+    bool can_create = creation_preset_ == custom_line || creation_preset_ == cubic_bezier || creation_preview_;
     if (creation_preset_ == custom_line && creation_parameters_.knots)
     {
         const auto valid = occt_lab::geometry::validate_clamped_knots(
@@ -262,7 +322,7 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     ImGui::SameLine();
     if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
     {
-        control_preview_.reset();
+        creation_preview_.reset();
         ImGui::CloseCurrentPopup();
     }
     if (!creation_error_.empty())
