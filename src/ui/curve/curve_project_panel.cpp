@@ -1,10 +1,13 @@
-#include "curve_editor.hpp"
+module;
 
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
-#include <filesystem>
-#include <utility>
+module occt_lab.ui.curve.curve_editor;
+
+import std;
+import occt_lab.application.editable_curve;
+import occt_lab.document.curve_project;
 
 void CurveEditor::draw_project(EditableCurve &curve)
 {

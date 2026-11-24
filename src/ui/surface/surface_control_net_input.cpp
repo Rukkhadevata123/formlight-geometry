@@ -1,9 +1,13 @@
-#include "nurbs_pole_inspector.hpp"
-#include "render/preview/surface/nurbs_surface_preview.hpp"
+module;
 
 #include <imgui.h>
 
-#include <array>
+module occt_lab.ui.surface.nurbs_pole_inspector;
+
+import std;
+import occt_lab.geometry.vec3;
+import occt_lab.render.preview.surface.nurbs_surface_preview;
+import occt_lab.render.viewport.clip_transform;
 
 bool NurbsPoleInspector::draw_net_table()
 {

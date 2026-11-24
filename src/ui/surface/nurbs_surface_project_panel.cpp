@@ -1,10 +1,12 @@
-#include "nurbs_pole_inspector.hpp"
-
-#include "document/nurbs_surface_project.hpp"
+module;
 
 #include <imgui.h>
 
-#include <utility>
+module occt_lab.ui.surface.nurbs_pole_inspector;
+
+import std;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.document.nurbs_surface_project;
 
 void NurbsPoleInspector::draw_project(EditableNurbsSurface &model)
 {

@@ -1,11 +1,9 @@
-#include "vulkan_window.hpp"
-
 #include <SDL3/SDL_main.h>
-
 #include <cstdio>
 #include <cstdlib>
-#include <exception>
-#include <print>
+
+import std;
+import occt_lab.vulkan_window;
 
 auto main(int, char **) -> int
 {

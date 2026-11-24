@@ -1,11 +1,14 @@
-#include "curve_editor.hpp"
-#include "ui/clamped_knot_editor.hpp"
+module;
 
 #include <imgui.h>
 
-#include <algorithm>
-#include <exception>
-#include <utility>
+module occt_lab.ui.curve.curve_editor;
+
+import std;
+import occt_lab.application.editable_curve;
+import occt_lab.application.nurbs_curve_creation;
+import occt_lab.geometry.curves.bspline_curve;
+import occt_lab.ui.clamped_knot_editor;
 
 namespace
 {

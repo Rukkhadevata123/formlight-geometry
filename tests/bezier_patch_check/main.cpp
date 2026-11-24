@@ -1,20 +1,11 @@
-#include "../support/near.hpp"
-#include "geometry/surfaces/bezier_patch.hpp"
-#include "geometry/surfaces/bspline_surface.hpp"
-#include "geometry/surfaces/occt_bezier_patch.hpp"
-
-#include <array>
-#include <cmath>
-#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <exception>
-#include <format>
-#include <limits>
-#include <numbers>
-#include <print>
-#include <stdexcept>
-#include <vector>
+
+import std;
+import occt_lab.geometry.surfaces.bezier_patch;
+import occt_lab.geometry.surfaces.bspline_surface;
+import occt_lab.geometry.surfaces.occt_bezier_patch;
+import occt_lab.test.support.near;
 
 namespace
 {

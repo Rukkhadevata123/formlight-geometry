@@ -1,17 +1,17 @@
-#include "occt_bspline.hpp"
+module;
 
 #include <GeomAPI_Interpolate.hxx>
 #include <GeomAPI_PointsToBSpline.hxx>
 #include <Precision.hxx>
 
-#include <algorithm>
-#include <cmath>
-#include <format>
-#include <limits>
-#include <stdexcept>
+module occt_lab.geometry.curves.bspline_curve;
+
+import std;
 
 namespace occt_lab::geometry
 {
+CurveDefinition read_bspline_definition(const Geom_BSplineCurve &curve, double weight_scale);
+
 namespace
 {
 std::vector<CurveDataPoint> parameterize_by_chord_length(const std::span<const Vec3> data_points)

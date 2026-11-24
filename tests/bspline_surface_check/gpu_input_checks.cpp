@@ -1,14 +1,8 @@
-#include "analytic_surface.hpp"
-#include "render/compute/nurbs_grid_input.hpp"
-#include "render/compute/nurbs_grid_report.hpp"
-
-#include <algorithm>
-#include <array>
-#include <bit>
-#include <cmath>
-#include <limits>
-#include <span>
-#include <stdexcept>
+import std;
+import occt_lab.geometry.surfaces.bspline_surface;
+import occt_lab.render.compute.nurbs_grid_input;
+import occt_lab.render.compute.nurbs_grid_report;
+import occt_lab.test.bspline_surface_check.analytic_surface;
 
 void check_nurbs_gpu_input()
 {

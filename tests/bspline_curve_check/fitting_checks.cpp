@@ -1,10 +1,7 @@
-#include "../support/near.hpp"
-#include "application/editable_curve.hpp"
-
-#include <algorithm>
-#include <array>
-#include <limits>
-#include <stdexcept>
+import std;
+import occt_lab.application.editable_curve;
+import occt_lab.geometry.curves.bspline_curve;
+import occt_lab.test.support.near;
 
 namespace
 {

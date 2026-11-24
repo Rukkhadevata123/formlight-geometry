@@ -1,22 +1,14 @@
-#include "geometry/brep/brep_face_properties.hpp"
-#include "geometry/brep/brep_mesh.hpp"
-#include "render/viewport/brep_face_picking.hpp"
-#include "render/viewport/clip_transform.hpp"
-
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
+#include <cstdio>
+#include <cstdlib>
 #include <gp_Pnt.hxx>
 
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <cstdlib>
-#include <exception>
-#include <format>
-#include <numbers>
-#include <print>
-#include <span>
-#include <stdexcept>
+import std;
+import occt_lab.geometry.brep.brep_face_properties;
+import occt_lab.geometry.brep.brep_mesh;
+import occt_lab.render.viewport.brep_face_picking;
+import occt_lab.render.viewport.clip_transform;
 
 namespace
 {
@@ -26,8 +18,8 @@ void check_pick_depth()
     BRepMeshData mesh;
     const auto add_triangle = [&](const float z, const bool reversed)
     {
-        const auto base = static_cast<uint32_t>(mesh.vertices.size());
-        const auto first = static_cast<uint32_t>(mesh.indices.size());
+        const auto base = static_cast<std::uint32_t>(mesh.vertices.size());
+        const auto first = static_cast<std::uint32_t>(mesh.indices.size());
         mesh.vertices.insert(mesh.vertices.end(), {{.position = {-1, -1, z}, .normal = {}},
                                                    {.position = {1, -1, z}, .normal = {}},
                                                    {.position = {0, 1, z}, .normal = {}}});

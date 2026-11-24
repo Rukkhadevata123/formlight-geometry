@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
-#include <exception>
-#include <print>
+
+import std;
 
 void check_surface_evaluation();
 void check_nurbs_pole_edits();

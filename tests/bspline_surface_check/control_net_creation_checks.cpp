@@ -1,9 +1,9 @@
-#include "../support/project_test_directory.hpp"
-#include "application/nurbs_surface_creation.hpp"
-#include "document/nurbs_surface_project.hpp"
-
-#include <cmath>
-#include <stdexcept>
+import std;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.application.nurbs_surface_creation;
+import occt_lab.document.nurbs_surface_project;
+import occt_lab.geometry.bspline_knot;
+import occt_lab.test.support.project_test_directory;
 
 void check_control_net_creation()
 {

@@ -1,12 +1,10 @@
-#include "../support/near.hpp"
-#include "../support/project_test_directory.hpp"
-#include "application/editable_curve.hpp"
-#include "document/curve_project.hpp"
-
-#include <algorithm>
-#include <array>
-#include <stdexcept>
-#include <utility>
+import std;
+import occt_lab.application.editable_curve;
+import occt_lab.application.nurbs_curve_creation;
+import occt_lab.document.curve_project;
+import occt_lab.geometry.curves.bspline_curve;
+import occt_lab.test.support.near;
+import occt_lab.test.support.project_test_directory;
 
 namespace
 {

@@ -1,12 +1,15 @@
-#include "nurbs_pole_inspector.hpp"
-
-#include "application/bezier_patch_presets.hpp"
-#include "ui/clamped_knot_editor.hpp"
+module;
 
 #include <imgui.h>
 
-#include <algorithm>
-#include <utility>
+module occt_lab.ui.surface.nurbs_pole_inspector;
+
+import std;
+import occt_lab.application.bezier_patch_presets;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.application.nurbs_surface_creation;
+import occt_lab.geometry.bspline_knot;
+import occt_lab.ui.clamped_knot_editor;
 
 namespace
 {

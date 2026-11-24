@@ -1,8 +1,9 @@
-#include "../support/project_test_directory.hpp"
-#include "analytic_surface.hpp"
-#include "document/nurbs_surface_project.hpp"
-
-#include <stdexcept>
+import std;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.document.nurbs_surface_project;
+import occt_lab.geometry.surfaces.bspline_surface;
+import occt_lab.test.bspline_surface_check.analytic_surface;
+import occt_lab.test.support.project_test_directory;
 
 namespace
 {

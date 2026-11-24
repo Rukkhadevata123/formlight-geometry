@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
-#include <exception>
-#include <print>
+
+import std;
 
 void check_curve_geometry();
 void check_curve_creation();

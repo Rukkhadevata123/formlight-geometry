@@ -1,9 +1,6 @@
-#include "application/editable_nurbs_surface.hpp"
-#include "analytic_surface.hpp"
-
-#include <cmath>
-#include <limits>
-#include <stdexcept>
+import std;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.test.bspline_surface_check.analytic_surface;
 
 void check_nurbs_pole_drag()
 {

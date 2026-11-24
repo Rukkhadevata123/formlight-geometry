@@ -1,24 +1,21 @@
-#include "../support/project_test_directory.hpp"
-#include "document/plate_step.hpp"
-#include "geometry/brep/brep_face_properties.hpp"
-#include "geometry/brep/brep_mesh.hpp"
-#include "geometry/brep/plate_with_hole.hpp"
-#include "render/viewport/brep_face_picking.hpp"
-#include "render/viewport/clip_transform.hpp"
-
+#include <GeomAbs_SurfaceType.hxx>
+#include <TopoDS_Solid.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
+#include <cstdio>
+#include <cstdlib>
 #include <gp_Pnt.hxx>
 
-#include <cmath>
-#include <cstdlib>
-#include <exception>
-#include <format>
-#include <fstream>
-#include <numbers>
-#include <print>
-#include <stdexcept>
+import std;
+import occt_lab.document.plate_step;
+import occt_lab.geometry.brep.box_model;
+import occt_lab.geometry.brep.brep_face_properties;
+import occt_lab.geometry.brep.brep_mesh;
+import occt_lab.geometry.brep.plate_with_hole;
+import occt_lab.render.viewport.brep_face_picking;
+import occt_lab.render.viewport.clip_transform;
+import occt_lab.test.support.project_test_directory;
 
 namespace
 {

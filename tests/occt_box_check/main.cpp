@@ -1,7 +1,4 @@
-#include "geometry/brep/box_model.hpp"
-#include "geometry/brep/brep_face_properties.hpp"
-#include "geometry/brep/brep_mesh.hpp"
-
+#include <GeomAbs_SurfaceType.hxx>
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 #include <NCollection_IndexedMap.hxx>
@@ -10,22 +7,16 @@
 #include <TopLoc_Location.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
 #include <TopoDS_Shape.hxx>
+#include <cstdio>
+#include <cstdlib>
 #include <gp_Pnt.hxx>
 #include <gp_Trsf.hxx>
 #include <gp_Vec.hxx>
 
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <cstddef>
-#include <cstdio>
-#include <cstdlib>
-#include <exception>
-#include <format>
-#include <limits>
-#include <print>
-#include <stdexcept>
-#include <string_view>
+import std;
+import occt_lab.geometry.brep.box_model;
+import occt_lab.geometry.brep.brep_face_properties;
+import occt_lab.geometry.brep.brep_mesh;
 
 namespace
 {

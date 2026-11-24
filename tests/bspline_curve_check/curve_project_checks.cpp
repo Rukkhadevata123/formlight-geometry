@@ -1,13 +1,7 @@
-#include "application/editable_curve.hpp"
-#include "document/curve_project.hpp"
-#include "../support/project_test_directory.hpp"
-
-#include <filesystem>
-#include <format>
-#include <fstream>
-#include <iterator>
-#include <stdexcept>
-#include <string_view>
+import std;
+import occt_lab.application.editable_curve;
+import occt_lab.document.curve_project;
+import occt_lab.test.support.project_test_directory;
 
 namespace
 {

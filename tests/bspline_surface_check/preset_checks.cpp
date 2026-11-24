@@ -1,13 +1,13 @@
-#include "application/bezier_patch_presets.hpp"
-#include "application/editable_nurbs_surface.hpp"
-#include "application/nurbs_surface_creation.hpp"
-#include "geometry/surfaces/occt_bezier_patch.hpp"
+#include <Geom_BSplineSurface.hxx>
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <stdexcept>
-#include <utility>
+import std;
+import occt_lab.application.bezier_patch_presets;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.application.nurbs_surface_creation;
+import occt_lab.geometry.surfaces.bernstein_reference;
+import occt_lab.geometry.surfaces.bezier_patch;
+import occt_lab.geometry.surfaces.bspline_surface;
+import occt_lab.geometry.surfaces.occt_bezier_patch;
 
 namespace
 {

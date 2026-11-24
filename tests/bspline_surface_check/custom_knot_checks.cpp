@@ -1,10 +1,7 @@
-#include "application/editable_nurbs_surface.hpp"
-#include "application/nurbs_surface_creation.hpp"
-
-#include <cmath>
-#include <limits>
-#include <stdexcept>
-#include <utility>
+import std;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.application.nurbs_surface_creation;
+import occt_lab.geometry.surfaces.bspline_surface;
 
 void check_custom_surface_knots()
 {

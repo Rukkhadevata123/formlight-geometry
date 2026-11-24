@@ -1,4 +1,6 @@
-#include "render/viewport/clip_transform.hpp"
+import std;
+import occt_lab.geometry.vec3;
+import occt_lab.render.viewport.clip_transform;
 
 namespace
 {

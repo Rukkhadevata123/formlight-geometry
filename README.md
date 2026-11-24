@@ -21,7 +21,9 @@ occt-lab 是一个用 C++23 编写的交互式计算机辅助几何设计（CAGD
 
 ## 构建与测试
 
-Windows x64 的 Release 预设使用 Ninja，项目和 vcpkg 依赖都从 PATH 查找 `clang-cl.exe`。请将 `VCPKG_ROOT` 指向 vcpkg 安装目录。运行需要支持 Vulkan 1.3 的驱动。[CMake 预设](CMakePresets.json)
+项目使用 C++23 命名模块。`.cppm` 文件用 `export` 标出对外接口，曲线拟合等较长的实现保存在同一模块的独立 `.cpp` 中。[曲线模块](src/geometry/curves/bspline_curve.cppm) · [拟合实现](src/geometry/curves/curve_fitting.cpp)
+
+Windows x64 的 Release 预设使用 CMake 4.5 或更高版本和 Ninja。项目通过 `import std;` 使用 C++23 标准库，需要 MSVC 工具集中的标准库模块文件。项目和 vcpkg 依赖都从 PATH 查找 `clang-cl.exe`。请将 `VCPKG_ROOT` 指向 vcpkg 安装目录。运行需要支持 Vulkan 1.3 的驱动。[CMake 预设](CMakePresets.json)
 
 以下命令在仓库根目录的 x64 VS 开发者 PowerShell 中运行。
 

@@ -1,10 +1,13 @@
-#include "curve_editor.hpp"
-
-#include "render/viewport/viewport_projection.hpp"
+module;
 
 #include <imgui.h>
 
-#include <array>
+module occt_lab.ui.curve.curve_editor;
+
+import std;
+import occt_lab.application.editable_curve;
+import occt_lab.render.viewport.clip_transform;
+import occt_lab.render.viewport.viewport_projection;
 
 void CurveEditor::preview_point_picking(const EditableCurve &curve, const ClipTransform &transform,
                                         const bool scene_click)

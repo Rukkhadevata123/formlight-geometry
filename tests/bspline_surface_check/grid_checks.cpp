@@ -1,11 +1,7 @@
-#include "analytic_surface.hpp"
-#include "render/viewport/clip_transform.hpp"
-
-#include <algorithm>
-#include <cmath>
-#include <format>
-#include <limits>
-#include <stdexcept>
+import std;
+import occt_lab.geometry.surfaces.bspline_surface;
+import occt_lab.render.viewport.clip_transform;
+import occt_lab.test.bspline_surface_check.analytic_surface;
 
 namespace
 {

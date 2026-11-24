@@ -1,12 +1,15 @@
-#include "nurbs_pole_inspector.hpp"
-#include "surface_sample_readout.hpp"
+module;
 
 #include <imgui.h>
 
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <numeric>
+module occt_lab.ui.surface.nurbs_pole_inspector;
+
+import std;
+import occt_lab.application.editable_nurbs_surface;
+import occt_lab.geometry.surfaces.bernstein_reference;
+import occt_lab.geometry.surfaces.bezier_patch;
+import occt_lab.geometry.surfaces.bspline_surface;
+import occt_lab.ui.surface.surface_sample_readout;
 
 namespace
 {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.23)
+cmake_minimum_required(VERSION 4.5)
 project(occt_lab LANGUAGES C CXX)
 
 find_package(OpenCASCADE 8.0.1 CONFIG REQUIRED COMPONENTS
@@ -9,87 +9,96 @@ find_package(Vulkan 1.4.363 REQUIRED)
 find_package(slang 2026.22 CONFIG REQUIRED)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
-add_library(occt_lab_geometry STATIC
-    src/geometry/bspline_knot.cpp
-    src/geometry/bspline_weights.hpp
-    src/geometry/occt_bspline_knots.cpp
-    src/geometry/brep/box_model.cpp
-    src/geometry/brep/plate_with_hole.cpp
-    src/geometry/brep/brep_face_properties.cpp
-    src/geometry/brep/brep_mesh.cpp
-    src/geometry/curves/bspline_curve.cpp
-    src/geometry/curves/curve_fitting.cpp
-    src/geometry/curves/occt_bspline.hpp
-    src/geometry/surfaces/bezier_patch.cpp
-    src/geometry/surfaces/bernstein_reference.cpp
-    src/geometry/surfaces/bspline_surface.cpp
-    src/geometry/surfaces/occt_bezier_patch.cpp
-    src/geometry/surfaces/patch_grid.cpp
-    src/geometry/surfaces/surface_isolines.hpp
-    src/geometry/vec3.hpp
+add_library(occt_lab_geometry STATIC src/geometry/curves/curve_fitting.cpp)
+target_sources(occt_lab_geometry PUBLIC
+    FILE_SET CXX_MODULES FILES
+        src/geometry/brep/box_model.cppm
+        src/geometry/brep/brep_face_properties.cppm
+        src/geometry/brep/brep_mesh.cppm
+        src/geometry/brep/plate_with_hole.cppm
+        src/geometry/bspline_knot.cppm
+        src/geometry/bspline_weights.cppm
+        src/geometry/curves/bspline_curve.cppm
+        src/geometry/occt_bspline_knots.cppm
+        src/geometry/surfaces/bernstein_reference.cppm
+        src/geometry/surfaces/bezier_patch.cppm
+        src/geometry/surfaces/bspline_surface.cppm
+        src/geometry/surfaces/occt_bezier_patch.cppm
+        src/geometry/surfaces/patch_grid.cppm
+        src/geometry/surfaces/surface_isolines.cppm
+        src/geometry/vec3.cppm
 )
 target_compile_features(occt_lab_geometry PUBLIC cxx_std_23)
-target_include_directories(occt_lab_geometry PUBLIC src)
 target_link_libraries(occt_lab_geometry
     PUBLIC TKBRep TKG3d
     PRIVATE TKMesh TKPrim TKBO TKTopAlgo TKGeomAlgo TKMath TKernel
 )
 
+add_library(occt_lab_model STATIC)
+target_link_libraries(occt_lab_model PUBLIC occt_lab_geometry PRIVATE TKDESTEP TKXSBase)
+target_sources(occt_lab_model PUBLIC
+    FILE_SET CXX_MODULES FILES
+        src/application/bezier_patch_presets.cppm
+        src/application/editable_curve.cppm
+        src/application/editable_nurbs_surface.cppm
+        src/application/nurbs_curve_creation.cppm
+        src/application/nurbs_surface_creation.cppm
+        src/application/single_step_history.cppm
+        src/document/curve_project.cppm
+        src/document/nurbs_surface_project.cppm
+        src/document/plate_step.cppm
+        src/document/project_io.cppm
+        src/render/compute/nurbs_grid_input.cppm
+        src/render/compute/nurbs_grid_report.cppm
+        src/render/viewport/brep_face_picking.cppm
+        src/render/viewport/clip_transform.cppm
+)
+
 add_executable(occt_lab
     src/main.cpp
-    src/application/bezier_patch_presets.hpp
-    src/application/editable_curve.cpp
-    src/application/nurbs_curve_creation.cpp
-    src/application/editable_nurbs_surface.cpp
-    src/application/nurbs_surface_creation.cpp
-    src/application/single_step_history.hpp
-    src/document/curve_project.cpp
-    src/document/nurbs_surface_project.cpp
-    src/document/plate_step.cpp
-    src/document/project_io.cpp
-    src/vulkan_window.cpp
-    src/render/compute/compute_buffer_check.cpp
-    src/render/compute/compute_pyramid.cpp
-    src/render/compute/nurbs_grid_mesh.cpp
-    src/render/compute/nurbs_grid_input.cpp
-    src/render/compute/nurbs_grid_report.cpp
-    src/render/compute/storage_buffer_kernel.cpp
-    src/render/preview/brep_preview.cpp
-    src/render/preview/curve_colors.hpp
-    src/render/preview/curve_preview.cpp
-    src/render/preview/surface/nurbs_surface_preview.cpp
-    src/render/preview/surface/surface_probe_marker.cpp
-    src/render/preview/surface/surface_wireframe.cpp
-    src/render/viewport/orbit_camera.cpp
-    src/render/viewport/clip_transform.hpp
-    src/render/viewport/viewport_projection.cpp
-    src/render/viewport/brep_face_picking.cpp
-    src/render/vulkan_resources.cpp
-    src/ui/box_editor.cpp
-    src/ui/clamped_knot_editor.cpp
     src/ui/curve/curve_creation_dialog.cpp
-    src/ui/curve/curve_editor.cpp
     src/ui/curve/curve_point_picker.cpp
     src/ui/curve/curve_project_panel.cpp
-    src/ui/curve/fit_residuals.cpp
-    src/ui/developer_diagnostics.cpp
-    src/ui/imgui_session.cpp
-    src/ui/pole_drag.hpp
-    src/ui/plate_step_panel.cpp
-    src/ui/project_file_controls.cpp
-    src/ui/renderer_status_panel.cpp
-    src/ui/surface/isoline_sampling.cpp
-    src/ui/surface/nurbs_pole_inspector.cpp
     src/ui/surface/nurbs_surface_creation_dialog.cpp
     src/ui/surface/nurbs_surface_probe.cpp
     src/ui/surface/nurbs_surface_project_panel.cpp
-    src/ui/surface/nurbs_surface_session.cpp
     src/ui/surface/surface_control_net_input.cpp
-    src/ui/surface/surface_grid_controls.cpp
-    src/ui/surface/surface_sample_readout.cpp
 )
-target_link_libraries(occt_lab PRIVATE occt_lab_geometry TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
+target_sources(occt_lab PRIVATE
+    FILE_SET CXX_MODULES FILES
+        src/render/compute/compute_buffer_check.cppm
+        src/render/compute/compute_pyramid.cppm
+        src/render/compute/nurbs_grid_mesh.cppm
+        src/render/compute/storage_buffer_kernel.cppm
+        src/render/preview/brep_preview.cppm
+        src/render/preview/curve_colors.cppm
+        src/render/preview/curve_preview.cppm
+        src/render/preview/surface/nurbs_surface_preview.cppm
+        src/render/preview/surface/surface_probe_marker.cppm
+        src/render/preview/surface/surface_wireframe.cppm
+        src/render/viewport/orbit_camera.cppm
+        src/render/viewport/viewport_projection.cppm
+        src/render/vulkan_resources.cppm
+        src/ui/box_editor.cppm
+        src/ui/clamped_knot_editor.cppm
+        src/ui/curve/curve_editor.cppm
+        src/ui/curve/fit_residuals.cppm
+        src/ui/developer_diagnostics.cppm
+        src/ui/imgui_session.cppm
+        src/ui/plate_step_panel.cppm
+        src/ui/pole_drag.cppm
+        src/ui/project_file_controls.cppm
+        src/ui/renderer_status_panel.cppm
+        src/ui/surface/isoline_sampling.cppm
+        src/ui/surface/nurbs_pole_inspector.cppm
+        src/ui/surface/nurbs_surface_session.cppm
+        src/ui/surface/surface_grid_controls.cppm
+        src/ui/surface/surface_sample_readout.cppm
+        src/vulkan_window.cppm
+)
+target_link_libraries(occt_lab PRIVATE occt_lab_model TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
 
 set(triangle_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.slang")
@@ -143,52 +152,44 @@ add_dependencies(occt_lab occt_lab_shaders)
 
 include(CTest)
 if(BUILD_TESTING)
+    add_library(occt_lab_test_support STATIC)
+    target_link_libraries(occt_lab_test_support PUBLIC occt_lab_geometry)
+    target_sources(occt_lab_test_support PUBLIC
+        FILE_SET CXX_MODULES FILES
+            tests/support/near.cppm
+            tests/support/project_test_directory.cppm
+    )
+
     foreach(check IN ITEMS occt_box_check occt_cylinder_check occt_plate_with_hole_check bezier_patch_check bspline_curve_check bspline_surface_check)
         add_executable(${check} tests/${check}/main.cpp)
-        target_link_libraries(${check} PRIVATE occt_lab_geometry)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
-    target_link_libraries(occt_box_check PRIVATE TKTopAlgo TKGeomBase)
-    target_link_libraries(occt_cylinder_check PRIVATE TKPrim)
-    target_sources(occt_cylinder_check PRIVATE src/render/viewport/brep_face_picking.cpp)
-    target_link_libraries(occt_plate_with_hole_check PRIVATE TKDESTEP TKXSBase)
-    target_sources(occt_plate_with_hole_check PRIVATE
-        src/render/viewport/brep_face_picking.cpp
-        src/document/plate_step.cpp
-        src/document/project_io.cpp
-    )
-    target_link_libraries(bspline_surface_check PRIVATE TKMath)
+
+    target_link_libraries(occt_box_check PRIVATE occt_lab_geometry TKTopAlgo TKGeomBase)
+    target_link_libraries(occt_cylinder_check PRIVATE occt_lab_model TKPrim)
+    target_link_libraries(occt_plate_with_hole_check PRIVATE occt_lab_model occt_lab_test_support TKDESTEP TKXSBase)
+    target_link_libraries(bezier_patch_check PRIVATE occt_lab_test_support)
+    target_link_libraries(bspline_surface_check PRIVATE occt_lab_model occt_lab_test_support TKMath)
+    target_link_libraries(bspline_curve_check PRIVATE occt_lab_model occt_lab_test_support)
+
     target_sources(bspline_surface_check PRIVATE
-        tests/bspline_surface_check/analytic_surface.cpp
-        tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/control_net_creation_checks.cpp
+        tests/bspline_surface_check/custom_knot_checks.cpp
         tests/bspline_surface_check/evaluation_checks.cpp
-        tests/bspline_surface_check/grid_checks.cpp
         tests/bspline_surface_check/gpu_input_checks.cpp
+        tests/bspline_surface_check/grid_checks.cpp
         tests/bspline_surface_check/pole_edit_checks.cpp
         tests/bspline_surface_check/preset_checks.cpp
         tests/bspline_surface_check/project_checks.cpp
         tests/bspline_surface_check/sampling_checks.cpp
-        tests/support/project_test_directory.hpp
-        src/application/editable_nurbs_surface.cpp
-        src/application/nurbs_surface_creation.cpp
-        src/render/compute/nurbs_grid_input.cpp
-        src/render/compute/nurbs_grid_report.cpp
-        src/document/nurbs_surface_project.cpp
-        src/document/project_io.cpp
+        PRIVATE FILE_SET CXX_MODULES FILES tests/bspline_surface_check/analytic_surface.cppm
     )
     target_sources(bspline_curve_check PRIVATE
-        tests/bspline_curve_check/curve_project_checks.cpp
         tests/bspline_curve_check/creation_checks.cpp
+        tests/bspline_curve_check/curve_project_checks.cpp
         tests/bspline_curve_check/editing_checks.cpp
         tests/bspline_curve_check/fitting_checks.cpp
         tests/bspline_curve_check/refinement_checks.cpp
         tests/bspline_curve_check/viewport_picking_checks.cpp
-        tests/support/near.hpp
-        tests/support/project_test_directory.hpp
-        src/application/editable_curve.cpp
-        src/application/nurbs_curve_creation.cpp
-        src/document/curve_project.cpp
-        src/document/project_io.cpp
     )
 endif()
