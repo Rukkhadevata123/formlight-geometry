@@ -2,14 +2,14 @@ module;
 
 #include <imgui.h>
 
-module occt_lab.ui.surface.nurbs_pole_inspector;
+module formlight_geometry.ui.surface.nurbs_pole_inspector;
 
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.geometry.surfaces.bernstein_reference;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.ui.surface.surface_sample_readout;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.geometry.surfaces.bernstein_reference;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.ui.surface.surface_sample_readout;
 
 namespace
 {
@@ -41,7 +41,7 @@ bool parameter_control(const char *label, double &value, const double low, const
 }
 } // namespace
 
-const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::update_probe(const EditableNurbsSurface::Snapshot &snapshot,
+const formlight_geometry::geometry::SurfaceProbe *NurbsPoleInspector::update_probe(const EditableNurbsSurface::Snapshot &snapshot,
                                                                          const bool show_controls)
 {
     const bool surface_changed = snapshot.surface != probed_surface_;
@@ -49,7 +49,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::update_probe(const E
     const bool center_requested = show_controls && ImGui::Button("Center UV probe");
     if (surface_changed || center_requested)
     {
-        const auto old = probed_surface_ ? probed_surface_->domain() : occt_lab::geometry::SurfaceDomain{};
+        const auto old = probed_surface_ ? probed_surface_->domain() : formlight_geometry::geometry::SurfaceDomain{};
         if (center_requested || old.u_min != bounds.u_min || old.u_max != bounds.u_max)
         {
             probe_u_ = std::midpoint(bounds.u_min, bounds.u_max);

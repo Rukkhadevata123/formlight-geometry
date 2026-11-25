@@ -1,9 +1,9 @@
-export module occt_lab.document.project_io;
+export module formlight_geometry.document.project_io;
 
 import std;
-import occt_lab.geometry.vec3;
+import formlight_geometry.geometry.vec3;
 
-namespace occt_lab::document::io
+namespace formlight_geometry::document::io
 {
 export template <class T> T read_number(std::istream &in, const std::string_view field)
 {
@@ -87,4 +87,4 @@ export [[nodiscard]] auto write_atomically(const std::filesystem::path &path,
         return std::unexpected(error.what());
     }
 }
-} // namespace occt_lab::document::io
+} // namespace formlight_geometry::document::io

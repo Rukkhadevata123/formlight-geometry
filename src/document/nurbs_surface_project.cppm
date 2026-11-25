@@ -2,14 +2,14 @@ module;
 
 #include <Geom_BSplineSurface.hxx>
 
-export module occt_lab.document.nurbs_surface_project;
+export module formlight_geometry.document.nurbs_surface_project;
 
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.document.project_io;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.document.project_io;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
-namespace occt_lab::document
+namespace formlight_geometry::document
 {
 namespace
 {
@@ -175,4 +175,4 @@ export [[nodiscard]] auto open_nurbs_surface_project(const std::filesystem::path
         return std::unexpected(error.what());
     }
 }
-} // namespace occt_lab::document
+} // namespace formlight_geometry::document

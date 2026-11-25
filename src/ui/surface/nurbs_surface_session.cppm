@@ -1,12 +1,12 @@
-export module occt_lab.ui.surface.nurbs_surface_session;
+export module formlight_geometry.ui.surface.nurbs_surface_session;
 
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.render.preview.surface.nurbs_surface_preview;
-import occt_lab.render.preview.surface.surface_wireframe;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.ui.surface.nurbs_pole_inspector;
-import occt_lab.ui.surface.surface_grid_controls;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.render.preview.surface.nurbs_surface_preview;
+import formlight_geometry.render.preview.surface.surface_wireframe;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.ui.surface.nurbs_pole_inspector;
+import formlight_geometry.ui.surface.surface_grid_controls;
 
 export class NurbsSurfaceSession
 {
@@ -33,7 +33,7 @@ export class NurbsSurfaceSession
     NurbsPoleInspector inspector_;
 };
 
-NurbsSurfaceSession::NurbsSurfaceSession() : model_(occt_lab::make_saddle_surface()), inspector_(model_)
+NurbsSurfaceSession::NurbsSurfaceSession() : model_(formlight_geometry::make_saddle_surface()), inspector_(model_)
 {
 }
 

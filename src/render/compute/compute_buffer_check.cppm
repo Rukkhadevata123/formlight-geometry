@@ -2,11 +2,11 @@ module;
 
 #include <vulkan/vulkan_core.h>
 
-export module occt_lab.render.compute.compute_buffer_check;
+export module formlight_geometry.render.compute.compute_buffer_check;
 
 import std;
 import vulkan;
-import occt_lab.render.compute.storage_buffer_kernel;
+import formlight_geometry.render.compute.storage_buffer_kernel;
 
 export class ComputeBufferCheck
 {

@@ -14,7 +14,7 @@ module;
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
 
-export module occt_lab.geometry.brep.brep_mesh;
+export module formlight_geometry.geometry.brep.brep_mesh;
 
 import std;
 

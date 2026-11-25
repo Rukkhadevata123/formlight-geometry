@@ -1,19 +1,19 @@
 #include <Geom_BSplineSurface.hxx>
 
 import std;
-import occt_lab.application.bezier_patch_presets;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.geometry.surfaces.bernstein_reference;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.geometry.surfaces.occt_bezier_patch;
+import formlight_geometry.application.bezier_patch_presets;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.geometry.surfaces.bernstein_reference;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.occt_bezier_patch;
 
 namespace
 {
 void check_bernstein_probe()
 {
-    using namespace occt_lab;
+    using namespace formlight_geometry;
     using namespace geometry;
     auto definition = make_bezier_nurbs_surface(raised_bezier_net());
     definition.u.knots = {{-4, 4}, {8, 4}};
@@ -79,7 +79,7 @@ void check_bernstein_probe()
 
 void check_bezier_presets()
 {
-    using namespace occt_lab;
+    using namespace formlight_geometry;
     const auto plane = make_bezier_nurbs_surface(planar_bezier_net());
     const auto raised = make_bezier_nurbs_surface(raised_bezier_net());
     EditableNurbsSurface model{plane};
@@ -109,9 +109,9 @@ void check_bezier_presets()
 
 void check_independent_degrees()
 {
-    using occt_lab::SurfaceCreationParameters;
+    using formlight_geometry::SurfaceCreationParameters;
     SurfaceCreationParameters parameters{.u_poles = 7, .v_poles = 7, .u_degree = 2, .v_degree = 5};
-    const auto plane = occt_lab::make_planar_nurbs_surface(parameters).value();
+    const auto plane = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     if (plane.u.degree != 2 || plane.v.degree != 5 || plane.u.knots.size() != 6 || plane.v.knots.size() != 3 ||
         plane.u.knots.front().multiplicity != 3 || plane.v.knots.back().multiplicity != 6)
     {
@@ -119,7 +119,7 @@ void check_independent_degrees()
     }
 
     parameters.v_degree.reset();
-    const auto cubic_v = occt_lab::make_planar_nurbs_surface(parameters).value();
+    const auto cubic_v = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     if (cubic_v.u != plane.u || cubic_v.v.degree != 3 || cubic_v.poles != plane.poles)
     {
         throw std::runtime_error("Defaulting V changed the U axis or the control grid");
@@ -138,8 +138,8 @@ void check_independent_degrees()
 
     const int occt_limit = Geom_BSplineSurface::MaxDegree();
     parameters = {.u_poles = SurfaceCreationParameters::max_poles, .v_poles = 2, .u_degree = occt_limit, .v_degree = 1};
-    const auto highest = occt_lab::make_planar_nurbs_surface(parameters).value();
-    const occt_lab::geometry::BSplineSurface reference{highest};
+    const auto highest = formlight_geometry::make_planar_nurbs_surface(parameters).value();
+    const formlight_geometry::geometry::BSplineSurface reference{highest};
     if (highest.u.degree != occt_limit || !reference.position(0.25, 0.75))
     {
         throw std::runtime_error("The supported OCCT degree limit should produce an evaluable plane");
@@ -149,7 +149,7 @@ void check_independent_degrees()
           SurfaceCreationParameters{.u_poles = 4, .u_degree = 4}, SurfaceCreationParameters{.v_poles = 2, .v_degree = 2},
           SurfaceCreationParameters{.v_poles = SurfaceCreationParameters::max_poles, .v_degree = occt_limit + 1}})
     {
-        if (occt_lab::make_planar_nurbs_surface(invalid))
+        if (formlight_geometry::make_planar_nurbs_surface(invalid))
         {
             throw std::runtime_error("New surface accepted an invalid degree");
         }
@@ -158,11 +158,11 @@ void check_independent_degrees()
 
 void check_planar_creation()
 {
-    using occt_lab::SurfaceCreationParameters;
+    using formlight_geometry::SurfaceCreationParameters;
     for (const auto [u_count, v_count] :
          {std::pair{2, 2}, std::pair{6, 3}, std::pair{3, SurfaceCreationParameters::max_poles}})
     {
-        const auto plane = occt_lab::make_planar_nurbs_surface({u_count, v_count, 120, 40}).value();
+        const auto plane = formlight_geometry::make_planar_nurbs_surface({u_count, v_count, 120, 40}).value();
         if (plane.u.pole_count != u_count || plane.v.pole_count != v_count ||
             plane.u.degree != std::min(3, u_count - 1) || plane.v.degree != std::min(3, v_count - 1))
         {
@@ -181,8 +181,8 @@ void check_planar_creation()
                 }
             }
         }
-        const occt_lab::geometry::BSplineSurface surface{plane};
-        const auto near = [](const auto &a, const occt_lab::geometry::Vec3 &b)
+        const formlight_geometry::geometry::BSplineSurface surface{plane};
+        const auto near = [](const auto &a, const formlight_geometry::geometry::Vec3 &b)
         { return std::hypot(a.x - b.x, a.y - b.y, a.z - b.z) <= 1e-10; };
         if (!near(surface.position(0.5, 0.5).value(), {}) ||
             !near(surface.position(0, 0).value(), plane.poles.front()) ||
@@ -197,7 +197,7 @@ void check_planar_creation()
                                 SurfaceCreationParameters{4, 4, std::numeric_limits<double>::quiet_NaN(), 40},
                                 SurfaceCreationParameters{4, 4, 120, std::numeric_limits<double>::infinity()}})
     {
-        if (occt_lab::make_planar_nurbs_surface(invalid))
+        if (formlight_geometry::make_planar_nurbs_surface(invalid))
         {
             throw std::runtime_error("New surface accepted invalid grid dimensions");
         }
@@ -211,8 +211,8 @@ void check_nurbs_presets()
     check_bezier_presets();
     check_planar_creation();
     check_independent_degrees();
-    const auto saddle = occt_lab::make_saddle_surface();
-    const occt_lab::geometry::BSplineSurface surface{saddle};
+    const auto saddle = formlight_geometry::make_saddle_surface();
+    const formlight_geometry::geometry::BSplineSurface surface{saddle};
     for (const double u : {0.0, 0.25, 0.5, 0.75, 1.0})
     {
         for (const double v : {0.0, 0.25, 0.5, 0.75, 1.0})
@@ -239,7 +239,7 @@ void check_nurbs_presets()
         throw std::runtime_error("Editing an outer saddle pole changed the framing");
     }
     const auto edited = model.current();
-    const auto plane = occt_lab::make_planar_nurbs_surface({6, 3, 120, 40}).value();
+    const auto plane = formlight_geometry::make_planar_nurbs_surface({6, 3, 120, 40}).value();
     model.replace(plane).value();
     const auto plane_frame = model.current().framing;
     if (model.current().definition != plane || plane_frame == saddle_frame)

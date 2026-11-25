@@ -11,12 +11,12 @@ module;
 #include <TopoDS_Iterator.hxx>
 #include <TopoDS_Solid.hxx>
 
-export module occt_lab.document.plate_step;
+export module formlight_geometry.document.plate_step;
 
 import std;
-import occt_lab.document.project_io;
+import formlight_geometry.document.project_io;
 
-namespace occt_lab::document
+namespace formlight_geometry::document
 {
 export struct PlateMeasurements
 {
@@ -130,4 +130,4 @@ export [[nodiscard]] PlateMeasurements verify_plate_step(const TopoDS_Solid &ori
     }
     return actual;
 }
-} // namespace occt_lab::document
+} // namespace formlight_geometry::document

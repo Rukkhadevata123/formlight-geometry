@@ -5,7 +5,7 @@ module;
 #include <Precision.hxx>
 #include <TopoDS_Shape.hxx>
 
-export module occt_lab.geometry.brep.box_model;
+export module formlight_geometry.geometry.brep.box_model;
 
 import std;
 

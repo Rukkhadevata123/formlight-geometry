@@ -4,10 +4,10 @@ module;
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
-export module occt_lab.ui.plate_step_panel;
+export module formlight_geometry.ui.plate_step_panel;
 
 import std;
-import occt_lab.document.plate_step;
+import formlight_geometry.document.plate_step;
 
 export struct PlateStepPanel
 {
@@ -42,14 +42,14 @@ void PlateStepPanel::draw(const TopoDS_Solid &plate)
                     std::filesystem::absolute(std::filesystem::path{std::u8string(path.begin(), path.end())});
                 if (exporting)
                 {
-                    occt_lab::document::write_plate_step(file, plate);
+                    formlight_geometry::document::write_plate_step(file, plate);
                     const auto utf8 = file.u8string();
                     status = "Exported " + std::string(utf8.begin(), utf8.end());
                 }
                 else
                 {
-                    const auto imported = occt_lab::document::read_step_solid(file);
-                    const auto measures = occt_lab::document::verify_plate_step(plate, imported);
+                    const auto imported = formlight_geometry::document::read_step_solid(file);
+                    const auto measures = formlight_geometry::document::verify_plate_step(plate, imported);
                     status = std::format("Verified one solid\nVolume: {:.6f} mm³\nHole wall: {:.6f} mm²",
                                          measures.volume_mm3, measures.hole_wall_area_mm2);
                 }

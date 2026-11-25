@@ -2,11 +2,11 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.render.preview.surface.surface_wireframe;
+export module formlight_geometry.render.preview.surface.surface_wireframe;
 
 import std;
-import occt_lab.geometry.surfaces.surface_isolines;
-import occt_lab.render.viewport.viewport_projection;
+import formlight_geometry.geometry.surfaces.surface_isolines;
+import formlight_geometry.render.viewport.viewport_projection;
 
 export struct PatchLayers
 {
@@ -15,9 +15,9 @@ export struct PatchLayers
     bool constant_v = true;
 };
 
-using occt_lab::geometry::PatchIsolines;
-using occt_lab::geometry::Vec3;
-using occt_lab::render::ViewportProjection;
+using formlight_geometry::geometry::PatchIsolines;
+using formlight_geometry::geometry::Vec3;
+using formlight_geometry::render::ViewportProjection;
 
 export void draw_surface_wireframe(ImDrawList &draw_list, const ViewportProjection &project,
                                    const std::span<const Vec3> net, const std::size_t u_count,

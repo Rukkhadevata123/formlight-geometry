@@ -1,9 +1,9 @@
-export module occt_lab.geometry.surfaces.surface_isolines;
+export module formlight_geometry.geometry.surfaces.surface_isolines;
 
 import std;
-export import occt_lab.geometry.vec3;
+export import formlight_geometry.geometry.vec3;
 
-export namespace occt_lab::geometry
+export namespace formlight_geometry::geometry
 {
 // Map a parameter inside a finite increasing knot interval to [0, 1].
 [[nodiscard]] inline double unit_parameter(const double value, const double low, const double high)
@@ -92,4 +92,4 @@ template <class Error, class Position>
     }
     return lines;
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

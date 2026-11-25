@@ -1,10 +1,10 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.test.bspline_surface_check.analytic_surface;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.test.bspline_surface_check.analytic_surface;
 
 void check_nurbs_pole_drag()
 {
-    EditableNurbsSurface model{occt_lab::test::make_analytic_surface()};
+    EditableNurbsSurface model{formlight_geometry::test::make_analytic_surface()};
     const auto original = model.current();
     constexpr std::size_t pole = 6;
     auto position = original.definition.poles.at(pole);
@@ -92,7 +92,7 @@ void check_nurbs_pole_drag()
 
 void check_nurbs_pole_edits()
 {
-    EditableNurbsSurface model{occt_lab::test::make_analytic_surface()};
+    EditableNurbsSurface model{formlight_geometry::test::make_analytic_surface()};
     const auto original = model.current();
     auto poles = original.definition.poles;
     auto weights = original.definition.weights;

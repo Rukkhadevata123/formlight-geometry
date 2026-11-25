@@ -14,9 +14,9 @@
 #include <gp_Vec.hxx>
 
 import std;
-import occt_lab.geometry.brep.box_model;
-import occt_lab.geometry.brep.brep_face_properties;
-import occt_lab.geometry.brep.brep_mesh;
+import formlight_geometry.geometry.brep.box_model;
+import formlight_geometry.geometry.brep.brep_face_properties;
+import formlight_geometry.geometry.brep.brep_mesh;
 
 namespace
 {

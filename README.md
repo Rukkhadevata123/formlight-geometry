@@ -1,6 +1,6 @@
-# occt-lab
+# Formlight Geometry
 
-occt-lab 是一个用 C++23 编写的交互式计算机辅助几何设计（CAGD）工作台。你可以拖动 NURBS 控制点、调整权重，观察曲线和曲面的变化，也可以比较 Open CASCADE Technology（OCCT）在 CPU 上与 Slang 计算着色器在 GPU 上的求值结果。
+Formlight Geometry 是一个用 C++23 编写的交互式计算机辅助几何设计（CAGD）工作台。你可以拖动 NURBS 控制点、调整权重，观察曲线和曲面的变化，也可以比较 Open CASCADE Technology（OCCT）在 CPU 上与 Slang 计算着色器在 GPU 上的求值结果。
 
 ![青色鞍形曲面及其控制网，右侧展开了 U/V 节点表和曲面探针](docs/images/nurbs-surface.png)
 
@@ -56,7 +56,7 @@ Windows x64 的 Release 预设使用 CMake 4.5 或更高版本、Ninja 和 clang
 ```powershell
 cmake --preset release
 cmake --build --preset release
-.\build-release\occt_lab.exe
+.\build-release\formlight-geometry.exe
 ctest --test-dir build-release --output-on-failure
 ```
 

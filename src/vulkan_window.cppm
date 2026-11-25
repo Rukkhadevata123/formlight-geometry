@@ -8,26 +8,26 @@ module;
 #include <imgui_impl_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-export module occt_lab.vulkan_window;
+export module formlight_geometry.vulkan_window;
 
 import std;
 import vulkan;
-import occt_lab.application.editable_curve;
-import occt_lab.render.compute.compute_buffer_check;
-import occt_lab.render.compute.compute_pyramid;
-import occt_lab.render.compute.nurbs_grid_mesh;
-import occt_lab.render.preview.brep_preview;
-import occt_lab.render.preview.surface.surface_wireframe;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.render.viewport.orbit_camera;
-import occt_lab.ui.box_editor;
-import occt_lab.ui.curve.curve_editor;
-import occt_lab.ui.developer_diagnostics;
-import occt_lab.ui.imgui_session;
-import occt_lab.ui.plate_step_panel;
-import occt_lab.ui.renderer_status_panel;
-import occt_lab.ui.surface.nurbs_surface_session;
-import occt_lab.ui.surface.surface_grid_controls;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.render.compute.compute_buffer_check;
+import formlight_geometry.render.compute.compute_pyramid;
+import formlight_geometry.render.compute.nurbs_grid_mesh;
+import formlight_geometry.render.preview.brep_preview;
+import formlight_geometry.render.preview.surface.surface_wireframe;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.orbit_camera;
+import formlight_geometry.ui.box_editor;
+import formlight_geometry.ui.curve.curve_editor;
+import formlight_geometry.ui.developer_diagnostics;
+import formlight_geometry.ui.imgui_session;
+import formlight_geometry.ui.plate_step_panel;
+import formlight_geometry.ui.renderer_status_panel;
+import formlight_geometry.ui.surface.nurbs_surface_session;
+import formlight_geometry.ui.surface.surface_grid_controls;
 
 namespace
 {
@@ -105,7 +105,7 @@ VulkanInstance create_instance(const vk::raii::Context &context)
     }
     std::vector extensions(sdl_extensions, sdl_extensions + extension_count);
 
-    constexpr vk::ApplicationInfo application("occt-lab", 0, nullptr, 0, required_api_version);
+    constexpr vk::ApplicationInfo application("Formlight Geometry", 0, nullptr, 0, required_api_version);
     vk::InstanceCreateInfo instance_info;
     instance_info.pApplicationInfo = &application;
 
@@ -950,7 +950,7 @@ export void run_vulkan_window()
     const SdlVideo video;
     constexpr auto window_flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
     const std::unique_ptr<SDL_Window, decltype(&SDL_DestroyWindow)> window{
-        SDL_CreateWindow("occt-lab", 960, 640, window_flags),
+        SDL_CreateWindow("Formlight Geometry", 960, 640, window_flags),
         SDL_DestroyWindow,
     };
     if (!window)

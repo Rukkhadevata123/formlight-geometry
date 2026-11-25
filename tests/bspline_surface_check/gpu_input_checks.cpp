@@ -1,14 +1,14 @@
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.render.compute.nurbs_grid_input;
-import occt_lab.render.compute.nurbs_grid_report;
-import occt_lab.test.bspline_surface_check.analytic_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.render.compute.nurbs_grid_input;
+import formlight_geometry.render.compute.nurbs_grid_report;
+import formlight_geometry.test.bspline_surface_check.analytic_surface;
 
 void check_nurbs_gpu_input()
 {
-    using occt_lab::render::pack_nurbs_grid;
-    auto definition = occt_lab::test::make_analytic_surface();
-    constexpr occt_lab::geometry::PatchGrid grid{3, 8};
+    using formlight_geometry::render::pack_nurbs_grid;
+    auto definition = formlight_geometry::test::make_analytic_surface();
+    constexpr formlight_geometry::geometry::PatchGrid grid{3, 8};
     // 36 two-float4 vertices, 12 pole float4s, 7+8 U words and 5+18 V words.
     constexpr std::uint32_t bytes = 374 * sizeof(float);
     const auto input = pack_nurbs_grid(definition, grid, bytes);
@@ -78,7 +78,7 @@ void check_nurbs_gpu_input()
 
 void check_nurbs_gpu_normals()
 {
-    using namespace occt_lab;
+    using namespace formlight_geometry;
     const geometry::SurfaceProbe smooth{{0, 0, 0}, geometry::Vec3{0, 0, 1}};
     const geometry::SurfaceProbe crease{{0, 0, 0}, std::unexpected("C0")};
     const auto report = [](std::array<float, 4> normal, const geometry::SurfaceProbe &sample, float x = 0)

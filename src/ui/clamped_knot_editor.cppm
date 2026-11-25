@@ -2,14 +2,14 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.clamped_knot_editor;
+export module formlight_geometry.ui.clamped_knot_editor;
 
 import std;
-import occt_lab.geometry.bspline_knot;
+import formlight_geometry.geometry.bspline_knot;
 
 namespace
 {
-using KnotList = std::vector<occt_lab::geometry::BSplineKnot>;
+using KnotList = std::vector<formlight_geometry::geometry::BSplineKnot>;
 
 bool draw_knot_table(KnotList &knots, const int poles, const int degree)
 {
@@ -84,7 +84,7 @@ bool draw_knot_table(KnotList &knots, const int poles, const int degree)
 }
 } // namespace
 
-export void draw_knot_inspector(const char *label, const std::span<const occt_lab::geometry::BSplineKnot> knots,
+export void draw_knot_inspector(const char *label, const std::span<const formlight_geometry::geometry::BSplineKnot> knots,
                                 const int degree)
 {
     if (!ImGui::TreeNode(label))
@@ -144,7 +144,7 @@ export bool draw_custom_knots(const char *label, const int poles, const int degr
     }
     if (!knots)
     {
-        knots = occt_lab::geometry::make_uniform_clamped_knots(poles, degree);
+        knots = formlight_geometry::geometry::make_uniform_clamped_knots(poles, degree);
     }
     const bool degree_changed = knots->front().multiplicity != degree + 1;
     if (degree_changed)

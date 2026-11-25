@@ -3,7 +3,7 @@ module;
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
-export module occt_lab.ui.project_file_controls;
+export module formlight_geometry.ui.project_file_controls;
 
 import std;
 

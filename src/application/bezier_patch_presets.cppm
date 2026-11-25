@@ -1,9 +1,9 @@
-export module occt_lab.application.bezier_patch_presets;
+export module formlight_geometry.application.bezier_patch_presets;
 
 import std;
-import occt_lab.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bezier_patch;
 
-export namespace occt_lab
+export namespace formlight_geometry
 {
 [[nodiscard]] constexpr geometry::CubicBezierPatch::ControlNet planar_bezier_net()
 {
@@ -31,4 +31,4 @@ export namespace occt_lab
     net[2 * side + 2].z = 32;
     return net;
 }
-} // namespace occt_lab
+} // namespace formlight_geometry

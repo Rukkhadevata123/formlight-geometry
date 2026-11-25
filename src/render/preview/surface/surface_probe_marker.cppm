@@ -2,15 +2,15 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.render.preview.surface.surface_probe_marker;
+export module formlight_geometry.render.preview.surface.surface_probe_marker;
 
 import std;
-import occt_lab.geometry.vec3;
-import occt_lab.render.viewport.viewport_projection;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.render.viewport.viewport_projection;
 
-using occt_lab::geometry::Vec3;
+using formlight_geometry::geometry::Vec3;
 
-export void draw_surface_probe_marker(ImDrawList &draw_list, const occt_lab::render::ViewportProjection &project,
+export void draw_surface_probe_marker(ImDrawList &draw_list, const formlight_geometry::render::ViewportProjection &project,
                                       const Vec3 point, const std::optional<Vec3> &normal, const double arrow_length)
 {
     const auto base = project.visible_point(point);

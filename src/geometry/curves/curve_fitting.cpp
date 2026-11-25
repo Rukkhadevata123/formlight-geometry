@@ -4,11 +4,11 @@ module;
 #include <GeomAPI_PointsToBSpline.hxx>
 #include <Precision.hxx>
 
-module occt_lab.geometry.curves.bspline_curve;
+module formlight_geometry.geometry.curves.bspline_curve;
 
 import std;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 CurveDefinition read_bspline_definition(const Geom_BSplineCurve &curve, double weight_scale);
 
@@ -127,4 +127,4 @@ SampledCurve approximate_curve(const std::span<const Vec3> data_points, const do
     return fit_curve(data_points, tolerance);
 }
 
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

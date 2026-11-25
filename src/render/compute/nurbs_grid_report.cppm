@@ -2,13 +2,13 @@ module;
 
 #include <gp_Vec.hxx>
 
-export module occt_lab.render.compute.nurbs_grid_report;
+export module formlight_geometry.render.compute.nurbs_grid_report;
 
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.render.compute.nurbs_grid_input;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.render.compute.nurbs_grid_input;
 
-namespace occt_lab::render
+namespace formlight_geometry::render
 {
 export [[nodiscard]] std::string compare_nurbs_grid(const std::span<const NurbsGridVertex> vertices,
                                                     const std::span<const geometry::SurfaceProbe> reference,
@@ -66,4 +66,4 @@ export [[nodiscard]] std::string compare_nurbs_grid(const std::span<const NurbsG
                        std::sqrt(squared_distance / static_cast<double>(vertices.size())), position_tolerance_mm,
                        compared, unavailable, mismatches, angle, angle_tolerance_deg);
 }
-} // namespace occt_lab::render
+} // namespace formlight_geometry::render

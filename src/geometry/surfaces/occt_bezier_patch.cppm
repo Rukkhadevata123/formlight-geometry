@@ -6,12 +6,12 @@ module;
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 
-export module occt_lab.geometry.surfaces.occt_bezier_patch;
+export module formlight_geometry.geometry.surfaces.occt_bezier_patch;
 
 import std;
-import occt_lab.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bezier_patch;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export class OcctBezierPatch
 {
@@ -93,4 +93,4 @@ export [[nodiscard]] SurfaceSampleDifference compare_surface_samples(const Surfa
     return {.position_distance_mm = std::hypot(a.x - b.x, a.y - b.y, a.z - b.z),
             .normal_angle_degrees = angle * (180.0 / std::numbers::pi)};
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

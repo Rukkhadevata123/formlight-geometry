@@ -2,18 +2,18 @@ module;
 
 #include <imgui.h>
 
-module occt_lab.ui.curve.curve_editor;
+module formlight_geometry.ui.curve.curve_editor;
 
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.render.viewport.viewport_projection;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.viewport_projection;
 
 void CurveEditor::preview_point_picking(const EditableCurve &curve, const ClipTransform &transform,
                                         const bool scene_click)
 {
     auto *viewport = ImGui::GetMainViewport();
-    const occt_lab::render::ViewportProjection project{transform, *viewport, curve.current().framing_extent};
+    const formlight_geometry::render::ViewportProjection project{transform, *viewport, curve.current().framing_extent};
     auto &draw = *ImGui::GetBackgroundDrawList(viewport);
     const ImU32 color =
         creation_preset_ == control_points ? IM_COL32(116, 187, 226, 255) : IM_COL32(104, 226, 153, 255);

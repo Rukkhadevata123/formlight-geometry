@@ -2,19 +2,19 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.render.preview.curve_preview;
+export module formlight_geometry.render.preview.curve_preview;
 
 import std;
-import occt_lab.geometry.curves.bspline_curve;
-import occt_lab.geometry.vec3;
-import occt_lab.render.preview.curve_colors;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.render.viewport.viewport_projection;
+import formlight_geometry.geometry.curves.bspline_curve;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.render.preview.curve_colors;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.viewport_projection;
 
-using occt_lab::geometry::Vec3;
-using occt_lab::render::ViewportProjection;
+using formlight_geometry::geometry::Vec3;
+using formlight_geometry::render::ViewportProjection;
 
-export [[nodiscard]] auto pick_curve_pole(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
+export [[nodiscard]] auto pick_curve_pole(const formlight_geometry::geometry::SampledCurve &curve, const ClipTransform &transform,
                                           const ImVec2 cursor) -> std::optional<std::size_t>
 {
     const auto &viewport = *ImGui::GetMainViewport();
@@ -22,7 +22,7 @@ export [[nodiscard]] auto pick_curve_pole(const occt_lab::geometry::SampledCurve
     return project.pick_pole(curve.definition.poles, cursor);
 }
 
-export [[nodiscard]] auto dragged_pole_position(const occt_lab::geometry::SampledCurve &curve,
+export [[nodiscard]] auto dragged_pole_position(const formlight_geometry::geometry::SampledCurve &curve,
                                                 const ClipTransform &transform, const std::size_t index,
                                                 const ImVec2 screen_delta) -> Vec3
 {
@@ -31,7 +31,7 @@ export [[nodiscard]] auto dragged_pole_position(const occt_lab::geometry::Sample
     return project.dragged_position(curve.definition.poles.at(index), screen_delta);
 }
 
-export void draw_curve_preview(const occt_lab::geometry::SampledCurve &curve, const ClipTransform &transform,
+export void draw_curve_preview(const formlight_geometry::geometry::SampledCurve &curve, const ClipTransform &transform,
                                const std::optional<std::size_t> selected_pole = std::nullopt)
 {
     auto *viewport = ImGui::GetMainViewport();

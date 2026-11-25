@@ -17,10 +17,10 @@ module;
 #include <gp_Pln.hxx>
 #include <gp_Vec.hxx>
 
-export module occt_lab.geometry.brep.plate_with_hole;
+export module formlight_geometry.geometry.brep.plate_with_hole;
 
 import std;
-import occt_lab.geometry.brep.box_model;
+import formlight_geometry.geometry.brep.box_model;
 
 namespace
 {

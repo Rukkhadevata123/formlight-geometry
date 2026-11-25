@@ -3,10 +3,10 @@ module;
 #include <gp_Dir.hxx>
 #include <gp_XYZ.hxx>
 
-export module occt_lab.render.viewport.orbit_camera;
+export module formlight_geometry.render.viewport.orbit_camera;
 
 import std;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.clip_transform;
 
 export enum class ProjectionMode
 {

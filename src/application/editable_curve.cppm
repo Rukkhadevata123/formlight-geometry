@@ -1,15 +1,15 @@
-export module occt_lab.application.editable_curve;
+export module formlight_geometry.application.editable_curve;
 
 import std;
-import occt_lab.application.nurbs_curve_creation;
-import occt_lab.application.single_step_history;
-import occt_lab.geometry.curves.bspline_curve;
+import formlight_geometry.application.nurbs_curve_creation;
+import formlight_geometry.application.single_step_history;
+import formlight_geometry.geometry.curves.bspline_curve;
 
 export class EditableCurve
 {
   public:
-    using Curve = occt_lab::geometry::SampledCurve;
-    using Definition = occt_lab::geometry::CurveDefinition;
+    using Curve = formlight_geometry::geometry::SampledCurve;
+    using Definition = formlight_geometry::geometry::CurveDefinition;
     enum class Framing
     {
         fit_curve,
@@ -21,7 +21,7 @@ export class EditableCurve
 
     [[nodiscard]] auto current() const -> const Curve &;
     [[nodiscard]] auto displayed() const -> const Curve &;
-    [[nodiscard]] auto preview_pole_move(std::size_t index, const occt_lab::geometry::Vec3 &position)
+    [[nodiscard]] auto preview_pole_move(std::size_t index, const formlight_geometry::geometry::Vec3 &position)
         -> std::expected<void, std::string>;
     void accept_pole_move();
     void cancel_pole_move();
@@ -35,7 +35,7 @@ export class EditableCurve
     [[nodiscard]] auto interpolate_through_poles()               -> std::expected<void, std::string>;
     [[nodiscard]] auto approximate_data_points(double tolerance) -> std::expected<void, std::string>;
     // clang-format on
-    [[nodiscard]] auto create_interpolated_curve(std::span<const occt_lab::geometry::Vec3> points,
+    [[nodiscard]] auto create_interpolated_curve(std::span<const formlight_geometry::geometry::Vec3> points,
                                                  Framing framing = Framing::fit_curve)
         -> std::expected<void, std::string>;
 
@@ -66,7 +66,7 @@ export class EditableCurve
 
 namespace
 {
-constexpr std::array<occt_lab::geometry::Vec3, 6> initial_poles{{
+constexpr std::array<formlight_geometry::geometry::Vec3, 6> initial_poles{{
     {.x = 42.0, .y = -42.0, .z = 0.0},
     {.x = 5.0, .y = -38.0, .z = 0.0},
     {.x = -10.0, .y = -26.0, .z = 0.0},
@@ -93,7 +93,7 @@ double max_sample_deviation(const EditableCurve::Curve::Samples &before, const E
 }
 } // namespace
 
-EditableCurve::EditableCurve() : history_(sample_curve(occt_lab::geometry::make_uniform_clamped_curve(initial_poles, 3)))
+EditableCurve::EditableCurve() : history_(sample_curve(formlight_geometry::geometry::make_uniform_clamped_curve(initial_poles, 3)))
 {
 }
 
@@ -111,7 +111,7 @@ auto EditableCurve::displayed() const -> const Curve &
     return pole_preview_ ? *pole_preview_ : current();
 }
 
-auto EditableCurve::preview_pole_move(const std::size_t index, const occt_lab::geometry::Vec3 &position)
+auto EditableCurve::preview_pole_move(const std::size_t index, const formlight_geometry::geometry::Vec3 &position)
     -> std::expected<void, std::string>
 {
     try
@@ -162,7 +162,7 @@ void EditableCurve::commit_refinement(const Definition &definition)
 {
     const auto &before = current();
     auto candidate = sample_curve(definition, before.data_points);
-    candidate.refinement = occt_lab::geometry::RefinementComparison{
+    candidate.refinement = formlight_geometry::geometry::RefinementComparison{
         .previous_degree = before.definition.degree,
         .previous_pole_count = before.definition.poles.size(),
         .max_sample_deviation = max_sample_deviation(before.samples, candidate.samples),
@@ -176,7 +176,7 @@ auto EditableCurve::create_line(const LineCurveParameters &params) -> std::expec
 {
     try
     {
-        replace_with_created_curve(sample_curve(occt_lab::make_line_curve(params)));
+        replace_with_created_curve(sample_curve(formlight_geometry::make_line_curve(params)));
         return {};
     }
     catch (const std::exception &error)
@@ -189,7 +189,7 @@ auto EditableCurve::create_cubic_bezier() -> std::expected<void, std::string>
 {
     try
     {
-        replace_with_created_curve(sample_curve(occt_lab::make_cubic_bezier_curve()));
+        replace_with_created_curve(sample_curve(formlight_geometry::make_cubic_bezier_curve()));
         return {};
     }
     catch (const std::exception &error)
@@ -260,12 +260,12 @@ std::expected<void, std::string> EditableCurve::interpolate_through_poles()
     return create_interpolated_curve(current().definition.poles);
 }
 
-auto EditableCurve::create_interpolated_curve(const std::span<const occt_lab::geometry::Vec3> points,
+auto EditableCurve::create_interpolated_curve(const std::span<const formlight_geometry::geometry::Vec3> points,
                                               const Framing framing) -> std::expected<void, std::string>
 {
     try
     {
-        replace_with_created_curve(occt_lab::geometry::interpolate_curve(points), framing);
+        replace_with_created_curve(formlight_geometry::geometry::interpolate_curve(points), framing);
         return {};
     }
     catch (const std::exception &error)
@@ -283,13 +283,13 @@ std::expected<void, std::string> EditableCurve::approximate_data_points(const do
     }
     try
     {
-        std::vector<occt_lab::geometry::Vec3> saved_positions;
+        std::vector<formlight_geometry::geometry::Vec3> saved_positions;
         for (const auto &input : curve.data_points)
         {
             saved_positions.push_back(input.position);
         }
         const auto &positions = saved_positions.empty() ? curve.definition.poles : saved_positions;
-        commit(occt_lab::geometry::approximate_curve(positions, tolerance));
+        commit(formlight_geometry::geometry::approximate_curve(positions, tolerance));
         return {};
     }
     catch (const std::exception &error)

@@ -5,10 +5,10 @@ module;
 #include <GProp_GProps.hxx>
 #include <GeomAbs_SurfaceType.hxx>
 
-export module occt_lab.geometry.brep.brep_face_properties;
+export module formlight_geometry.geometry.brep.brep_face_properties;
 
 import std;
-import occt_lab.geometry.brep.brep_mesh;
+import formlight_geometry.geometry.brep.brep_mesh;
 
 export struct BRepFaceProperties
 {

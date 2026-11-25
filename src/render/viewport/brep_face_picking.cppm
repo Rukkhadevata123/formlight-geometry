@@ -2,11 +2,11 @@ module;
 
 #include <gp_XYZ.hxx>
 
-export module occt_lab.render.viewport.brep_face_picking;
+export module formlight_geometry.render.viewport.brep_face_picking;
 
 import std;
-import occt_lab.geometry.brep.brep_mesh;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.geometry.brep.brep_mesh;
+import formlight_geometry.render.viewport.clip_transform;
 
 namespace
 {

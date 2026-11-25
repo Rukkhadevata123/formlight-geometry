@@ -1,8 +1,8 @@
-export module occt_lab.render.compute.storage_buffer_kernel;
+export module formlight_geometry.render.compute.storage_buffer_kernel;
 
 import std;
 import vulkan;
-import occt_lab.render.vulkan_resources;
+import formlight_geometry.render.vulkan_resources;
 
 // The kernels share a single storage buffer binding and a small push-constant block.
 export class StorageBufferKernel
@@ -77,7 +77,7 @@ void StorageBufferKernel::create_storage_buffer(const vk::raii::PhysicalDevice &
     const auto requirements = device.getBufferMemoryRequirements2({*buffer_}).memoryRequirements;
     const auto properties = physical_device.getMemoryProperties2().memoryProperties;
     const auto memory_type =
-        occt_lab::render::find_memory_type(properties, requirements.memoryTypeBits, required_memory);
+        formlight_geometry::render::find_memory_type(properties, requirements.memoryTypeBits, required_memory);
     const auto flags = properties.memoryTypes[memory_type].propertyFlags;
     host_coherent_ = static_cast<bool>(flags & vk::MemoryPropertyFlagBits::eHostCoherent);
 
@@ -127,7 +127,7 @@ void StorageBufferKernel::create_compute_pipeline(const vk::raii::Device &device
     layout_info.setSetLayouts(*set_layout_).setPushConstantRanges(parameter_range);
     layout_ = vk::raii::PipelineLayout{device, layout_info};
 
-    const auto shader = occt_lab::render::load_shader(device, shader_file);
+    const auto shader = formlight_geometry::render::load_shader(device, shader_file);
     const vk::PipelineShaderStageCreateInfo stage{{}, compute_stage, *shader, "computeMain"};
     vk::ComputePipelineCreateInfo pipeline_info;
     pipeline_info.stage = stage;

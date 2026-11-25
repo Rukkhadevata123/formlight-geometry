@@ -1,10 +1,10 @@
-export module occt_lab.document.curve_project;
+export module formlight_geometry.document.curve_project;
 
 import std;
-import occt_lab.document.project_io;
-import occt_lab.geometry.curves.bspline_curve;
+import formlight_geometry.document.project_io;
+import formlight_geometry.geometry.curves.bspline_curve;
 
-namespace occt_lab::document
+namespace formlight_geometry::document
 {
 export struct CurveProjectSettings
 {
@@ -248,4 +248,4 @@ export [[nodiscard]] auto save_curve_project(const fs::path &path, const geometr
     };
     return io::write_atomically(path, write);
 }
-} // namespace occt_lab::document
+} // namespace formlight_geometry::document

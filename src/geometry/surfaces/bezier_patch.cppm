@@ -1,9 +1,9 @@
-export module occt_lab.geometry.surfaces.bezier_patch;
+export module formlight_geometry.geometry.surfaces.bezier_patch;
 
 import std;
-export import occt_lab.geometry.surfaces.surface_isolines;
+export import formlight_geometry.geometry.surfaces.surface_isolines;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export struct SurfaceSample
 {
@@ -150,4 +150,4 @@ export [[nodiscard]] auto sample_patch_isolines(const CubicBezierPatch &patch, c
     { return patch.evaluate(u, v).transform([](const SurfaceSample &sample) { return sample.position; }); };
     return sample_surface_isolines({0, 1, 0, 1}, sampling, PatchError::InvalidSampling, position);
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

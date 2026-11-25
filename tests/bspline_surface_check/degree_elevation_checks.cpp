@@ -1,14 +1,14 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.document.nurbs_surface_project;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.test.bspline_surface_check.analytic_surface;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.document.nurbs_surface_project;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.test.bspline_surface_check.analytic_surface;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
-using namespace occt_lab;
+using namespace formlight_geometry;
 using geometry::SurfaceDirection;
 
 void check_rational_elevation(const SurfaceDirection direction)

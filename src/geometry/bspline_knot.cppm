@@ -1,8 +1,8 @@
-export module occt_lab.geometry.bspline_knot;
+export module formlight_geometry.geometry.bspline_knot;
 
 import std;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export struct BSplineKnot
 {
@@ -62,4 +62,4 @@ export [[nodiscard]] auto validate_clamped_knots(const std::span<const BSplineKn
     }
     return {};
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

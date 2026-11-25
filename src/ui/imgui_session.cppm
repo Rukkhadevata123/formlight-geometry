@@ -5,7 +5,7 @@ module;
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_vulkan.h>
 
-export module occt_lab.ui.imgui_session;
+export module formlight_geometry.ui.imgui_session;
 
 import std;
 

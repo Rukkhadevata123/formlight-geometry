@@ -1,14 +1,14 @@
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.application.nurbs_curve_creation;
-import occt_lab.document.curve_project;
-import occt_lab.geometry.curves.bspline_curve;
-import occt_lab.test.support.near;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.application.nurbs_curve_creation;
+import formlight_geometry.document.curve_project;
+import formlight_geometry.geometry.curves.bspline_curve;
+import formlight_geometry.test.support.near;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
-using occt_lab::test::near;
+using formlight_geometry::test::near;
 
 void check_custom_curve()
 {
@@ -20,7 +20,7 @@ void check_custom_curve()
     }
     const auto line = curve.current();
     const auto &definition = line.definition;
-    using occt_lab::geometry::BSplineKnot;
+    using formlight_geometry::geometry::BSplineKnot;
     const std::vector<BSplineKnot> knots{{0, 4}, {1.0 / 3, 1}, {2.0 / 3, 1}, {1, 4}};
     if (definition.degree != 3 || definition.knots != knots || definition.poles.size() != 6 ||
         definition.weights != std::vector<double>(6, 1.0))
@@ -76,7 +76,7 @@ void check_bezier_preset()
     }
     const auto bezier = curve.current();
     const auto &definition = bezier.definition;
-    const std::vector<occt_lab::geometry::BSplineKnot> knots{{0, 4}, {1, 4}};
+    const std::vector<formlight_geometry::geometry::BSplineKnot> knots{{0, 4}, {1, 4}};
     if (definition.degree != 3 || definition.poles.size() != 4 || definition.weights != std::vector<double>(4, 1.0) ||
         definition.knots != knots || !bezier.data_points.empty())
     {
@@ -109,7 +109,7 @@ void check_bezier_preset()
 
 void check_control_point_curve()
 {
-    using namespace occt_lab::geometry;
+    using namespace formlight_geometry::geometry;
     constexpr std::array<Vec3, 4> points{{{0, 0, 0}, {8, 0, 8}, {8, 16, 8}, {16, 16, 0}}};
     EditableCurve editor;
     editor.create_interpolated_curve(points).value();
@@ -151,7 +151,7 @@ void check_control_point_curve()
 
 void check_interpolated_curve_creation()
 {
-    using occt_lab::geometry::Vec3;
+    using formlight_geometry::geometry::Vec3;
     // Chord lengths of 10, 20 and 10 give known parameters in all three dimensions.
     constexpr std::array<Vec3, 4> points{{{0, 0, 0}, {10, 0, 0}, {10, 0, 20}, {10, -10, 20}}};
     constexpr std::array parameters{0.0, 0.25, 0.75, 1.0};
@@ -204,8 +204,8 @@ void check_interpolated_curve_creation()
 
 void check_custom_curve_knots()
 {
-    using namespace occt_lab::geometry;
-    using namespace occt_lab::document;
+    using namespace formlight_geometry::geometry;
+    using namespace formlight_geometry::document;
     const std::vector<BSplineKnot> knots{{-2, 4}, {-1, 3}, {2, 4}};
     const std::array<Vec3, 7> poles{{{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {3, 1, 0}, {3, 2, 0}, {3, 3, 0}}};
     const auto uniform = sample_curve(make_uniform_clamped_curve(poles, 3));

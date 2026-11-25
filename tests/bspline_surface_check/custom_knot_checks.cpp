@@ -1,28 +1,28 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
 void check_custom_surface_knots()
 {
-    using KnotList = std::vector<occt_lab::geometry::BSplineKnot>;
+    using KnotList = std::vector<formlight_geometry::geometry::BSplineKnot>;
     const KnotList u{{-2, 3}, {0, 2}, {3, 1}, {5, 3}};
     const KnotList v{{-4, 2}, {-1, 1}, {1, 1}, {4, 2}};
-    occt_lab::SurfaceCreationParameters parameters{.u_poles = 6, .v_poles = 4, .u_degree = 2, .v_degree = 1};
-    const auto uniform = occt_lab::make_planar_nurbs_surface(parameters).value();
+    formlight_geometry::SurfaceCreationParameters parameters{.u_poles = 6, .v_poles = 4, .u_degree = 2, .v_degree = 1};
+    const auto uniform = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     parameters.u_knots = u;
-    const auto custom_u = occt_lab::make_planar_nurbs_surface(parameters).value();
+    const auto custom_u = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     if (custom_u.u.knots != u || custom_u.v != uniform.v)
     {
         throw std::runtime_error("Overriding U knots changed the automatic V axis");
     }
     parameters.v_knots = v;
-    const auto plane = occt_lab::make_planar_nurbs_surface(parameters).value();
+    const auto plane = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     if (plane.u.knots != u || plane.v.knots != v || plane.poles != uniform.poles)
     {
         throw std::runtime_error("Creating a plane changed its custom knot vectors or control net");
     }
-    const occt_lab::geometry::BSplineSurface surface{plane};
+    const formlight_geometry::geometry::BSplineSurface surface{plane};
     const auto [u_min, u_max, v_min, v_max] = surface.domain();
     if (u_min != -2 || u_max != 5 || v_min != -4 || v_max != 4)
     {
@@ -46,20 +46,20 @@ void check_custom_surface_knots()
                                 KnotList{{-2, 3}, {0, 2}, {std::numeric_limits<double>::quiet_NaN(), 1}, {5, 3}}})
     {
         parameters.u_knots = invalid;
-        const auto result = occt_lab::make_planar_nurbs_surface(parameters);
+        const auto result = formlight_geometry::make_planar_nurbs_surface(parameters);
         if (result || !result.error().starts_with("U knots:"))
         {
             throw std::runtime_error("Invalid custom U knots should produce a U-axis diagnostic");
         }
     }
     parameters.u_knots.reset();
-    const auto custom_v = occt_lab::make_planar_nurbs_surface(parameters).value();
+    const auto custom_v = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     if (custom_v.u != uniform.u || custom_v.v.knots != v)
     {
         throw std::runtime_error("Returning U to uniform knots changed the custom V axis");
     }
     parameters.v_knots->back().multiplicity = 0;
-    const auto rejected = occt_lab::make_planar_nurbs_surface(parameters)
+    const auto rejected = formlight_geometry::make_planar_nurbs_surface(parameters)
                               .and_then([&](auto definition) { return model.replace(std::move(definition)); });
     if (rejected || !rejected.error().starts_with("V knots:") || !model.can_redo() ||
         model.current().definition != uniform)

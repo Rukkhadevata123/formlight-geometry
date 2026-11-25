@@ -2,7 +2,7 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.render.preview.curve_colors;
+export module formlight_geometry.render.preview.curve_colors;
 
 export namespace curve_colors
 {

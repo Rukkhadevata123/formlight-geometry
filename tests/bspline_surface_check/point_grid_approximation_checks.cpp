@@ -1,13 +1,13 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.document.nurbs_surface_project;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.document.nurbs_surface_project;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
-using namespace occt_lab;
+using namespace formlight_geometry;
 
 double measured_error(const geometry::BSplineSurfaceDefinition &definition, const SurfacePoleRows &rows)
 {
@@ -49,7 +49,7 @@ void check_cubic_fit(const int columns, const int rows)
 
 void check_point_grid_approximation()
 {
-    using namespace occt_lab;
+    using namespace formlight_geometry;
     check_cubic_fit(64, 3);
     check_cubic_fit(2, 8);
     SurfacePoleRows grid;

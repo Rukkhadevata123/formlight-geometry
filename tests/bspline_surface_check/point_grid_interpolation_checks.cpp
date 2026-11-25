@@ -1,16 +1,16 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.document.nurbs_surface_project;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.document.nurbs_surface_project;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
-occt_lab::SurfacePoleRows check_grid(const int columns, const int rows)
+formlight_geometry::SurfacePoleRows check_grid(const int columns, const int rows)
 {
-    occt_lab::SurfacePoleRows grid;
-    occt_lab::resize_surface_net(grid, columns, rows);
+    formlight_geometry::SurfacePoleRows grid;
+    formlight_geometry::resize_surface_net(grid, columns, rows);
     for (int v = 0; v < rows; ++v)
     {
         for (int u = 0; u < columns; ++u)
@@ -18,8 +18,8 @@ occt_lab::SurfacePoleRows check_grid(const int columns, const int rows)
             grid[v][u].position = {4.0 * u + v * v, 7.0 * v - u, std::sin(u + 2.0 * v) * 12};
         }
     }
-    const auto def = occt_lab::interpolate_surface_grid(grid).value();
-    const occt_lab::geometry::BSplineSurface surface{def};
+    const auto def = formlight_geometry::interpolate_surface_grid(grid).value();
+    const formlight_geometry::geometry::BSplineSurface surface{def};
     if (def.u.degree != std::min(3, columns - 1) || def.v.degree != std::min(3, rows - 1))
     {
         throw std::runtime_error("Unexpected interpolation degrees");
@@ -43,7 +43,7 @@ occt_lab::SurfacePoleRows check_grid(const int columns, const int rows)
 
 void check_point_grid_interpolation()
 {
-    using namespace occt_lab;
+    using namespace formlight_geometry;
     check_grid(2, 2);
     SurfacePoleRows plane;
     resize_surface_net(plane, 2, 2);

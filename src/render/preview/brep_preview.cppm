@@ -7,19 +7,19 @@ module;
 #include <gp_Pnt.hxx>
 #include <vulkan/vulkan_core.h>
 
-export module occt_lab.render.preview.brep_preview;
+export module formlight_geometry.render.preview.brep_preview;
 
 import std;
 import vulkan;
-import occt_lab.geometry.brep.box_model;
-import occt_lab.geometry.brep.brep_face_properties;
-import occt_lab.geometry.brep.brep_mesh;
-import occt_lab.geometry.brep.plate_with_hole;
-import occt_lab.render.compute.nurbs_grid_input;
-import occt_lab.render.viewport.brep_face_picking;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.render.viewport.orbit_camera;
-import occt_lab.render.vulkan_resources;
+import formlight_geometry.geometry.brep.box_model;
+import formlight_geometry.geometry.brep.brep_face_properties;
+import formlight_geometry.geometry.brep.brep_mesh;
+import formlight_geometry.geometry.brep.plate_with_hole;
+import formlight_geometry.render.compute.nurbs_grid_input;
+import formlight_geometry.render.viewport.brep_face_picking;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.orbit_camera;
+import formlight_geometry.render.vulkan_resources;
 
 export struct PreviewDepthTarget
 {
@@ -116,8 +116,8 @@ export class BRepPreview
 
 namespace
 {
-using occt_lab::render::find_memory_type;
-using occt_lab::render::load_shader;
+using formlight_geometry::render::find_memory_type;
+using formlight_geometry::render::load_shader;
 constexpr vk::ImageSubresourceRange depth_range{vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1};
 constexpr auto depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 constexpr double linear_deflection = 0.1;
@@ -449,7 +449,7 @@ void BRepPreview::create_pipeline(const vk::Format color_format)
     info.pDynamicState = &dynamic;
     info.layout = *layout_;
     pipeline_ = vk::raii::Pipeline{device_, nullptr, info};
-    using occt_lab::render::NurbsGridVertex;
+    using formlight_geometry::render::NurbsGridVertex;
     binding.stride = sizeof(NurbsGridVertex);
     attributes[1].offset = offsetof(NurbsGridVertex, normal);
     attributes[1].format = vk::Format::eR32G32B32A32Sfloat;

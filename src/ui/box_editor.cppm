@@ -2,11 +2,11 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.box_editor;
+export module formlight_geometry.ui.box_editor;
 
 import std;
-import occt_lab.geometry.brep.box_model;
-import occt_lab.render.preview.brep_preview;
+import formlight_geometry.geometry.brep.box_model;
+import formlight_geometry.render.preview.brep_preview;
 
 export class BoxEditor
 {

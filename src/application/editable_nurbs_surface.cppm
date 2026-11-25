@@ -2,20 +2,20 @@ module;
 
 #include <Bnd_Box.hxx>
 
-export module occt_lab.application.editable_nurbs_surface;
+export module formlight_geometry.application.editable_nurbs_surface;
 
 import std;
-import occt_lab.application.single_step_history;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.application.single_step_history;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
 export class EditableNurbsSurface
 {
   public:
-    using Definition = occt_lab::geometry::BSplineSurfaceDefinition;
+    using Definition = formlight_geometry::geometry::BSplineSurfaceDefinition;
 
     struct Framing
     {
-        occt_lab::geometry::Vec3 center;
+        formlight_geometry::geometry::Vec3 center;
         double span;
         [[nodiscard]] double world_units_per_view_unit() const
         {
@@ -27,25 +27,25 @@ export class EditableNurbsSurface
     struct Snapshot
     {
         Definition definition;
-        std::shared_ptr<const occt_lab::geometry::BSplineSurface> surface;
-        occt_lab::geometry::PatchIsolines isolines;
+        std::shared_ptr<const formlight_geometry::geometry::BSplineSurface> surface;
+        formlight_geometry::geometry::PatchIsolines isolines;
         Framing framing;
-        std::optional<occt_lab::geometry::SurfaceGridDeviation> max_grid_deviation;
+        std::optional<formlight_geometry::geometry::SurfaceGridDeviation> max_grid_deviation;
     };
 
-    explicit EditableNurbsSurface(Definition definition, occt_lab::geometry::PatchSampling sampling = {});
-    [[nodiscard]] occt_lab::geometry::PatchSampling sampling() const
+    explicit EditableNurbsSurface(Definition definition, formlight_geometry::geometry::PatchSampling sampling = {});
+    [[nodiscard]] formlight_geometry::geometry::PatchSampling sampling() const
     {
         return sampling_;
     }
     [[nodiscard]] auto replace(Definition definition) -> std::expected<void, std::string>;
-    [[nodiscard]] auto insert_knot(occt_lab::geometry::SurfaceDirection direction, double parameter)
+    [[nodiscard]] auto insert_knot(formlight_geometry::geometry::SurfaceDirection direction, double parameter)
         -> std::expected<void, std::string>;
-    [[nodiscard]] auto elevate_degree(occt_lab::geometry::SurfaceDirection direction)
+    [[nodiscard]] auto elevate_degree(formlight_geometry::geometry::SurfaceDirection direction)
         -> std::expected<void, std::string>;
     [[nodiscard]] auto preview_replacement(Definition definition, std::optional<Framing> framing = {})
         -> std::expected<void, std::string>;
-    [[nodiscard]] auto resample(occt_lab::geometry::PatchSampling sampling) -> std::expected<void, std::string>;
+    [[nodiscard]] auto resample(formlight_geometry::geometry::PatchSampling sampling) -> std::expected<void, std::string>;
     [[nodiscard]] const Snapshot &current() const
     {
         return history_.current();
@@ -63,9 +63,9 @@ export class EditableNurbsSurface
         return history_.can_redo();
     }
 
-    [[nodiscard]] auto apply(const std::vector<occt_lab::geometry::Vec3> &poles, const std::vector<double> &weights)
+    [[nodiscard]] auto apply(const std::vector<formlight_geometry::geometry::Vec3> &poles, const std::vector<double> &weights)
         -> std::expected<void, std::string>;
-    [[nodiscard]] auto preview_pole_move(std::size_t index, occt_lab::geometry::Vec3 position)
+    [[nodiscard]] auto preview_pole_move(std::size_t index, formlight_geometry::geometry::Vec3 position)
         -> std::expected<void, std::string>;
     void commit_preview();
     void discard_preview();
@@ -74,14 +74,14 @@ export class EditableNurbsSurface
 
   private:
     void commit(Snapshot next);
-    occt_lab::geometry::PatchSampling sampling_;
+    formlight_geometry::geometry::PatchSampling sampling_;
     SingleStepHistory<Snapshot> history_;
     std::optional<Snapshot> preview_;
 };
 
 namespace
 {
-EditableNurbsSurface::Framing frame_control_net(const std::vector<occt_lab::geometry::Vec3> &poles)
+EditableNurbsSurface::Framing frame_control_net(const std::vector<formlight_geometry::geometry::Vec3> &poles)
 {
     Bnd_Box bounds;
     for (const auto &[x, y, z] : poles)
@@ -95,8 +95,8 @@ EditableNurbsSurface::Framing frame_control_net(const std::vector<occt_lab::geom
             .span = std::max({high.X() - low.X(), high.Y() - low.Y(), high.Z() - low.Z()})};
 }
 
-occt_lab::geometry::PatchIsolines sample_isolines(const occt_lab::geometry::BSplineSurface &surface,
-                                                  const occt_lab::geometry::PatchSampling sampling)
+formlight_geometry::geometry::PatchIsolines sample_isolines(const formlight_geometry::geometry::BSplineSurface &surface,
+                                                  const formlight_geometry::geometry::PatchSampling sampling)
 {
     auto lines = surface.isolines(sampling);
     if (!lines)
@@ -108,7 +108,7 @@ occt_lab::geometry::PatchIsolines sample_isolines(const occt_lab::geometry::BSpl
 
 
 EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition definition,
-                                              const occt_lab::geometry::PatchSampling sampling,
+                                              const formlight_geometry::geometry::PatchSampling sampling,
                                               std::optional<EditableNurbsSurface::Framing> framing = {})
 {
     if (definition.weights.empty())
@@ -122,7 +122,7 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
             throw std::invalid_argument("A fitting tolerance must be finite and positive.");
         }
     }
-    auto surface = std::make_shared<const occt_lab::geometry::BSplineSurface>(definition);
+    auto surface = std::make_shared<const formlight_geometry::geometry::BSplineSurface>(definition);
     const auto deviation =
         definition.data_grid.transform([&](const auto &grid) { return surface->max_grid_deviation(grid); });
     auto lines = sample_isolines(*surface, sampling);
@@ -135,7 +135,7 @@ EditableNurbsSurface::Snapshot sample_surface(EditableNurbsSurface::Definition d
 }
 } // namespace
 
-EditableNurbsSurface::EditableNurbsSurface(Definition definition, const occt_lab::geometry::PatchSampling sampling)
+EditableNurbsSurface::EditableNurbsSurface(Definition definition, const formlight_geometry::geometry::PatchSampling sampling)
     : sampling_(sampling), history_(sample_surface(std::move(definition), sampling))
 {
 }
@@ -145,7 +145,7 @@ auto EditableNurbsSurface::replace(Definition definition) -> std::expected<void,
     return preview_replacement(std::move(definition)).transform([this] { commit_preview(); });
 }
 
-auto EditableNurbsSurface::insert_knot(const occt_lab::geometry::SurfaceDirection direction, const double parameter)
+auto EditableNurbsSurface::insert_knot(const formlight_geometry::geometry::SurfaceDirection direction, const double parameter)
     -> std::expected<void, std::string>
 {
     try
@@ -160,7 +160,7 @@ auto EditableNurbsSurface::insert_knot(const occt_lab::geometry::SurfaceDirectio
     }
 }
 
-auto EditableNurbsSurface::elevate_degree(const occt_lab::geometry::SurfaceDirection direction)
+auto EditableNurbsSurface::elevate_degree(const formlight_geometry::geometry::SurfaceDirection direction)
     -> std::expected<void, std::string>
 {
     try
@@ -197,7 +197,7 @@ auto EditableNurbsSurface::preview_replacement(Definition definition, std::optio
     }
 }
 
-auto EditableNurbsSurface::resample(const occt_lab::geometry::PatchSampling sampling)
+auto EditableNurbsSurface::resample(const formlight_geometry::geometry::PatchSampling sampling)
     -> std::expected<void, std::string>
 {
     if (sampling == sampling_)
@@ -208,7 +208,7 @@ auto EditableNurbsSurface::resample(const occt_lab::geometry::PatchSampling samp
     {
         auto [applied, alternate] = history_.stored_snapshots();
         auto applied_lines = sample_isolines(*applied.surface, sampling);
-        occt_lab::geometry::PatchIsolines alternate_lines;
+        formlight_geometry::geometry::PatchIsolines alternate_lines;
         if (alternate)
         {
             alternate_lines = sample_isolines(*alternate->surface, sampling);
@@ -232,7 +232,7 @@ auto EditableNurbsSurface::resample(const occt_lab::geometry::PatchSampling samp
     }
 }
 
-auto EditableNurbsSurface::apply(const std::vector<occt_lab::geometry::Vec3> &poles, const std::vector<double> &weights)
+auto EditableNurbsSurface::apply(const std::vector<formlight_geometry::geometry::Vec3> &poles, const std::vector<double> &weights)
     -> std::expected<void, std::string>
 {
     const auto &applied = current().definition;
@@ -258,7 +258,7 @@ auto EditableNurbsSurface::apply(const std::vector<occt_lab::geometry::Vec3> &po
     }
 }
 
-auto EditableNurbsSurface::preview_pole_move(const std::size_t index, const occt_lab::geometry::Vec3 position)
+auto EditableNurbsSurface::preview_pole_move(const std::size_t index, const formlight_geometry::geometry::Vec3 position)
     -> std::expected<void, std::string>
 {
     try

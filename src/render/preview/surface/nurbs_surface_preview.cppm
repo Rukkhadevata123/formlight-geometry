@@ -2,17 +2,17 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.render.preview.surface.nurbs_surface_preview;
+export module formlight_geometry.render.preview.surface.nurbs_surface_preview;
 
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.render.preview.surface.surface_probe_marker;
-import occt_lab.render.preview.surface.surface_wireframe;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.render.viewport.viewport_projection;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.render.preview.surface.surface_probe_marker;
+import formlight_geometry.render.preview.surface.surface_wireframe;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.viewport_projection;
 
-export [[nodiscard]] occt_lab::render::ViewportProjection nurbs_surface_projection(
+export [[nodiscard]] formlight_geometry::render::ViewportProjection nurbs_surface_projection(
     const ClipTransform &transform, const EditableNurbsSurface::Framing &frame)
 {
     // Frame the longest side in the same 90-unit view as the Bezier example.
@@ -20,8 +20,8 @@ export [[nodiscard]] occt_lab::render::ViewportProjection nurbs_surface_projecti
 }
 
 export void draw_nurbs_surface_preview(const EditableNurbsSurface::Snapshot &surface, const ClipTransform &transform,
-                                       const PatchLayers &layers, const occt_lab::geometry::Vec3 &selected_point,
-                                       const occt_lab::geometry::SurfaceProbe *probe)
+                                       const PatchLayers &layers, const formlight_geometry::geometry::Vec3 &selected_point,
+                                       const formlight_geometry::geometry::SurfaceProbe *probe)
 {
     const auto project = nurbs_surface_projection(transform, surface.framing);
     auto &draw_list = *ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());

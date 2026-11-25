@@ -2,12 +2,12 @@ module;
 
 #include <cstddef>
 
-export module occt_lab.render.compute.compute_pyramid;
+export module formlight_geometry.render.compute.compute_pyramid;
 
 import std;
 import vulkan;
-import occt_lab.geometry.brep.brep_mesh;
-import occt_lab.render.compute.storage_buffer_kernel;
+import formlight_geometry.geometry.brep.brep_mesh;
+import formlight_geometry.render.compute.storage_buffer_kernel;
 
 export class ComputePyramid
 {

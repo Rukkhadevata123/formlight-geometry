@@ -4,12 +4,12 @@ module;
 #include <imgui.h>
 #include <vulkan/vulkan_core.h>
 
-export module occt_lab.ui.renderer_status_panel;
+export module formlight_geometry.ui.renderer_status_panel;
 
 import std;
-import occt_lab.geometry.brep.brep_face_properties;
-import occt_lab.render.preview.surface.surface_wireframe;
-import occt_lab.render.viewport.orbit_camera;
+import formlight_geometry.geometry.brep.brep_face_properties;
+import formlight_geometry.render.preview.surface.surface_wireframe;
+import formlight_geometry.render.viewport.orbit_camera;
 
 export enum class PreviewMode
 {

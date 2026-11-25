@@ -1,19 +1,19 @@
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.geometry.curves.bspline_curve;
-import occt_lab.test.support.near;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.geometry.curves.bspline_curve;
+import formlight_geometry.test.support.near;
 
 namespace
 {
-using occt_lab::geometry::Vec3;
-using occt_lab::test::near;
+using formlight_geometry::geometry::Vec3;
+using formlight_geometry::test::near;
 
 void check_interpolation()
 {
     constexpr std::array data{Vec3{.x = 0.0, .y = 0.0, .z = 0.0}, Vec3{.x = 1.0, .y = 0.0, .z = 0.0},
                               Vec3{.x = 1.0, .y = 2.0, .z = 0.0}, Vec3{.x = 1.0, .y = 2.0, .z = 1.0}};
     EditableCurve curve;
-    auto source = occt_lab::geometry::make_uniform_clamped_curve(data, 3);
+    auto source = formlight_geometry::geometry::make_uniform_clamped_curve(data, 3);
     source.weights[1] = 4.0;
     if (!curve.apply(source) || !curve.interpolate_through_poles())
     {
@@ -21,7 +21,7 @@ void check_interpolation()
     }
     const auto interpolated = curve.current();
     if (interpolated.unit_weight_samples ||
-        !std::ranges::equal(interpolated.data_points, data, {}, &occt_lab::geometry::CurveDataPoint::position))
+        !std::ranges::equal(interpolated.data_points, data, {}, &formlight_geometry::geometry::CurveDataPoint::position))
     {
         throw std::runtime_error("Interpolation must use the applied pole positions and solve for its own curve");
     }
@@ -77,7 +77,7 @@ void check_off_grid_residual()
 {
     constexpr std::array data{Vec3{.x = 0.0, .y = 0.0, .z = 0.0}, Vec3{.x = 1.0, .y = 0.0, .z = 0.0},
                               Vec3{.x = 1.0, .y = 3.0, .z = 0.0}, Vec3{.x = 1.0, .y = 3.0, .z = 3.0}};
-    const auto curve = occt_lab::geometry::interpolate_curve(data);
+    const auto curve = formlight_geometry::geometry::interpolate_curve(data);
     const auto &input = curve.data_points.at(1);
     // u = 1/7 lies between the 129 display samples.
     if (!near(input.parameter, 1.0 / 7.0, 1e-14) || !near(input.residual, 0.0))
@@ -95,7 +95,7 @@ void check_approximation()
         data[i] = {.x = static_cast<double>(i), .y = static_cast<double>(i % 2), .z = 0.0};
     }
     EditableCurve curve;
-    const auto source = occt_lab::geometry::make_uniform_clamped_curve(data, 3);
+    const auto source = formlight_geometry::geometry::make_uniform_clamped_curve(data, 3);
     constexpr double tolerance = 2.0;
     if (!curve.apply(source) || !curve.approximate_data_points(tolerance))
     {

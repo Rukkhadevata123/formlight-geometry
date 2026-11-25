@@ -3,13 +3,13 @@ module;
 #include <Geom_BSplineSurface.hxx>
 #include <Precision.hxx>
 
-export module occt_lab.application.nurbs_surface_creation;
+export module formlight_geometry.application.nurbs_surface_creation;
 
 import std;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
-namespace occt_lab
+namespace formlight_geometry
 {
 export struct SurfaceCreationParameters
 {
@@ -221,4 +221,4 @@ export [[nodiscard]] BSplineSurfaceDefinition make_saddle_surface()
     }
     return definition;
 }
-} // namespace occt_lab
+} // namespace formlight_geometry

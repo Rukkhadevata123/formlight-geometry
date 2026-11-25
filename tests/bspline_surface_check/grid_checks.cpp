@@ -1,11 +1,11 @@
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.test.bspline_surface_check.analytic_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.test.bspline_surface_check.analytic_surface;
 
 namespace
 {
-using namespace occt_lab::geometry;
+using namespace formlight_geometry::geometry;
 
 void check_rectangular_grid(BSplineSurfaceDefinition definition)
 {
@@ -48,7 +48,7 @@ void check_rectangular_grid(BSplineSurfaceDefinition definition)
 
 void check_nurbs_reference_grid()
 {
-    const auto definition = occt_lab::test::make_analytic_surface();
+    const auto definition = formlight_geometry::test::make_analytic_surface();
     check_rectangular_grid(definition);
 
     const BSplineSurface surface{definition};

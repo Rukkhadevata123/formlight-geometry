@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 4.5)
-project(occt_lab LANGUAGES C CXX)
+project(formlight-geometry LANGUAGES C CXX)
 
 find_package(OpenCASCADE 8.0.1 CONFIG REQUIRED COMPONENTS
     FoundationClasses ModelingData ModelingAlgorithms Visualization ApplicationFramework DataExchange)
@@ -11,8 +11,8 @@ find_package(slang 2026.22 CONFIG REQUIRED)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 
-add_library(occt_lab_geometry STATIC src/geometry/curves/curve_fitting.cpp)
-target_sources(occt_lab_geometry PUBLIC
+add_library(formlight_geometry_core STATIC src/geometry/curves/curve_fitting.cpp)
+target_sources(formlight_geometry_core PUBLIC
     FILE_SET CXX_MODULES FILES
         src/geometry/brep/box_model.cppm
         src/geometry/brep/brep_face_properties.cppm
@@ -30,18 +30,18 @@ target_sources(occt_lab_geometry PUBLIC
         src/geometry/surfaces/surface_isolines.cppm
         src/geometry/vec3.cppm
 )
-target_compile_features(occt_lab_geometry PUBLIC cxx_std_23)
-target_link_libraries(occt_lab_geometry
+target_compile_features(formlight_geometry_core PUBLIC cxx_std_23)
+target_link_libraries(formlight_geometry_core
     PUBLIC TKBRep TKG3d
     PRIVATE TKMesh TKPrim TKBO TKTopAlgo TKGeomAlgo TKMath TKernel
 )
 
-add_library(occt_lab_model STATIC
+add_library(formlight_geometry_model STATIC
     src/application/surface_approximation.cpp
     src/application/surface_interpolation.cpp
 )
-target_link_libraries(occt_lab_model PUBLIC occt_lab_geometry PRIVATE TKDESTEP TKXSBase TKMath)
-target_sources(occt_lab_model PUBLIC
+target_link_libraries(formlight_geometry_model PUBLIC formlight_geometry_core PRIVATE TKDESTEP TKXSBase TKMath)
+target_sources(formlight_geometry_model PUBLIC
     FILE_SET CXX_MODULES FILES
         src/application/bezier_patch_presets.cppm
         src/application/editable_curve.cppm
@@ -59,7 +59,7 @@ target_sources(occt_lab_model PUBLIC
         src/render/viewport/clip_transform.cppm
 )
 
-add_executable(occt_lab
+add_executable(formlight-geometry
     src/main.cpp
     src/ui/curve/curve_creation_dialog.cpp
     src/ui/curve/curve_point_picker.cpp
@@ -69,7 +69,7 @@ add_executable(occt_lab
     src/ui/surface/nurbs_surface_project_panel.cpp
     src/ui/surface/surface_control_net_input.cpp
 )
-target_sources(occt_lab PRIVATE
+target_sources(formlight-geometry PRIVATE
     FILE_SET CXX_MODULES FILES
         src/render/compute/compute_buffer_check.cppm
         src/render/compute/compute_pyramid.cppm
@@ -101,13 +101,13 @@ target_sources(occt_lab PRIVATE
         src/ui/surface/surface_sample_readout.cppm
         src/vulkan_window.cppm
 )
-target_sources(occt_lab PRIVATE
+target_sources(formlight-geometry PRIVATE
     FILE_SET vulkan_hpp TYPE CXX_MODULES
     BASE_DIRS "${Vulkan_INCLUDE_DIR}"
     FILES "${Vulkan_INCLUDE_DIR}/vulkan/vulkan.cppm"
 )
-target_link_libraries(occt_lab PRIVATE occt_lab_model TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
-target_compile_definitions(occt_lab PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
+target_link_libraries(formlight-geometry PRIVATE formlight_geometry_model TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
+target_compile_definitions(formlight-geometry PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
 
 set(triangle_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.slang")
 set(shader_output_dir "${CMAKE_CURRENT_BINARY_DIR}/shaders")
@@ -153,16 +153,16 @@ foreach(name IN ITEMS buffer_check compute_pyramid nurbs_grid)
     list(APPEND compute_shaders "${output}")
 endforeach()
 
-add_custom_target(occt_lab_shaders DEPENDS
+add_custom_target(formlight_geometry_shaders DEPENDS
     "${triangle_spv}" "${preview_vertex_spv}" "${preview_fragment_spv}" ${compute_shaders}
 )
-add_dependencies(occt_lab occt_lab_shaders)
+add_dependencies(formlight-geometry formlight_geometry_shaders)
 
 include(CTest)
 if(BUILD_TESTING)
-    add_library(occt_lab_test_support STATIC)
-    target_link_libraries(occt_lab_test_support PUBLIC occt_lab_geometry)
-    target_sources(occt_lab_test_support PUBLIC
+    add_library(formlight_geometry_test_support STATIC)
+    target_link_libraries(formlight_geometry_test_support PUBLIC formlight_geometry_core)
+    target_sources(formlight_geometry_test_support PUBLIC
         FILE_SET CXX_MODULES FILES
             tests/support/near.cppm
             tests/support/project_test_directory.cppm
@@ -173,12 +173,12 @@ if(BUILD_TESTING)
         add_test(NAME ${check} COMMAND ${check})
     endforeach()
 
-    target_link_libraries(occt_box_check PRIVATE occt_lab_geometry TKTopAlgo TKGeomBase)
-    target_link_libraries(occt_cylinder_check PRIVATE occt_lab_model TKPrim)
-    target_link_libraries(occt_plate_with_hole_check PRIVATE occt_lab_model occt_lab_test_support TKDESTEP TKXSBase)
-    target_link_libraries(bezier_patch_check PRIVATE occt_lab_test_support)
-    target_link_libraries(bspline_surface_check PRIVATE occt_lab_model occt_lab_test_support TKMath)
-    target_link_libraries(bspline_curve_check PRIVATE occt_lab_model occt_lab_test_support)
+    target_link_libraries(occt_box_check PRIVATE formlight_geometry_core TKTopAlgo TKGeomBase)
+    target_link_libraries(occt_cylinder_check PRIVATE formlight_geometry_model TKPrim)
+    target_link_libraries(occt_plate_with_hole_check PRIVATE formlight_geometry_model formlight_geometry_test_support TKDESTEP TKXSBase)
+    target_link_libraries(bezier_patch_check PRIVATE formlight_geometry_test_support)
+    target_link_libraries(bspline_surface_check PRIVATE formlight_geometry_model formlight_geometry_test_support TKMath)
+    target_link_libraries(bspline_curve_check PRIVATE formlight_geometry_model formlight_geometry_test_support)
 
     target_sources(bspline_surface_check PRIVATE
         tests/bspline_surface_check/control_net_creation_checks.cpp

@@ -3,12 +3,12 @@ module;
 #include <BSplCLib.hxx>
 #include <cstddef>
 
-export module occt_lab.render.compute.nurbs_grid_input;
+export module formlight_geometry.render.compute.nurbs_grid_input;
 
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
-namespace occt_lab::render
+namespace formlight_geometry::render
 {
 export struct NurbsGridVertex
 {
@@ -117,4 +117,4 @@ export [[nodiscard]] NurbsGridInput pack_nurbs_grid(const geometry::BSplineSurfa
     append_axis(input.words, v, grid.v_segments);
     return input;
 }
-} // namespace occt_lab::render
+} // namespace formlight_geometry::render

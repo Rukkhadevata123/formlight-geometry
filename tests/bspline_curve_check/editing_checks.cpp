@@ -1,12 +1,12 @@
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.geometry.vec3;
-import occt_lab.test.support.near;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.test.support.near;
 
 namespace
 {
-using occt_lab::geometry::Vec3;
-using occt_lab::test::near;
+using formlight_geometry::geometry::Vec3;
+using formlight_geometry::test::near;
 
 void check_pole_drag()
 {

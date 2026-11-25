@@ -2,12 +2,12 @@ module;
 
 #include <imgui.h>
 
-module occt_lab.ui.surface.nurbs_pole_inspector;
+module formlight_geometry.ui.surface.nurbs_pole_inspector;
 
 import std;
-import occt_lab.geometry.vec3;
-import occt_lab.render.preview.surface.nurbs_surface_preview;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.render.preview.surface.nurbs_surface_preview;
+import formlight_geometry.render.viewport.clip_transform;
 
 bool NurbsPoleInspector::draw_net_table(const bool show_weights)
 {
@@ -80,7 +80,7 @@ void NurbsPoleInspector::draw_net_picker(const ClipTransform &transform, const b
     const auto project = nurbs_surface_projection(transform, frame);
     auto &draw = *ImGui::GetBackgroundDrawList(ImGui::GetMainViewport());
     constexpr ImU32 blue = IM_COL32(116, 187, 226, 255);
-    const auto draw_neighbors = [&](std::size_t i, const occt_lab::geometry::Vec3 &point)
+    const auto draw_neighbors = [&](std::size_t i, const formlight_geometry::geometry::Vec3 &point)
     {
         if (i % columns != 0)
         {

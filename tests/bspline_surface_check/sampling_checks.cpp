@@ -1,17 +1,17 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.document.nurbs_surface_project;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.test.bspline_surface_check.analytic_surface;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.document.nurbs_surface_project;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.test.bspline_surface_check.analytic_surface;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
-using occt_lab::geometry::PatchSampling;
+using formlight_geometry::geometry::PatchSampling;
 
 void check_lines(const EditableNurbsSurface::Snapshot &snapshot, const PatchSampling sampling)
 {
-    const auto expected = occt_lab::geometry::BSplineSurface{snapshot.definition}.isolines(sampling).value();
+    const auto expected = formlight_geometry::geometry::BSplineSurface{snapshot.definition}.isolines(sampling).value();
     if (snapshot.isolines.constant_u != expected.constant_u || snapshot.isolines.constant_v != expected.constant_v)
     {
         throw std::runtime_error("NURBS isolines do not match the snapshot at the selected density");
@@ -21,7 +21,7 @@ void check_lines(const EditableNurbsSurface::Snapshot &snapshot, const PatchSamp
 
 void check_nurbs_resampling()
 {
-    const auto original = occt_lab::test::make_analytic_surface();
+    const auto original = formlight_geometry::test::make_analytic_surface();
     EditableNurbsSurface model{original};
     const auto frame = model.current().framing;
     constexpr PatchSampling coarse{.constant_u_lines = 2, .constant_v_lines = 7, .samples_per_line = 2};
@@ -61,8 +61,8 @@ void check_nurbs_resampling()
 
     const ProjectTestDirectory directory;
     const auto path = directory.path / "resampled.occtlab";
-    occt_lab::document::save_nurbs_surface_project(path, model).value();
-    const auto restored = occt_lab::document::open_nurbs_surface_project(path).value();
+    formlight_geometry::document::save_nurbs_surface_project(path, model).value();
+    const auto restored = formlight_geometry::document::open_nurbs_surface_project(path).value();
     if (restored.sampling() != final_density || restored.current().definition != original)
     {
         throw std::runtime_error("Reopening lost the selected density or saved an unapplied preview");

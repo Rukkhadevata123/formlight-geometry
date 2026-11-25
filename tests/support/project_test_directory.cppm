@@ -1,11 +1,11 @@
-export module occt_lab.test.support.project_test_directory;
+export module formlight_geometry.test.support.project_test_directory;
 
 import std;
 
 export struct ProjectTestDirectory
 {
     std::filesystem::path path =
-        std::filesystem::temp_directory_path() / std::format("occt-lab-project-{:08x}", std::random_device{}());
+        std::filesystem::temp_directory_path() / std::format("formlight-geometry-project-{:08x}", std::random_device{}());
     ProjectTestDirectory()
     {
         if (!std::filesystem::create_directory(path))

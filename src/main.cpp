@@ -3,7 +3,7 @@
 #include <cstdlib>
 
 import std;
-import occt_lab.vulkan_window;
+import formlight_geometry.vulkan_window;
 
 auto main(int, char **) -> int
 {
@@ -14,7 +14,7 @@ auto main(int, char **) -> int
     }
     catch (const std::exception &error)
     {
-        std::println(stderr, "occt-lab: {}", error.what());
+        std::println(stderr, "formlight-geometry: {}", error.what());
         return EXIT_FAILURE;
     }
 }

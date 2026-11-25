@@ -2,22 +2,22 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.surface.nurbs_pole_inspector;
+export module formlight_geometry.ui.surface.nurbs_pole_inspector;
 
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.render.viewport.viewport_projection;
-import occt_lab.ui.clamped_knot_editor;
-import occt_lab.ui.pole_drag;
-import occt_lab.ui.project_file_controls;
-import occt_lab.ui.surface.isoline_sampling;
-import occt_lab.ui.surface.surface_grid_controls;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.render.viewport.viewport_projection;
+import formlight_geometry.ui.clamped_knot_editor;
+import formlight_geometry.ui.pole_drag;
+import formlight_geometry.ui.project_file_controls;
+import formlight_geometry.ui.surface.isoline_sampling;
+import formlight_geometry.ui.surface.surface_grid_controls;
 
-void draw_max_grid_deviation(const occt_lab::geometry::SurfaceGridDeviation &deviation)
+void draw_max_grid_deviation(const formlight_geometry::geometry::SurfaceGridDeviation &deviation)
 {
     ImGui::Text("Max point error: %.4g mm at U %d, V %d", deviation.distance_mm, deviation.u_index + 1,
                 deviation.v_index + 1);
@@ -28,14 +28,14 @@ export class NurbsPoleInspector
 {
   public:
     explicit NurbsPoleInspector(const EditableNurbsSurface &model);
-    void handle_viewport_input(EditableNurbsSurface &model, const occt_lab::render::ViewportProjection &project,
+    void handle_viewport_input(EditableNurbsSurface &model, const formlight_geometry::render::ViewportProjection &project,
                                bool pole_click);
     void cancel_drag(EditableNurbsSurface &model);
     [[nodiscard]] bool tracking_pole() const
     {
         return tracking_pole_;
     }
-    [[nodiscard]] const occt_lab::geometry::Vec3 &selected_point(const EditableNurbsSurface::Definition &definition) const
+    [[nodiscard]] const formlight_geometry::geometry::Vec3 &selected_point(const EditableNurbsSurface::Definition &definition) const
     {
         if (net_preview_ && definition.data_grid)
         {
@@ -49,37 +49,37 @@ export class NurbsPoleInspector
     }
     void cancel_creation(EditableNurbsSurface &model);
     void draw_net_picker(const ClipTransform &transform, bool scene_click);
-    [[nodiscard]] const occt_lab::geometry::SurfaceProbe *draw(EditableNurbsSurface &model, NurbsMeshControls *mesh);
+    [[nodiscard]] const formlight_geometry::geometry::SurfaceProbe *draw(EditableNurbsSurface &model, NurbsMeshControls *mesh);
 
   private:
     [[nodiscard]] bool begin_inspector_window() const;
     void draw_creation_dialog(EditableNurbsSurface &model);
     bool draw_net_table(bool show_weights);
     void draw_project(EditableNurbsSurface &model);
-    const occt_lab::geometry::SurfaceProbe *update_probe(const EditableNurbsSurface::Snapshot &snapshot,
+    const formlight_geometry::geometry::SurfaceProbe *update_probe(const EditableNurbsSurface::Snapshot &snapshot,
                                                          bool show_controls);
     void reset_draft(const EditableNurbsSurface &model);
     [[nodiscard]] bool has_edits(const EditableNurbsSurface::Definition &surface) const;
     std::size_t selected_pole_ = 0;
     int draft_columns_ = 0;
     bool tracking_pole_ = false;
-    std::vector<occt_lab::geometry::Vec3> poles_;
+    std::vector<formlight_geometry::geometry::Vec3> poles_;
     std::vector<double> weights_;
     std::string error_;
     std::string sampling_error_;
-    std::shared_ptr<const occt_lab::geometry::BSplineSurface> probed_surface_;
+    std::shared_ptr<const formlight_geometry::geometry::BSplineSurface> probed_surface_;
     double probe_u_ = 0.0;
     double probe_v_ = 0.0;
-    std::expected<occt_lab::geometry::SurfaceProbe, std::string> probe_;
-    std::expected<occt_lab::geometry::SurfaceSample, occt_lab::geometry::PatchError> bernstein_sample_;
-    occt_lab::SurfaceCreationParameters creation_parameters_;
-    occt_lab::SurfaceCreationParameters net_parameters_{.v_poles = 3};
-    occt_lab::SurfacePoleRows creation_net_;
+    std::expected<formlight_geometry::geometry::SurfaceProbe, std::string> probe_;
+    std::expected<formlight_geometry::geometry::SurfaceSample, formlight_geometry::geometry::PatchError> bernstein_sample_;
+    formlight_geometry::SurfaceCreationParameters creation_parameters_;
+    formlight_geometry::SurfaceCreationParameters net_parameters_{.v_poles = 3};
+    formlight_geometry::SurfacePoleRows creation_net_;
     double fit_tolerance_mm_ = 0.1;
     struct NetPicking
     {
         EditableNurbsSurface::Framing framing;
-        std::vector<occt_lab::geometry::Vec3> positions;
+        std::vector<formlight_geometry::geometry::Vec3> positions;
     };
     std::optional<NetPicking> picked_net_;
     std::optional<EditableNurbsSurface::Framing> net_frame_;
@@ -128,7 +128,7 @@ void NurbsPoleInspector::cancel_drag(EditableNurbsSurface &model)
 }
 
 void NurbsPoleInspector::handle_viewport_input(EditableNurbsSurface &model,
-                                               const occt_lab::render::ViewportProjection &project,
+                                               const formlight_geometry::render::ViewportProjection &project,
                                                const bool pole_click)
 {
     const auto &surface = model.current().definition;
@@ -184,7 +184,7 @@ bool NurbsPoleInspector::begin_inspector_window() const
     return ImGui::Begin(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 }
 
-const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model,
+const formlight_geometry::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSurface &model,
                                                                 NurbsMeshControls *mesh)
 {
     const bool visible = begin_inspector_window();
@@ -195,7 +195,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         ImGui::EndDisabled();
         const auto &surface = model.current().definition;
         ImGui::Text("Surface degree   U %d   V %d", surface.u.degree, surface.v.degree);
-        const int degree_limit = occt_lab::geometry::max_surface_degree();
+        const int degree_limit = formlight_geometry::geometry::max_surface_degree();
         ImGui::BeginDisabled(tracking_pole_ || has_edits(surface) || net_preview_);
         ImGui::BeginDisabled(surface.u.degree >= degree_limit);
         const bool elevate_u = ImGui::Button("Elevate U degree (+1)");
@@ -207,7 +207,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         ImGui::EndDisabled();
         if (elevate_u || elevate_v)
         {
-            using enum occt_lab::geometry::SurfaceDirection;
+            using enum formlight_geometry::geometry::SurfaceDirection;
             const auto result = model.elevate_degree(elevate_u ? u : v);
             if (result)
             {
@@ -352,7 +352,7 @@ const occt_lab::geometry::SurfaceProbe *NurbsPoleInspector::draw(EditableNurbsSu
         ImGui::EndDisabled();
         if (insert_u || insert_v)
         {
-            using enum occt_lab::geometry::SurfaceDirection;
+            using enum formlight_geometry::geometry::SurfaceDirection;
             const auto result = model.insert_knot(insert_u ? u : v, insert_u ? probe_u_ : probe_v_);
             if (result)
             {

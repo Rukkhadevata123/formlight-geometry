@@ -3,11 +3,11 @@ module;
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
-module occt_lab.ui.curve.curve_editor;
+module formlight_geometry.ui.curve.curve_editor;
 
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.document.curve_project;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.document.curve_project;
 
 void CurveEditor::draw_project(EditableCurve &curve)
 {
@@ -17,10 +17,10 @@ void CurveEditor::draw_project(EditableCurve &curve)
     }
     ImGui::InputText("Curve name", &settings_.name);
     const auto save = [&](const std::filesystem::path &path)
-    { return occt_lab::document::save_curve_project(path, curve.current(), settings_); };
+    { return formlight_geometry::document::save_curve_project(path, curve.current(), settings_); };
     const auto open = [&](const std::filesystem::path &path) -> std::expected<void, std::string>
     {
-        auto project = occt_lab::document::open_curve_project(path);
+        auto project = formlight_geometry::document::open_curve_project(path);
         if (!project)
         {
             return std::unexpected(project.error());

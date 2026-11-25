@@ -1,7 +1,7 @@
-export module occt_lab.application.nurbs_curve_creation;
+export module formlight_geometry.application.nurbs_curve_creation;
 
 import std;
-import occt_lab.geometry.curves.bspline_curve;
+import formlight_geometry.geometry.curves.bspline_curve;
 
 export struct LineCurveParameters
 {
@@ -9,10 +9,10 @@ export struct LineCurveParameters
     static constexpr int max_poles = 64;
     int pole_count = 6;
     int degree = 3;
-    std::optional<std::vector<occt_lab::geometry::BSplineKnot>> knots;
+    std::optional<std::vector<formlight_geometry::geometry::BSplineKnot>> knots;
 };
 
-namespace occt_lab
+namespace formlight_geometry
 {
 export [[nodiscard]] geometry::CurveDefinition make_line_curve(const LineCurveParameters &parameters)
 {
@@ -42,4 +42,4 @@ export [[nodiscard]] geometry::CurveDefinition make_cubic_bezier_curve()
     }};
     return geometry::make_uniform_clamped_curve(poles, 3);
 }
-} // namespace occt_lab
+} // namespace formlight_geometry

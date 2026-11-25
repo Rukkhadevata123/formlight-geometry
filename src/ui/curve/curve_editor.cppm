@@ -2,20 +2,20 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.curve.curve_editor;
+export module formlight_geometry.ui.curve.curve_editor;
 
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.application.nurbs_curve_creation;
-import occt_lab.document.curve_project;
-import occt_lab.geometry.bspline_knot;
-import occt_lab.geometry.vec3;
-import occt_lab.render.preview.curve_preview;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.ui.clamped_knot_editor;
-import occt_lab.ui.curve.fit_residuals;
-import occt_lab.ui.pole_drag;
-import occt_lab.ui.project_file_controls;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.application.nurbs_curve_creation;
+import formlight_geometry.document.curve_project;
+import formlight_geometry.geometry.bspline_knot;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.render.preview.curve_preview;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.ui.clamped_knot_editor;
+import formlight_geometry.ui.curve.fit_residuals;
+import formlight_geometry.ui.pole_drag;
+import formlight_geometry.ui.project_file_controls;
 
 export class CurveEditor
 {
@@ -71,15 +71,15 @@ export class CurveEditor
     void finish_curve_operation(const EditableCurve &curve, const std::expected<void, std::string> &result);
     EditableCurve::Definition draft_;
     LineCurveParameters creation_parameters_;
-    std::vector<occt_lab::geometry::Vec3> creation_points_;
+    std::vector<formlight_geometry::geometry::Vec3> creation_points_;
     bool picking_points_ = false;
     int creation_preset_ = custom_line;
     int control_degree_ = 3;
-    std::optional<std::vector<occt_lab::geometry::BSplineKnot>> control_knots_;
+    std::optional<std::vector<formlight_geometry::geometry::BSplineKnot>> control_knots_;
     std::optional<EditableCurve::Curve> creation_preview_;
     double creation_tolerance_ = 1.0;
     std::string creation_error_;
-    occt_lab::document::CurveProjectSettings settings_;
+    formlight_geometry::document::CurveProjectSettings settings_;
     ProjectFileControls project_file_{.path = "curve.occtlab"};
     bool tracking_pole_ = false;
     std::string error_;

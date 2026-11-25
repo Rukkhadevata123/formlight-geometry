@@ -1,10 +1,10 @@
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.test.bspline_surface_check.analytic_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.test.bspline_surface_check.analytic_surface;
 
 namespace
 {
-using namespace occt_lab::geometry;
+using namespace formlight_geometry::geometry;
 
 void check_vector(const Vec3 &actual, const Vec3 &expected, const std::string_view quantity, const double u,
                   const double v)
@@ -187,7 +187,7 @@ void check_invalid_definitions(BSplineSurfaceDefinition definition)
 
 void check_surface_evaluation()
 {
-    auto definition = occt_lab::test::make_analytic_surface();
+    auto definition = formlight_geometry::test::make_analytic_surface();
     check_preview_isolines(BSplineSurface{definition});
     definition.weights.clear();
     check_evaluation(BSplineSurface{definition});

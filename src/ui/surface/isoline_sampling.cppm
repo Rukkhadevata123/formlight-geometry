@@ -2,13 +2,13 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.surface.isoline_sampling;
+export module formlight_geometry.ui.surface.isoline_sampling;
 
-import occt_lab.geometry.surfaces.surface_isolines;
+import formlight_geometry.geometry.surfaces.surface_isolines;
 
-export [[nodiscard]] bool draw_isoline_sampling_controls(occt_lab::geometry::PatchSampling &sampling)
+export [[nodiscard]] bool draw_isoline_sampling_controls(formlight_geometry::geometry::PatchSampling &sampling)
 {
-    using occt_lab::geometry::PatchSampling;
+    using formlight_geometry::geometry::PatchSampling;
     const auto before = sampling;
     ImGui::SeparatorText("Isoline sampling");
     ImGui::PushItemWidth(11.0F * ImGui::GetFontSize());

@@ -2,13 +2,13 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.curve.fit_residuals;
+export module formlight_geometry.ui.curve.fit_residuals;
 
 import std;
-import occt_lab.geometry.curves.bspline_curve;
-import occt_lab.render.preview.curve_colors;
+import formlight_geometry.geometry.curves.bspline_curve;
+import formlight_geometry.render.preview.curve_colors;
 
-using occt_lab::geometry::SampledCurve;
+using formlight_geometry::geometry::SampledCurve;
 
 namespace
 {
@@ -102,7 +102,7 @@ export void draw_fit_residuals(const SampledCurve &curve)
     {
         return;
     }
-    const auto largest = std::ranges::max_element(points, {}, &occt_lab::geometry::CurveDataPoint::residual);
+    const auto largest = std::ranges::max_element(points, {}, &formlight_geometry::geometry::CurveDataPoint::residual);
     double peak = largest->residual;
     ImGui::Text("Green diamonds: %zu data points", points.size());
     if (curve.approximation)

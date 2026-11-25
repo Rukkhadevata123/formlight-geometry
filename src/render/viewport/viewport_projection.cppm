@@ -3,13 +3,13 @@ module;
 #include <gp_XYZ.hxx>
 #include <imgui.h>
 
-export module occt_lab.render.viewport.viewport_projection;
+export module formlight_geometry.render.viewport.viewport_projection;
 
 import std;
-import occt_lab.geometry.vec3;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.render.viewport.clip_transform;
 
-namespace occt_lab::render
+namespace formlight_geometry::render
 {
 struct ClipPoint;
 
@@ -224,4 +224,4 @@ Vec3 ViewportProjection::dragged_position(const Vec3 &origin, const ImVec2 scree
     return {
         .x = origin.x + offset.X() * scale_, .y = origin.y + offset.Y() * scale_, .z = origin.z + offset.Z() * scale_};
 }
-} // namespace occt_lab::render
+} // namespace formlight_geometry::render

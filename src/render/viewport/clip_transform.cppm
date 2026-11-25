@@ -1,7 +1,7 @@
-export module occt_lab.render.viewport.clip_transform;
+export module formlight_geometry.render.viewport.clip_transform;
 
 import std;
-import occt_lab.geometry.vec3;
+import formlight_geometry.geometry.vec3;
 
 export using ClipRow = std::array<float, 4>;
 
@@ -11,9 +11,9 @@ export struct ClipTransform
 
     // At fixed model Z, clip.x = ndc_x * clip.w and clip.y = ndc_y * clip.w are linear in X and Y.
     [[nodiscard]] constexpr auto intersect_z_plane(double ndc_x, double ndc_y, double plane_z) const
-        -> std::optional<occt_lab::geometry::Vec3>
+        -> std::optional<formlight_geometry::geometry::Vec3>
     {
-        using occt_lab::geometry::Vec3;
+        using formlight_geometry::geometry::Vec3;
         const auto coefficients = [&](const ClipRow &row, double ndc) -> Vec3
         { return {row[0] - ndc * w[0], row[1] - ndc * w[1], row[2] - ndc * w[2]}; };
         const Vec3 a = coefficients(x, ndc_x);
@@ -40,10 +40,10 @@ export struct ClipTransform
     }
 
     // GPU vertices are relative to origin, while the wireframe uses (world - center) / scale.
-    [[nodiscard]] constexpr ClipTransform from_local_frame(occt_lab::geometry::Vec3 origin,
-                                                           occt_lab::geometry::Vec3 center, double scale) const
+    [[nodiscard]] constexpr ClipTransform from_local_frame(formlight_geometry::geometry::Vec3 origin,
+                                                           formlight_geometry::geometry::Vec3 center, double scale) const
     {
-        const occt_lab::geometry::Vec3 offset{(origin.x - center.x) / scale, (origin.y - center.y) / scale,
+        const formlight_geometry::geometry::Vec3 offset{(origin.x - center.x) / scale, (origin.y - center.y) / scale,
                                               (origin.z - center.z) / scale};
         const auto local_row = [&](const ClipRow &row) -> ClipRow
         {

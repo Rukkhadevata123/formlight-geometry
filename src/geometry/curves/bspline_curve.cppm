@@ -5,15 +5,15 @@ module;
 #include <Precision.hxx>
 #include <gp_Pnt.hxx>
 
-export module occt_lab.geometry.curves.bspline_curve;
+export module formlight_geometry.geometry.curves.bspline_curve;
 
 import std;
-export import occt_lab.geometry.bspline_knot;
-export import occt_lab.geometry.vec3;
-import occt_lab.geometry.bspline_weights;
-import occt_lab.geometry.occt_bspline_knots;
+export import formlight_geometry.geometry.bspline_knot;
+export import formlight_geometry.geometry.vec3;
+import formlight_geometry.geometry.bspline_weights;
+import formlight_geometry.geometry.occt_bspline_knots;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export struct CurveDefinition
 {
@@ -257,4 +257,4 @@ export [[nodiscard]] CurveDefinition elevate_curve_degree(const CurveDefinition 
     curve.IncreaseDegree(target_degree);
     return read_bspline_definition(curve, std::ranges::max(definition.weights));
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

@@ -2,17 +2,17 @@ module;
 
 #include <vulkan/vulkan_core.h>
 
-export module occt_lab.render.compute.nurbs_grid_mesh;
+export module formlight_geometry.render.compute.nurbs_grid_mesh;
 
 import std;
 import vulkan;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.render.compute.nurbs_grid_input;
-import occt_lab.render.compute.nurbs_grid_report;
-import occt_lab.render.compute.storage_buffer_kernel;
-import occt_lab.render.preview.brep_preview;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.render.compute.nurbs_grid_input;
+import formlight_geometry.render.compute.nurbs_grid_report;
+import formlight_geometry.render.compute.storage_buffer_kernel;
+import formlight_geometry.render.preview.brep_preview;
+import formlight_geometry.render.viewport.clip_transform;
 
 export class NurbsGridMesh
 {
@@ -20,7 +20,7 @@ export class NurbsGridMesh
     NurbsGridMesh(const vk::raii::PhysicalDevice &physical_device, const vk::raii::Device &device,
                   std::uint32_t max_storage_range);
     // Previous frame must have completed before uploading a replacement snapshot.
-    void prepare(const EditableNurbsSurface::Snapshot &snapshot, occt_lab::geometry::PatchGrid grid);
+    void prepare(const EditableNurbsSurface::Snapshot &snapshot, formlight_geometry::geometry::PatchGrid grid);
     void dispatch_if_needed(const vk::raii::CommandBuffer &commands);
     void draw(const vk::raii::CommandBuffer &commands, const BRepPreview &preview, vk::Extent2D extent,
               const ClipTransform &transform) const;
@@ -32,13 +32,13 @@ export class NurbsGridMesh
     std::uint32_t max_storage_range_;
     std::optional<StorageBufferKernel> kernel_;
     vk::DeviceSize capacity_ = 0; // The index buffer begins immediately after the storage descriptor.
-    occt_lab::geometry::PatchGrid grid_;
+    formlight_geometry::geometry::PatchGrid grid_;
     std::array<std::uint32_t, 6> parameters_{};
-    occt_lab::geometry::Vec3 origin_{};
+    formlight_geometry::geometry::Vec3 origin_{};
     EditableNurbsSurface::Framing frame_{};
     double tolerance_mm_ = 0;
     bool dispatch_needed_ = false;
-    std::shared_ptr<const occt_lab::geometry::BSplineSurface> reference_;
+    std::shared_ptr<const formlight_geometry::geometry::BSplineSurface> reference_;
 };
 
 namespace
@@ -56,19 +56,19 @@ NurbsGridMesh::NurbsGridMesh(const vk::raii::PhysicalDevice &physical_device, co
 {
 }
 
-void NurbsGridMesh::prepare(const EditableNurbsSurface::Snapshot &snapshot, const occt_lab::geometry::PatchGrid grid)
+void NurbsGridMesh::prepare(const EditableNurbsSurface::Snapshot &snapshot, const formlight_geometry::geometry::PatchGrid grid)
 {
     frame_ = snapshot.framing;
     if (reference_ == snapshot.surface && grid_ == grid)
     {
         return;
     }
-    const auto input = occt_lab::render::pack_nurbs_grid(snapshot.definition, grid, max_storage_range_);
+    const auto input = formlight_geometry::render::pack_nurbs_grid(snapshot.definition, grid, max_storage_range_);
     const vk::DeviceSize bytes = input.words.size() * sizeof(float);
     const bool grow = bytes > capacity_;
     if (grow)
     {
-        constexpr auto max_segments = occt_lab::geometry::PatchGrid::max_segments;
+        constexpr auto max_segments = formlight_geometry::geometry::PatchGrid::max_segments;
         constexpr vk::DeviceSize index_bytes = 6 * max_segments * max_segments * sizeof(std::uint32_t);
         const auto capacity = std::min<vk::DeviceSize>(std::bit_ceil(bytes), max_storage_range_ & ~3U);
         kernel_.emplace(physical_device_, device_, "nurbs_grid.comp.spv", capacity,
@@ -134,7 +134,7 @@ std::string NurbsGridMesh::read_report() const
     {
         device_.invalidateMappedMemoryRanges(vk::MappedMemoryRange{*kernel_->memory(), 0, VK_WHOLE_SIZE});
     }
-    std::vector<occt_lab::render::NurbsGridVertex> vertices(samples->size());
+    std::vector<formlight_geometry::render::NurbsGridVertex> vertices(samples->size());
     std::memcpy(vertices.data(), mapped.get(), vertices.size() * sizeof(vertices.front()));
-    return occt_lab::render::compare_nurbs_grid(vertices, *samples, origin_, tolerance_mm_);
+    return formlight_geometry::render::compare_nurbs_grid(vertices, *samples, origin_, tolerance_mm_);
 }

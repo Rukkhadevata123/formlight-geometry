@@ -2,7 +2,7 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.pole_drag;
+export module formlight_geometry.ui.pole_drag;
 
 import std;
 

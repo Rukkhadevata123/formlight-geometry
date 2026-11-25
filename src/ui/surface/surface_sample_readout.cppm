@@ -2,16 +2,16 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.surface.surface_sample_readout;
+export module formlight_geometry.ui.surface.surface_sample_readout;
 
 import std;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.occt_bezier_patch;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.occt_bezier_patch;
 
 export inline constexpr char parameter_slider_hint[] = "Ctrl+click a slider to type a value, then press Enter.";
 
-using occt_lab::geometry::PatchError;
-using occt_lab::geometry::SurfaceSample;
+using formlight_geometry::geometry::PatchError;
+using formlight_geometry::geometry::SurfaceSample;
 
 export void draw_surface_sample(const SurfaceSample &sample)
 {

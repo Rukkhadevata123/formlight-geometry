@@ -1,13 +1,13 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.document.nurbs_surface_project;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.document.nurbs_surface_project;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
-using namespace occt_lab::document;
+using namespace formlight_geometry::document;
 
 void check_rejected(const std::filesystem::path &path, std::string text, const std::string_view field,
                     const std::string_view replacement, const std::string_view expected_error = {})
@@ -33,8 +33,8 @@ void check_nurbs_surface_projects()
 {
     const ProjectTestDirectory directory;
     const auto path = directory.path / u8"自定义曲面.occtlab";
-    using KnotList = std::vector<occt_lab::geometry::BSplineKnot>;
-    const occt_lab::SurfaceCreationParameters parameters{
+    using KnotList = std::vector<formlight_geometry::geometry::BSplineKnot>;
+    const formlight_geometry::SurfaceCreationParameters parameters{
         .u_poles = 6,
         .v_poles = 4,
         .u_degree = 2,
@@ -42,7 +42,7 @@ void check_nurbs_surface_projects()
         .u_knots = KnotList{{-2, 3}, {0, 2}, {3, 1}, {5, 3}},
         .v_knots = KnotList{{-4, 2}, {-1, 1}, {1, 1}, {4, 2}},
     };
-    auto definition = occt_lab::make_planar_nurbs_surface(parameters).value();
+    auto definition = formlight_geometry::make_planar_nurbs_surface(parameters).value();
     EditableNurbsSurface model{definition};
     save_nurbs_surface_project(path, model).value();
 
@@ -64,8 +64,8 @@ void check_nurbs_surface_projects()
     {
         throw std::runtime_error("Isolines changed after reopening");
     }
-    const occt_lab::geometry::BSplineSurface before{definition};
-    const occt_lab::geometry::BSplineSurface after{loaded.current().definition};
+    const formlight_geometry::geometry::BSplineSurface before{definition};
+    const formlight_geometry::geometry::BSplineSurface after{loaded.current().definition};
     const auto a = before.evaluate_d1(1.25, 0.375).value();
     const auto b = after.evaluate_d1(1.25, 0.375).value();
     if (a.position != b.position || a.du != b.du || a.dv != b.dv)

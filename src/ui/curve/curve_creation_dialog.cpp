@@ -2,13 +2,13 @@ module;
 
 #include <imgui.h>
 
-module occt_lab.ui.curve.curve_editor;
+module formlight_geometry.ui.curve.curve_editor;
 
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.application.nurbs_curve_creation;
-import occt_lab.geometry.curves.bspline_curve;
-import occt_lab.ui.clamped_knot_editor;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.application.nurbs_curve_creation;
+import formlight_geometry.geometry.curves.bspline_curve;
+import formlight_geometry.ui.clamped_knot_editor;
 
 namespace
 {
@@ -19,7 +19,7 @@ bool draw_line_parameters(LineCurveParameters &parameters)
     constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
     const bool count_changed =
         ImGui::SliderInt("Poles", &count, LineCurveParameters::min_poles, LineCurveParameters::max_poles, "%d", flags);
-    const int limit = occt_lab::geometry::curve_degree_limit(count);
+    const int limit = formlight_geometry::geometry::curve_degree_limit(count);
     degree = std::min(degree, limit);
     ImGui::BeginDisabled(limit == 1);
     const bool degree_changed = ImGui::SliderInt("Degree", &degree, 1, limit, "%d", flags);
@@ -28,7 +28,7 @@ bool draw_line_parameters(LineCurveParameters &parameters)
     return count_changed || degree_changed || knots_changed;
 }
 
-bool draw_point_table(std::vector<occt_lab::geometry::Vec3> &points)
+bool draw_point_table(std::vector<formlight_geometry::geometry::Vec3> &points)
 {
     const float em = ImGui::GetFontSize();
     const float height = 7 * ImGui::GetFrameHeightWithSpacing();
@@ -93,7 +93,7 @@ bool draw_point_table(std::vector<occt_lab::geometry::Vec3> &points)
 
 bool CurveEditor::draw_control_parameters()
 {
-    const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
+    const int limit = formlight_geometry::geometry::curve_degree_limit(creation_points_.size());
     if (limit < 1)
     {
         return false;
@@ -143,7 +143,7 @@ void CurveEditor::draw_creation_fit_summary() const
     if (creation_preview_ && !creation_preview_->data_points.empty())
     {
         const auto largest =
-            std::ranges::max_element(creation_preview_->data_points, {}, &occt_lab::geometry::CurveDataPoint::residual);
+            std::ranges::max_element(creation_preview_->data_points, {}, &formlight_geometry::geometry::CurveDataPoint::residual);
         ImGui::Text("Control points: %zu   Max point residual: %.4g mm", creation_preview_->definition.poles.size(),
                     largest->residual);
         if (creation_preview_->approximation)
@@ -166,21 +166,21 @@ void CurveEditor::refresh_creation_preview(const EditableCurve &curve)
         switch (creation_preset_)
         {
         case approximate_points:
-            creation_preview_ = occt_lab::geometry::approximate_curve(creation_points_, creation_tolerance_);
+            creation_preview_ = formlight_geometry::geometry::approximate_curve(creation_points_, creation_tolerance_);
             break;
         case interpolate_points:
-            creation_preview_ = occt_lab::geometry::interpolate_curve(creation_points_);
+            creation_preview_ = formlight_geometry::geometry::interpolate_curve(creation_points_);
             break;
         case control_points:
         {
-            const int limit = occt_lab::geometry::curve_degree_limit(creation_points_.size());
+            const int limit = formlight_geometry::geometry::curve_degree_limit(creation_points_.size());
             if (picking_points_ && control_knots_ && control_degree_ > limit)
             {
                 return;
             }
             const int degree = std::min(control_degree_, limit);
             creation_preview_ =
-                sample_curve(occt_lab::geometry::make_clamped_curve(creation_points_, degree, control_knots_));
+                sample_curve(formlight_geometry::geometry::make_clamped_curve(creation_points_, degree, control_knots_));
             break;
         }
         default:
@@ -296,7 +296,7 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     bool can_create = creation_preset_ == custom_line || creation_preset_ == cubic_bezier || creation_preview_;
     if (creation_preset_ == custom_line && creation_parameters_.knots)
     {
-        const auto valid = occt_lab::geometry::validate_clamped_knots(
+        const auto valid = formlight_geometry::geometry::validate_clamped_knots(
             *creation_parameters_.knots, creation_parameters_.degree, creation_parameters_.pole_count);
         if (!valid)
         {

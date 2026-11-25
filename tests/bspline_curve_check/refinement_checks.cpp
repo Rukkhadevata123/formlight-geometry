@@ -1,16 +1,16 @@
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.geometry.curves.bspline_curve;
-import occt_lab.test.support.near;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.geometry.curves.bspline_curve;
+import formlight_geometry.test.support.near;
 
 namespace
 {
-using occt_lab::geometry::Vec3;
-using occt_lab::test::near;
+using formlight_geometry::geometry::Vec3;
+using formlight_geometry::test::near;
 
 void check_curve_samples()
 {
-    using occt_lab::geometry::make_uniform_clamped_curve;
+    using formlight_geometry::geometry::make_uniform_clamped_curve;
     constexpr std::array poles{
         Vec3{.x = -3.0, .y = 1.0, .z = 0.0}, Vec3{.x = -2.0, .y = 2.0, .z = 1.0}, Vec3{.x = 1.0, .y = 4.0, .z = 3.0},
         Vec3{.x = 3.0, .y = -2.0, .z = 1.0}, Vec3{.x = 6.0, .y = 0.0, .z = 0.0},

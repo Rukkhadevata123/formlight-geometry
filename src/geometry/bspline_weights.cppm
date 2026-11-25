@@ -2,11 +2,11 @@ module;
 
 #include <gp.hxx>
 
-export module occt_lab.geometry.bspline_weights;
+export module formlight_geometry.geometry.bspline_weights;
 
 import std;
 
-export namespace occt_lab::geometry
+export namespace formlight_geometry::geometry
 {
 // Dividing all weights by this scale preserves rational positions and derivatives.
 [[nodiscard]] inline double checked_weight_scale(const std::span<const double> weights, const std::size_t pole_count)
@@ -26,4 +26,4 @@ export namespace occt_lab::geometry
     }
     return largest;
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

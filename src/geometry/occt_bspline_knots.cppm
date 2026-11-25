@@ -2,12 +2,12 @@ module;
 
 #include <NCollection_Array1.hxx>
 
-export module occt_lab.geometry.occt_bspline_knots;
+export module formlight_geometry.geometry.occt_bspline_knots;
 
 import std;
-import occt_lab.geometry.bspline_knot;
+import formlight_geometry.geometry.bspline_knot;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export struct OcctKnotArrays
 {
@@ -34,4 +34,4 @@ export [[nodiscard]] OcctKnotArrays make_clamped_knots(const std::span<const BSp
     }
     return result;
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

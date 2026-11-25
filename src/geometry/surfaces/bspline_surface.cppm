@@ -3,16 +3,16 @@ module;
 #include <Geom_BSplineSurface.hxx>
 #include <Precision.hxx>
 
-export module occt_lab.geometry.surfaces.bspline_surface;
+export module formlight_geometry.geometry.surfaces.bspline_surface;
 
 import std;
-export import occt_lab.geometry.bspline_knot;
-export import occt_lab.geometry.surfaces.patch_grid;
-export import occt_lab.geometry.surfaces.surface_isolines;
-import occt_lab.geometry.bspline_weights;
-import occt_lab.geometry.occt_bspline_knots;
+export import formlight_geometry.geometry.bspline_knot;
+export import formlight_geometry.geometry.surfaces.patch_grid;
+export import formlight_geometry.geometry.surfaces.surface_isolines;
+import formlight_geometry.geometry.bspline_weights;
+import formlight_geometry.geometry.occt_bspline_knots;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export struct BSplineSurfaceAxis
 {
@@ -425,4 +425,4 @@ auto BSplineSurface::sample_grid(const PatchGrid grid) const -> std::expected<st
     }
     return vertices;
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

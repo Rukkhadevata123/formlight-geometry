@@ -1,10 +1,10 @@
-export module occt_lab.geometry.surfaces.bernstein_reference;
+export module formlight_geometry.geometry.surfaces.bernstein_reference;
 
 import std;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 namespace
 {
@@ -51,4 +51,4 @@ export [[nodiscard]] auto evaluate_bernstein_reference(const BSplineSurfaceDefin
                                       unit_parameter(v, domain.v_min, domain.v_max));
             });
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

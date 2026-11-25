@@ -2,11 +2,11 @@ module;
 
 #include <imgui.h>
 
-module occt_lab.ui.surface.nurbs_pole_inspector;
+module formlight_geometry.ui.surface.nurbs_pole_inspector;
 
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.document.nurbs_surface_project;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.document.nurbs_surface_project;
 
 void NurbsPoleInspector::draw_project(EditableNurbsSurface &model)
 {
@@ -15,10 +15,10 @@ void NurbsPoleInspector::draw_project(EditableNurbsSurface &model)
         return;
     }
     const auto save = [&](const std::filesystem::path &path)
-    { return occt_lab::document::save_nurbs_surface_project(path, model); };
+    { return formlight_geometry::document::save_nurbs_surface_project(path, model); };
     const auto open = [&](const std::filesystem::path &path) -> std::expected<void, std::string>
     {
-        auto project = occt_lab::document::open_nurbs_surface_project(path);
+        auto project = formlight_geometry::document::open_nurbs_surface_project(path);
         if (!project)
         {
             return std::unexpected(project.error());

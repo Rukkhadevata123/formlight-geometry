@@ -3,12 +3,12 @@ module;
 #include <BSplCLib.hxx>
 #include <math_Householder.hxx>
 
-module occt_lab.application.nurbs_surface_creation;
+module formlight_geometry.application.nurbs_surface_creation;
 
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
-namespace occt_lab
+namespace formlight_geometry
 {
 namespace
 {
@@ -145,4 +145,4 @@ auto approximate_surface_grid(const SurfacePoleRows &rows, const double toleranc
         return std::unexpected(error.what());
     }
 }
-} // namespace occt_lab
+} // namespace formlight_geometry

@@ -2,20 +2,20 @@
 #include <cstdlib>
 
 import std;
-import occt_lab.geometry.surfaces.bezier_patch;
-import occt_lab.geometry.surfaces.bspline_surface;
-import occt_lab.geometry.surfaces.occt_bezier_patch;
-import occt_lab.test.support.near;
+import formlight_geometry.geometry.surfaces.bezier_patch;
+import formlight_geometry.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.occt_bezier_patch;
+import formlight_geometry.test.support.near;
 
 namespace
 {
-using occt_lab::geometry::CubicBezierPatch;
-using occt_lab::geometry::OcctBezierPatch;
-using occt_lab::geometry::PatchError;
-using occt_lab::geometry::PatchIsolines;
-using occt_lab::geometry::PatchSampling;
-using occt_lab::geometry::SurfaceSample;
-using occt_lab::geometry::Vec3;
+using formlight_geometry::geometry::CubicBezierPatch;
+using formlight_geometry::geometry::OcctBezierPatch;
+using formlight_geometry::geometry::PatchError;
+using formlight_geometry::geometry::PatchIsolines;
+using formlight_geometry::geometry::PatchSampling;
+using formlight_geometry::geometry::SurfaceSample;
+using formlight_geometry::geometry::Vec3;
 
 constexpr std::size_t side_length = 4;
 using ControlNet = std::array<Vec3, side_length * side_length>;
@@ -46,11 +46,11 @@ ControlNet raised_patch()
     return control_points;
 }
 
-using occt_lab::test::near;
+using formlight_geometry::test::near;
 
 void check_samples(const CubicBezierPatch &patch, const OcctBezierPatch &reference)
 {
-    using namespace occt_lab::geometry;
+    using namespace formlight_geometry::geometry;
     const BSplineSurfaceAxis cubic_axis{.degree = 3, .pole_count = 4, .knots = {{0, 4}, {1, 4}}};
     const auto &net = patch.control_net();
     const BSplineSurfaceDefinition definition{

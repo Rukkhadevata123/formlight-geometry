@@ -2,7 +2,7 @@ module;
 
 #include <imgui.h>
 
-export module occt_lab.ui.developer_diagnostics;
+export module formlight_geometry.ui.developer_diagnostics;
 
 import std;
 

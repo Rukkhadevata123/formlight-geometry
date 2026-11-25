@@ -8,14 +8,14 @@
 #include <gp_Pnt.hxx>
 
 import std;
-import occt_lab.document.plate_step;
-import occt_lab.geometry.brep.box_model;
-import occt_lab.geometry.brep.brep_face_properties;
-import occt_lab.geometry.brep.brep_mesh;
-import occt_lab.geometry.brep.plate_with_hole;
-import occt_lab.render.viewport.brep_face_picking;
-import occt_lab.render.viewport.clip_transform;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.document.plate_step;
+import formlight_geometry.geometry.brep.box_model;
+import formlight_geometry.geometry.brep.brep_face_properties;
+import formlight_geometry.geometry.brep.brep_mesh;
+import formlight_geometry.geometry.brep.plate_with_hole;
+import formlight_geometry.render.viewport.brep_face_picking;
+import formlight_geometry.render.viewport.clip_transform;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
@@ -88,9 +88,9 @@ void check_plate(const char *method, const TopoDS_Solid &plate, const std::files
     const double wall_area = check_face_picking(plate);
     std::println("{}: volume {:.6f} mm^3, selected hole wall {:.6f} mm^2", method, volume, wall_area);
 
-    occt_lab::document::write_plate_step(file, plate);
-    const auto imported = occt_lab::document::read_step_solid(file);
-    const auto measures = occt_lab::document::verify_plate_step(plate, imported);
+    formlight_geometry::document::write_plate_step(file, plate);
+    const auto imported = formlight_geometry::document::read_step_solid(file);
+    const auto measures = formlight_geometry::document::verify_plate_step(plate, imported);
     check_solid(imported);
     check_face_picking(imported);
     std::println("{} STEP: volume {:.6f} mm^3, cylindrical wall {:.6f} mm^2", method, measures.volume_mm3,
@@ -99,12 +99,12 @@ void check_plate(const char *method, const TopoDS_Solid &plate, const std::files
 
 void check_step_failures(const std::filesystem::path &file)
 {
-    const auto imported = occt_lab::document::read_step_solid(file);
+    const auto imported = formlight_geometry::document::read_step_solid(file);
     const auto smaller_hole = cut_plate_with_hole(dimensions, 0.5 * radius);
     bool mismatch_detected = false;
     try
     {
-        (void)occt_lab::document::verify_plate_step(smaller_hole, imported);
+        (void)formlight_geometry::document::verify_plate_step(smaller_hole, imported);
     }
     catch (const std::runtime_error &)
     {
@@ -118,7 +118,7 @@ void check_step_failures(const std::filesystem::path &file)
     std::ofstream(file) << "invalid STEP";
     try
     {
-        (void)occt_lab::document::read_step_solid(file);
+        (void)formlight_geometry::document::read_step_solid(file);
     }
     catch (const std::runtime_error &)
     {

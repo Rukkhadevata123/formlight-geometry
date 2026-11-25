@@ -1,4 +1,4 @@
-export module occt_lab.application.single_step_history;
+export module formlight_geometry.application.single_step_history;
 
 import std;
 

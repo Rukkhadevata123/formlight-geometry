@@ -2,23 +2,23 @@ module;
 
 #include <imgui.h>
 
-module occt_lab.ui.surface.nurbs_pole_inspector;
+module formlight_geometry.ui.surface.nurbs_pole_inspector;
 
 import std;
-import occt_lab.application.bezier_patch_presets;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.geometry.bspline_knot;
-import occt_lab.ui.clamped_knot_editor;
+import formlight_geometry.application.bezier_patch_presets;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.geometry.bspline_knot;
+import formlight_geometry.ui.clamped_knot_editor;
 
 namespace
 {
-using KnotList = std::vector<occt_lab::geometry::BSplineKnot>;
+using KnotList = std::vector<formlight_geometry::geometry::BSplineKnot>;
 
 bool draw_creation_axis(const char *poles_label, const char *degree_label, const char *knots_label, int &poles,
                         std::optional<int> &degree, std::optional<KnotList> &knots)
 {
-    using Params = occt_lab::SurfaceCreationParameters;
+    using Params = formlight_geometry::SurfaceCreationParameters;
     constexpr auto flags = ImGuiSliderFlags_AlwaysClamp;
     const bool poles_changed = ImGui::SliderInt(poles_label, &poles, Params::min_poles, Params::max_poles, "%d", flags);
     const int limit = Params::degree_limit(poles);
@@ -38,7 +38,7 @@ bool draw_creation_axis(const char *poles_label, const char *degree_label, const
     return poles_changed || degree_changed || knots_changed;
 }
 
-bool draw_axes(occt_lab::SurfaceCreationParameters &p)
+bool draw_axes(formlight_geometry::SurfaceCreationParameters &p)
 {
     const bool u_changed =
         draw_creation_axis("U poles", "U degree", "Custom U knots", p.u_poles, p.u_degree, p.u_knots);
@@ -47,7 +47,7 @@ bool draw_axes(occt_lab::SurfaceCreationParameters &p)
     return u_changed || v_changed;
 }
 
-bool draw_plane_parameters(occt_lab::SurfaceCreationParameters &p)
+bool draw_plane_parameters(formlight_geometry::SurfaceCreationParameters &p)
 {
     const bool axes_changed = draw_axes(p);
     ImGui::PushItemFlag(ImGuiItemFlags_LiveEditOnInputScalar, true);
@@ -67,34 +67,34 @@ enum CreationPreset
     approximate_grid
 };
 
-auto create_from_grid(const int preset, const occt_lab::SurfaceCreationParameters &parameters,
-                      const occt_lab::SurfacePoleRows &grid, const double tolerance_mm)
+auto create_from_grid(const int preset, const formlight_geometry::SurfaceCreationParameters &parameters,
+                      const formlight_geometry::SurfacePoleRows &grid, const double tolerance_mm)
     -> std::expected<EditableNurbsSurface::Definition, std::string>
 {
     switch (preset)
     {
     case from_control_net:
-        return occt_lab::make_control_net_surface(parameters, grid);
+        return formlight_geometry::make_control_net_surface(parameters, grid);
     case interpolate_grid:
-        return occt_lab::interpolate_surface_grid(grid);
+        return formlight_geometry::interpolate_surface_grid(grid);
     case approximate_grid:
-        return occt_lab::approximate_surface_grid(grid, tolerance_mm);
+        return formlight_geometry::approximate_surface_grid(grid, tolerance_mm);
     default:
         return std::unexpected("Unknown point-grid preset.");
     }
 }
 
-auto create_definition(const int preset, const occt_lab::SurfaceCreationParameters &parameters)
+auto create_definition(const int preset, const formlight_geometry::SurfaceCreationParameters &parameters)
     -> std::expected<EditableNurbsSurface::Definition, std::string>
 {
     switch (preset)
     {
     case custom_plane:
-        return occt_lab::make_planar_nurbs_surface(parameters);
+        return formlight_geometry::make_planar_nurbs_surface(parameters);
     case bezier_plane:
-        return occt_lab::make_bezier_nurbs_surface(occt_lab::planar_bezier_net());
+        return formlight_geometry::make_bezier_nurbs_surface(formlight_geometry::planar_bezier_net());
     case raised_bezier:
-        return occt_lab::make_bezier_nurbs_surface(occt_lab::raised_bezier_net());
+        return formlight_geometry::make_bezier_nurbs_surface(formlight_geometry::raised_bezier_net());
     default:
         return std::unexpected("Unknown surface preset.");
     }
@@ -148,7 +148,7 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     {
         if (data_points)
         {
-            using Params = occt_lab::SurfaceCreationParameters;
+            using Params = formlight_geometry::SurfaceCreationParameters;
             const bool u_changed = ImGui::SliderInt("U points", &net_parameters_.u_poles, Params::min_poles,
                                                     Params::max_poles, "%d", ImGuiSliderFlags_AlwaysClamp);
             const bool v_changed = ImGui::SliderInt("V points", &net_parameters_.v_poles, Params::min_poles,
@@ -170,7 +170,7 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
         if (creation_net_.size() != static_cast<std::size_t>(rows) ||
             creation_net_.front().size() != static_cast<std::size_t>(columns))
         {
-            occt_lab::resize_surface_net(creation_net_, columns, rows);
+            formlight_geometry::resize_surface_net(creation_net_, columns, rows);
             net_selected_ = 0;
         }
         if (draw_net_table(!data_points))

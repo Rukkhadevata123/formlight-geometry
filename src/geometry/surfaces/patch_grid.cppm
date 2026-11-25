@@ -1,8 +1,8 @@
-export module occt_lab.geometry.surfaces.patch_grid;
+export module formlight_geometry.geometry.surfaces.patch_grid;
 
 import std;
 
-namespace occt_lab::geometry
+namespace formlight_geometry::geometry
 {
 export struct PatchGrid
 {
@@ -49,4 +49,4 @@ std::vector<std::uint32_t> PatchGrid::triangle_indices() const
     }
     return indices;
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

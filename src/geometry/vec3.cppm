@@ -1,6 +1,6 @@
-export module occt_lab.geometry.vec3;
+export module formlight_geometry.geometry.vec3;
 
-export namespace occt_lab::geometry
+export namespace formlight_geometry::geometry
 {
 struct Vec3
 {
@@ -29,4 +29,4 @@ struct Vec3
         .z = left.x * right.y - left.y * right.x,
     };
 }
-} // namespace occt_lab::geometry
+} // namespace formlight_geometry::geometry

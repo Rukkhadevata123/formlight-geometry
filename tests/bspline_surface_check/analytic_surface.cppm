@@ -1,9 +1,9 @@
-export module occt_lab.test.bspline_surface_check.analytic_surface;
+export module formlight_geometry.test.bspline_surface_check.analytic_surface;
 
 import std;
-import occt_lab.geometry.surfaces.bspline_surface;
+import formlight_geometry.geometry.surfaces.bspline_surface;
 
-namespace occt_lab::test
+namespace formlight_geometry::test
 {
 export [[nodiscard]] geometry::BSplineSurfaceDefinition make_analytic_surface()
 {
@@ -47,4 +47,4 @@ export void check_refined_positions(const geometry::BSplineSurface &before, cons
         }
     }
 }
-} // namespace occt_lab::test
+} // namespace formlight_geometry::test

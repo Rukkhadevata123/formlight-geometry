@@ -1,10 +1,10 @@
 import std;
-import occt_lab.geometry.vec3;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.geometry.vec3;
+import formlight_geometry.render.viewport.clip_transform;
 
 namespace
 {
-using occt_lab::geometry::Vec3;
+using formlight_geometry::geometry::Vec3;
 
 // A translated, non-square orthographic view. The depth interval is [0, 1].
 constexpr ClipTransform ortho{{2, 0, 0, 1}, {0, 4, 0, -1}, {0, 0, 1, 0.5F}, {0, 0, 0, 1}};

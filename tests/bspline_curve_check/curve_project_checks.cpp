@@ -1,12 +1,12 @@
 import std;
-import occt_lab.application.editable_curve;
-import occt_lab.document.curve_project;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_curve;
+import formlight_geometry.document.curve_project;
+import formlight_geometry.test.support.project_test_directory;
 
 namespace
 {
 namespace fs = std::filesystem;
-using namespace occt_lab::document;
+using namespace formlight_geometry::document;
 
 void check_invalid_file(const fs::path &path, const std::string &original, const std::string_view part,
                         const std::string_view replacement)

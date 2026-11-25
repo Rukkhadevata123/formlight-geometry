@@ -5,10 +5,10 @@
 #include <gp_Pnt.hxx>
 
 import std;
-import occt_lab.geometry.brep.brep_face_properties;
-import occt_lab.geometry.brep.brep_mesh;
-import occt_lab.render.viewport.brep_face_picking;
-import occt_lab.render.viewport.clip_transform;
+import formlight_geometry.geometry.brep.brep_face_properties;
+import formlight_geometry.geometry.brep.brep_mesh;
+import formlight_geometry.render.viewport.brep_face_picking;
+import formlight_geometry.render.viewport.clip_transform;
 
 namespace
 {

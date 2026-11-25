@@ -1,13 +1,13 @@
 import std;
-import occt_lab.application.editable_nurbs_surface;
-import occt_lab.application.nurbs_surface_creation;
-import occt_lab.document.nurbs_surface_project;
-import occt_lab.geometry.bspline_knot;
-import occt_lab.test.support.project_test_directory;
+import formlight_geometry.application.editable_nurbs_surface;
+import formlight_geometry.application.nurbs_surface_creation;
+import formlight_geometry.document.nurbs_surface_project;
+import formlight_geometry.geometry.bspline_knot;
+import formlight_geometry.test.support.project_test_directory;
 
 void check_control_net_creation()
 {
-    using namespace occt_lab;
+    using namespace formlight_geometry;
     SurfacePoleRows net;
     resize_surface_net(net, 4, 3);
     net[1][2].position.z = 16;

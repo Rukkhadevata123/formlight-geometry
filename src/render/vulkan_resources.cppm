@@ -2,12 +2,12 @@ module;
 
 #include <SDL3/SDL.h>
 
-export module occt_lab.render.vulkan_resources;
+export module formlight_geometry.render.vulkan_resources;
 
 import std;
 import vulkan;
 
-namespace occt_lab::render
+namespace formlight_geometry::render
 {
 export [[nodiscard]] std::uint32_t find_memory_type(const vk::PhysicalDeviceMemoryProperties &properties,
                                                     const std::uint32_t type_bits,
@@ -54,4 +54,4 @@ export [[nodiscard]] vk::raii::ShaderModule load_shader(const vk::raii::Device &
     info.setCode(words);
     return vk::raii::ShaderModule{device, info};
 }
-} // namespace occt_lab::render
+} // namespace formlight_geometry::render
