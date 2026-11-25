@@ -60,11 +60,11 @@ bool draw_plane_parameters(formlight_geometry::SurfaceCreationParameters &p)
 enum CreationPreset
 {
     custom_plane,
-    bezier_plane,
-    raised_bezier,
     from_control_net,
     interpolate_grid,
-    approximate_grid
+    approximate_grid,
+    bezier_plane,
+    raised_bezier
 };
 
 auto create_from_grid(const int preset, const formlight_geometry::SurfaceCreationParameters &parameters,
@@ -139,8 +139,8 @@ void NurbsPoleInspector::draw_creation_dialog(EditableNurbsSurface &model)
     }
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
     const bool preset_changed = ImGui::Combo("Preset", &creation_preset_,
-                                             "Custom plane\0Bezier plane\0Raised Bezier patch\0From control net\0"
-                                             "Interpolate through point grid\0Approximate point grid\0");
+                                             "Custom plane\0From control net\0Interpolate through point grid\0"
+                                             "Approximate point grid\0Bezier plane\0Raised Bezier patch\0");
     const bool data_points = creation_preset_ == interpolate_grid || creation_preset_ == approximate_grid;
     const bool uses_grid = creation_preset_ == from_control_net || data_points;
     bool parameters_changed = creation_preset_ == custom_plane && draw_plane_parameters(creation_parameters_);

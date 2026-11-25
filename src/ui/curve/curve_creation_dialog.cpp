@@ -248,8 +248,8 @@ void CurveEditor::draw_creation_dialog(EditableCurve &curve)
     ImGui::PushItemWidth(12.0F * ImGui::GetFontSize());
     const bool preset_changed =
         ImGui::Combo("Preset", &creation_preset_,
-                     "Custom line\0Cubic Bezier\0Interpolate through points\0From control points\0"
-                     "Approximate points\0");
+                     "Custom line\0From control points\0Interpolate through points\0Approximate points\0"
+                     "Cubic Bezier\0");
     bool parameters_changed = false;
     switch (creation_preset_)
     {

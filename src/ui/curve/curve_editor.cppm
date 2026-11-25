@@ -45,10 +45,10 @@ export class CurveEditor
     enum CreationPreset
     {
         custom_line,
-        cubic_bezier,
-        interpolate_points,
         control_points,
-        approximate_points
+        interpolate_points,
+        approximate_points,
+        cubic_bezier
     };
 
     [[nodiscard]] std::size_t selected_index() const
