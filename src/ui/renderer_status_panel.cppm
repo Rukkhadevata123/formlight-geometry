@@ -17,8 +17,8 @@ export enum class PreviewMode
     cylinder,
     plate_with_hole_cut,
     plate_with_hole_extrusion,
-    nurbs_curve,
     nurbs_surface,
+    nurbs_curve,
     compute_pyramid,
 };
 
@@ -105,7 +105,7 @@ export void draw_status_panel(const RendererStatus &status, PreviewMode &mode, P
         const float combo_width = 9.0F * ImGui::GetFontSize();
         auto mode_index = static_cast<int>(mode);
         constexpr const char *shapes[] = {"Box", "Cylinder", "Plate with hole (cut)", "Plate with hole (extrusion)",
-                                          "NURBS curve", "NURBS surface", "Compute pyramid"};
+                                          "NURBS surface", "NURBS curve", "Compute pyramid"};
         constexpr auto longest_label = shapes[static_cast<int>(PreviewMode::plate_with_hole_extrusion)];
         ImGui::SetNextItemWidth(ImGui::CalcTextSize(longest_label).x + ImGui::GetFrameHeight() +
                                 2.0F * ImGui::GetStyle().FramePadding.x);
