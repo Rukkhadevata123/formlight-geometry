@@ -29,18 +29,17 @@ namespace
 {
 void configure_imgui_fonts(ImGuiIO &io)
 {
-    ImFontConfig font_config;
-#ifdef _WIN32
-    if (const auto *windows_dir = SDL_getenv("SystemRoot"); windows_dir && *windows_dir)
+    if (const auto *base_path = SDL_GetBasePath())
     {
-        const auto path = std::format("{}/Fonts/segoeui.ttf", windows_dir);
-        font_config.Flags |= ImFontFlags_NoLoadError;
-        io.FontDefault = io.Fonts->AddFontFromFileTTF(path.c_str(), 0.0F, &font_config);
+        const auto path = std::format("{}fonts/NotoSansSC-Regular.otf", base_path);
+        ImFontConfig config;
+        config.Flags |= ImFontFlags_NoLoadError;
+        io.FontDefault = io.Fonts->AddFontFromFileTTF(path.c_str(), 0.0F, &config);
     }
-#endif
     if (!io.FontDefault)
     {
-        io.FontDefault = io.Fonts->AddFontDefaultVector(&font_config);
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not load fonts/NotoSansSC-Regular.otf; using the built-in font.");
+        io.FontDefault = io.Fonts->AddFontDefaultVector();
     }
     ImGui::GetStyle().FontSizeBase = 17.0F;
 }

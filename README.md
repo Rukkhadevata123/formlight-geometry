@@ -64,4 +64,6 @@ ctest --test-dir build-release --output-on-failure
 
 SDL3 处理窗口和输入，Dear ImGui 绘制编辑面板。渲染使用 Vulkan-Hpp、动态渲染和 Synchronization2。CMake 编译 Slang 着色器，vcpkg 管理依赖。[依赖清单](vcpkg.json)
 
-项目采用 [MIT License](LICENSE)。
+界面的中文和英文共用随程序分发的 Noto Sans SC Regular 2.004。CMake 将这份静态字体（约 7.95 MiB）和许可证复制到可执行文件旁的 `fonts/` 目录。[字体来源](https://github.com/notofonts/noto-cjk/blob/Sans2.004/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf) · [字体许可证（SIL OFL 1.1）](assets/fonts/OFL.txt)
+
+项目代码采用 [MIT License](LICENSE)。

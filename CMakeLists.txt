@@ -109,6 +109,10 @@ target_sources(formlight-geometry PRIVATE
 target_link_libraries(formlight-geometry PRIVATE formlight_geometry_model TKPrim TKMath TKDESTEP TKXSBase SDL3::SDL3 imgui::imgui Vulkan::Vulkan)
 target_compile_definitions(formlight-geometry PRIVATE VULKAN_HPP_ENABLE_DYNAMIC_LOADER_TOOL=0)
 
+foreach(asset IN ITEMS NotoSansSC-Regular.otf OFL.txt)
+    configure_file("assets/fonts/${asset}" "fonts/${asset}" COPYONLY)
+endforeach()
+
 set(triangle_shader "${CMAKE_CURRENT_SOURCE_DIR}/shaders/triangle.slang")
 set(shader_output_dir "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(triangle_spv "${shader_output_dir}/triangle.vert.spv")
