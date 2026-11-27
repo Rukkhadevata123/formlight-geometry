@@ -48,7 +48,7 @@ OCCT 构造方块、圆柱和带孔板，并将实体三角化后交给 Vulkan �
 
 Windows x64 的 Release 预设使用 CMake 4.5 或更高版本、Ninja 和 clang-cl。[CMake 预设](CMakePresets.json)
 
-- 项目和 vcpkg 依赖都从 `PATH` 查找 `clang-cl.exe`。将 `VCPKG_ROOT` 指向 vcpkg 安装目录。
+- 项目和 vcpkg 依赖都从 `PATH` 查找 `clang-cl.exe`。使用共享预设 `release` 时，将 `VCPKG_ROOT` 指向已完成 bootstrap 的 vcpkg 根目录。首次配置会按清单锁定的基线安装依赖。[依赖清单](vcpkg.json)
 - `import std;` 需要 MSVC 工具集中的 C++23 标准库模块文件。运行程序需要支持 Vulkan 1.3 的驱动。
 
 在 x64 VS 开发者 PowerShell 中进入仓库根目录，运行以下命令。
@@ -56,9 +56,13 @@ Windows x64 的 Release 预设使用 CMake 4.5 或更高版本、Ninja 和 clang
 ```powershell
 cmake --preset release
 cmake --build --preset release
+ctest --preset release
 .\build-release\formlight-geometry.exe
-ctest --test-dir build-release --output-on-failure
 ```
+
+个人机器的 vcpkg 路径和缓存位置可以放在仓库根目录的 `CMakeUserPresets.json`。Git 已忽略这个文件。若在其中定义了继承 `release` 的 `release-local`，并添加同名的构建和测试预设，上面三条 CMake/CTest 命令都可改用 `release-local`。[忽略规则](.gitignore)
+
+以 `D:\vcpkg` 为例，其下的 `downloads`、`archives`、`registries` 分别存放下载文件、二进制包缓存和 vcpkg registry 缓存，可跨项目复用。本机的个人预设显式使用 `build-release`，与 clangd 的编译数据库路径一致。vcpkg 安装的依赖、构建依赖的中间文件和打包目录都在 `build-release\vcpkg_installed` 内。
 
 项目使用 C++23 命名模块。`.cppm` 文件用 `export` 标出对外接口，曲线拟合等较长的实现放在同一模块的独立 `.cpp` 文件中。[曲线模块](src/geometry/curves/bspline_curve.cppm) · [拟合实现](src/geometry/curves/curve_fitting.cpp)
 
