@@ -26,13 +26,13 @@ CPU 将整张曲面的输入与输出打包进同一块 `RWByteAddressBuffer`（
 1. **CPU 双精度定位 span 与折痕**：在 `pack_nurbs_grid` 中用 `double` 查找每个采样参数所在的节点区间 `span`，同时检测重数等于次数的内部节点并打上 `crease` 标记，打包为 `(span << 1) | crease` 传给 GPU。这样参数舍入到 `float` 时不会意外跨过 $C^0$ 折痕。
 2. **每采样点选最大基函数控制点作局部锚点**：着色器用 `strongestBasis` 选出当前贡献最大的控制点作为局部 `anchor`，累加所有偏移量 `(p.xyz - anchor) * (p.w * bu[i] * bv[j])` 后再加回 `anchor`。即使在退化边或权重相差悬殊的区域，也能避免大坐标相减造成有效位丢失。
 3. **按局部跨距缩放导数**：`basisAt` 在递推最高阶基函数时对局部跨距坐标求导（乘以当前区间宽度 `width`），保持正向缩放而不必除以极小的节点区间长度。
-4. **商法则切向与退化法向保护**：记齐次和为 $(S, W)$，其对局部参数的一阶偏导为 $(S_u, W_u)$ 与 $(S_v, W_v)$，则切向量方向与下式同向（略去正公共分母 $W$）：
+4. **商法则切向与退化法向保护**：记齐次和为 $(S, W)$，其对局部参数的一阶偏导为 $(S_u, W_u)$ 与 $(S_v, W_v)$，则切向量方向满足（略去正公共分母 $W$）：
 
-   $$
-   \mathbf{t}_u \propto S_u - \mathbf{p}\, W_u, \qquad \mathbf{t}_v \propto S_v - \mathbf{p}\, W_v
-   $$
+$$
+\mathbf{t}_u \propto S_u - \mathbf{p}\, W_u, \qquad \mathbf{t}_v \propto S_v - \mathbf{p}\, W_v
+$$
 
-   着色器先将 $\mathbf{t}_u$、$\mathbf{t}_v$ 各自按最大分量缩放后单位化，再做叉积。结果 `normal.w` 明确区分三种状态：`1` 为有效单位法向，`0` 为折痕处或两切向近乎平行（叉积模长 $\le 8\varepsilon_{\text{fp32}}$），`-1` 为非有限数值异常。
+着色器先将 $\mathbf{t}_u$、$\mathbf{t}_v$ 各自按最大分量缩放后单位化，再做叉积。结果 `normal.w` 明确区分三种状态：`1` 为有效单位法向，`0` 为折痕处或两切向近乎平行（叉积模长 $\le 8\varepsilon_{\text{fp32}}$），`-1` 为非有限数值异常。
 
 ## 3. B-Rep 三角化、面拾取与 STEP 往返
 
